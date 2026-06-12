@@ -1,0 +1,15 @@
+name: session-financials
+summary: Session revenue, collection rate, cost of care, and session volume.
+status: confirmed
+owner: data-team
+grain: note_id x authorized_service_id
+tables:
+  canonical: TRANSFORMED.DBT.FCT_SESSION_FINANCIALS
+  others: [dim_client, dim_provider, dim_care_provider_company]
+dashboards:
+  - name: Collection Rate by Payer
+    owner: revenue-ops
+    canonical_question: "What is our collection rate by payer, last quarter?"
+lineage:
+  - source: dbt_core
+    models: [fct_session_financials, dim_client, dim_provider]

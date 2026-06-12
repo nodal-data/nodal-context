@@ -1,0 +1,19 @@
+# evals/seeds/<name>.seed.yaml — one harvested ground-truth pair.
+# Written by the interview at the moment a disambiguation is confirmed.
+question: "<a question a user might actually ask>"
+domain: <domain>
+intent: >
+  <the confirmed correct meaning — including the disambiguation the naive reading
+  would miss>
+expected:
+  kind: sql_shape              # semantic_entity | sql_shape | value_at_snapshot
+  must_include: []             # for sql_shape
+  must_exclude: []
+  # entity: <name>             # for semantic_entity
+  # value: <n>                 # for value_at_snapshot
+  # as_of: <YYYY-MM-DD>        # for value_at_snapshot (pin it!)
+provenance: interview          # interview | dashboard | correction | generated
+status: confirmed              # confirmed | draft  (draft excluded from "perfect")
+lineage:
+  - source: dbt_core
+    models: []

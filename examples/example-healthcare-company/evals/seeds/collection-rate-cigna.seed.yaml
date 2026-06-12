@@ -1,0 +1,19 @@
+question: "What's our collection rate for Payer X last quarter?"
+domain: session-financials
+intent: >
+  Collection rate on adjudicated claims. "Payer X" must resolve state-specifically
+  (Payer X-TX vs Payer X-FL), not aggregate across states. Exclude sessions <45 days
+  old (claims not yet adjudicated). Exclude Payer Y/Payer Y-CA. Acknowledge blank-payer
+  handling if filtering by payer.
+expected:
+  kind: sql_shape
+  must_include:
+    - "session age cutoff >= 45 days"
+    - "state-specific payer resolution (no cross-state Payer X aggregation)"
+  must_exclude:
+    - "Payer Y / Payer Y-CA payers"
+provenance: interview
+status: confirmed
+lineage:
+  - source: dbt_core
+    models: [fct_session_financials]

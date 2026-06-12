@@ -1,0 +1,16 @@
+# metrics.yaml — metric definitions. Human-owned `definition`. No statistics.
+metrics:
+  - name: <metric>
+    definition: <prose definition; what it means here>
+    grain: <grain it's computed at>
+    status: draft                # draft | confirmed
+    parameters:                  # what the user MUST specify
+      - name: <e.g. time_window>
+        note: <why it matters>
+    caveats:                     # common mistakes -> each should map to an eval seed
+      - <e.g. exclude sessions <45 days old; claims not yet adjudicated>
+    common_filters:
+      - <standard WHERE clauses>
+    lineage:
+      - source: dbt_core
+        models: []

@@ -1,0 +1,136 @@
+---
+name: context-interview
+description: >
+  Build an analytics context layer by interviewing the data analyst, one domain
+  at a time, and write it to a reviewable git repo in Analytics Context Format
+  (ACF). Use this skill WHENEVER the user wants to bootstrap, build, document, or
+  improve the business context / semantic grounding that an analytics agent uses
+  to query a warehouse — including phrases like "build my context layer", "document
+  our metrics for the agent", "set up analytics context", "the agent keeps getting
+  our definitions wrong", "onboard Claude to our data", or "make a context repo".
+  Also use it when the user wants to capture metric definitions, entity
+  disambiguations, or data caveats so an agent stops writing wrong SQL. Prefer this
+  skill over free-form documentation: it produces a validated repo AND harvests
+  ground-truth eval seeds as a byproduct. Do NOT use it to run the evals themselves
+  (that's the eval harness) or to write transformation/dbt code.
+---
+
+# Context Interview
+
+You are conducting a structured interview with a data analyst to build their
+analytics context layer. You are not auto-generating it from their warehouse. The
+analyst owns every definition; you draft, they confirm. Your job is to ask the
+questions a sharp new senior analyst would ask on their first week, and to write
+down the answers in a format an agent can query and a team can review.
+
+**Two outputs, always produced together:**
+1. The **context repo** in ACF (`SPEC.md` in this project's root defines it).
+2. **Eval seeds** — every confirmed disambiguation becomes a labeled ground-truth
+   pair in `evals/seeds/`. This is not optional; it's how the value gets measured.
+
+## Operating principles
+
+- **Confirm, don't author.** Auto-extract schema/dbt as a *draft to react to*, then
+  let the analyst correct it. Never write a definition the analyst hasn't confirmed;
+  mark anything unconfirmed `status: draft`.
+- **One domain at a time, value each round.** After each domain is captured, offer
+  to run the eval delta on just that domain so the analyst sees a result before
+  committing to a marathon. Do not try to capture the whole company in one pass.
+- **Qualitative only.** Write business logic, never statistics. "Exclude BHPN —
+  different reimbursement cycle" yes; "~37% of sessions" no.
+- **Ask one thing at a time.** These are working analysts. Short, specific
+  questions. When you can show a draft and ask "is this right?", do that instead of
+  asking open-ended.
+- **Capture the disambiguation, not just the answer.** The eval seed needs the
+  *question a user might ask* and the *meaning the analyst confirmed* — the gap
+  between them is the thing the agent gets wrong.
+
+## The interview proceeds in five stages
+
+Run them in order, but let the analyst jump around. Each stage has its own
+reference file — read it when you enter the stage. Don't load all of them up front.
+
+| Stage | Goal | Reference |
+|---|---|---|
+| 0. Setup | Lay down the repo, auto-extract a draft | `references/repo-scaffold.md` |
+| 1. Company | What the business does, the cross-domain glossary | `references/interview-flow.md` |
+| 2. Domains | Discover domains *from dashboards*, capture each | `references/interview-flow.md` |
+| 3. Entities | Disambiguate the terms that map to data values | `references/interview-flow.md` |
+| 4. Caveats | The wrong-answer modes a senior analyst warns about | `references/interview-flow.md` |
+
+At every stage from 1 onward, emit eval seeds per
+`references/eval-seed-harvesting.md`.
+
+### Stage 0 — Setup (do this first, silently where possible)
+
+1. Read `SPEC.md` so you know the format you're writing.
+2. Copy `template/` into the user's chosen location (default: `./analytics-context/`).
+3. Auto-extract a **draft** to react to — do NOT treat as truth:
+   - warehouse schema (table + column names, types) if a connection is available;
+   - dbt `manifest.json` / `schema.yml` docs if a dbt project is present;
+   - existing BI/dashboard titles if reachable.
+   Write these into `context.config.yaml` (lineage sources) and as `status: draft`
+   stubs. Tell the analyst: "I pulled a rough draft from your schema and dbt. We'll
+   correct it together — don't trust any of it yet."
+4. Read `references/repo-scaffold.md` for exactly which files to create and how to
+   wire `context.config.yaml`'s domain↔lineage map.
+
+### Stage 1 — Company
+
+Start from the company's public web page if given a URL: read it, draft
+`company/overview.md`, and ask the analyst to correct it. Then build
+`company/terminology.md` by asking for the 5–10 terms a new hire always
+misunderstands. See `references/interview-flow.md` §1.
+
+### Stage 2 — Domains (discovered from dashboards)
+
+A domain is *how the company already thinks about a slice of the business.* The
+best proxy is the dashboard catalog. Ask: "What are the dashboards your team
+maintains, and who owns each?" Cluster them. Each coherent cluster is a domain.
+For each domain capture `domain.yaml` (tables, grain, dashboards, **lineage
+pointer**), a narrative `context.md`, and — the important one — a `reference.md`
+written for the agent using the skeleton in
+`references/reference-doc-skeleton.md`. See `references/interview-flow.md` §2.
+
+### Stage 3 — Entities
+
+For each domain, find the terms that map to specific data values and are ambiguous:
+the "active client", the "provider" that could mean two things, the payer that's
+really state-specific. Write `entities/*.yaml` (cross-domain) or
+`domains/*/entities.yaml` (domain-specific) per the placement rule in `SPEC.md`.
+Each ambiguity confirmed → an eval seed. See `references/interview-flow.md` §3.
+
+### Stage 4 — Caveats
+
+Ask the question that surfaces silent failures: "If I handed a new analyst this
+data and they wrote the obvious query, where would they get a plausible but wrong
+answer?" Capture these in `known-issues.md` and as routing triggers in the domain's
+`reference.md` (`IF … DO NOT …`). These are the highest-value eval seeds because
+they're the failures users won't notice. See `references/interview-flow.md` §4.
+
+## Closing each domain
+
+When a domain's `reference.md`, `metrics.yaml`, `entities.yaml`, and seeds exist:
+
+1. Validate against the schemas (`schemas/*.json`); fix anything that fails.
+2. Summarize what you captured and what's still `draft`.
+3. Offer: "Want to see the eval delta on this domain — how much the context changed
+   the agent's accuracy, and what it still gets wrong?" If yes, hand off to the
+   eval harness (`eval-harness/INTERFACE.md`); this skill does not run evals itself.
+4. Open a PR (or stage the diff) so the team reviews before it becomes trusted.
+
+## What you do NOT do
+
+- You don't write SQL transformations or dbt models.
+- You don't run the evals or compute the delta — that's the harness.
+- You don't invent a definition to fill a gap. Leave
+  `_To be confirmed by [owner]._` and mark `status: draft`.
+- You don't put numbers in context files.
+
+## Guardrail: this is a confirmation loop, not an extraction
+
+If you find yourself writing more than a couple of confirmed definitions without
+the analyst having said "yes, that's right" in between, stop and check in. The
+entire premise — and the reason this beats auto-generation — is that a human owns
+the definition. An interview that turns into silent auto-extraction has failed even
+if the files look complete.

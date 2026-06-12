@@ -1,0 +1,19 @@
+# Fire when an upstream lineage source changes, and flag context that may be stale.
+# This is what makes "context separate from lineage" safe: the link is enforced
+# by automation even though the files live in different repos.
+name: context-drift
+on:
+  repository_dispatch:
+    types: [lineage-changed]     # dbt repo CI posts here on model change
+  schedule:
+    - cron: '0 7 * * 1'          # weekly safety net
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Diff lineage manifest vs context.config.yaml pointers
+        run: python .ci/drift.py   # for each domain, compare model column/test sets
+        # On change: open an issue/PR tagged to the domain owner listing the
+        # affected reference.md / metrics.yaml / entities.yaml. The fix path is
+        # deliberately boring: edit the markdown, merge, re-validate.

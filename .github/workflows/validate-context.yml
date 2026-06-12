@@ -1,0 +1,19 @@
+# Validate ACF on every PR: schemas pass, links resolve, drafts are surfaced.
+name: validate-context
+on:
+  pull_request:
+    paths: ['**/*.yaml', '**/*.md', 'context.config.yaml']
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install jsonschema pyyaml
+      - name: Validate YAML against ACF schemas
+        run: python .ci/validate.py        # validates entities/metrics/domain/seeds
+      - name: Surface unconfirmed drafts (warn, don't fail)
+        run: |
+          echo "Definitions still marked status: draft:"
+          grep -rn "status: draft" --include=*.yaml . || echo "none — all confirmed"

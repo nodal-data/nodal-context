@@ -1,0 +1,18 @@
+# context.config.yaml — repo metadata + the domain↔lineage map that makes
+# "context lives apart from lineage" safe. Every domain MUST carry a lineage
+# pointer so drift detection can fire when an upstream model changes.
+version: 0.1
+warehouse: snowflake            # snowflake | bigquery | databricks | postgres | ...
+
+lineage_sources:
+  - id: dbt_core
+    type: dbt                   # dbt | sqlmesh | raw_sql | none
+    repo: github.com/your-org/your-dbt
+    ref: main
+    manifest_path: target/manifest.json
+
+domains: {}                     # filled in per domain during the interview, e.g.:
+  # session-financials:
+  #   lineage:
+  #     - source: dbt_core
+  #       models: [fct_session_financials, dim_client]

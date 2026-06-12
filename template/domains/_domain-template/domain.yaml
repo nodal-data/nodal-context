@@ -1,0 +1,18 @@
+# domain.yaml — structured metadata for one domain.
+# A domain ≈ how the company already thinks about a slice of the business,
+# usually a cluster of dashboards. Discovered during interview Stage 2.
+name: <domain-name>
+summary: <the business question this domain's dashboards answer>
+status: draft                    # draft | confirmed
+owner: <team or person>
+grain: <what one row of the canonical table represents>
+tables:
+  canonical: <the single source-of-truth table>
+  others: []
+dashboards:                      # the cluster that defines this domain
+  - name: <dashboard name>
+    owner: <owner>
+    canonical_question: <the question it answers>   # -> a dashboard eval seed
+lineage:                         # REQUIRED — keeps drift detection working
+  - source: dbt_core
+    models: []

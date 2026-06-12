@@ -1,0 +1,14 @@
+# entities/<group>.yaml — CROSS-DOMAIN entities (live in a dim_* table or span
+# multiple fact tables; multiple teams reference them). Group by subject:
+# payers.yaml, clients.yaml, providers.yaml, geography.yaml, etc.
+entities:
+  - name: <e.g. client_weekly_status>
+    description: <what it means>
+    status: draft                # draft | confirmed
+    mappings:
+      <value>: <business meaning>
+    important: <the disambiguation that prevents a wrong answer>
+    analytical_notes: <when this matters; when to clarify>
+    lineage:
+      - source: dbt_core
+        models: [<dim_table>]

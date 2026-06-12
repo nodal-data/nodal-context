@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nodaldata.io/acf/evalseed.schema.json",
+  "title": "ACF Eval Seed",
+  "type": "object",
+  "required": ["question", "domain", "intent", "expected", "provenance", "status"],
+  "properties": {
+    "question": { "type": "string" },
+    "domain": { "type": "string" },
+    "intent": { "type": "string" },
+    "expected": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["semantic_entity", "sql_shape", "value_at_snapshot"] },
+        "must_include": { "type": "array", "items": { "type": "string" } },
+        "must_exclude": { "type": "array", "items": { "type": "string" } },
+        "entity": { "type": "string" },
+        "value": {},
+        "as_of": { "type": "string", "format": "date" }
+      }
+    },
+    "provenance": { "enum": ["interview", "dashboard", "correction", "generated"] },
+    "status": { "enum": ["draft", "confirmed"] },
+    "lineage": { "$ref": "lineage.schema.json" }
+  },
+  "additionalProperties": false
+}

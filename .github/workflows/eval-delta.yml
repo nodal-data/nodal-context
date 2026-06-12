@@ -1,0 +1,25 @@
+# Run the on/off/perfect delta on PR for any domain whose context changed.
+# The OSS runner produces the one-shot delta report; the hosted Nodal action
+# (commented) adds trustworthy ground truth, time-series, and regression gating.
+name: eval-delta
+on:
+  pull_request:
+    paths: ['domains/**', 'entities/**', 'evals/seeds/**']
+jobs:
+  delta:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Identify changed domains
+        id: changed
+        run: python .ci/changed_domains.py >> "$GITHUB_OUTPUT"
+      - name: Run on/off/perfect delta (OSS one-shot runner)
+        run: |
+          python -m eval_harness.run \
+            --adapter acf \
+            --domains "${{ steps.changed.outputs.domains }}" \
+            --report pr-comment
+        # Excludes status: draft seeds from the "perfect" baseline.
+      # - name: Hosted continuous eval + regression gate (Nodal) [paid]
+      #   uses: nodaldata/eval-action@v1
+      #   with: { gate-threshold: 0.90, ground-truth: managed }
