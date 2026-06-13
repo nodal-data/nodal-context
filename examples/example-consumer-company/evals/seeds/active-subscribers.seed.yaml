@@ -1,0 +1,20 @@
+question: "How many active subscribers do we have?"
+domain: subscription-revenue
+intent: >
+  Paid subscribers (status = 'active') in the current billing_period — NOT engaged
+  "active users" from product analytics. Exclude trials (status = 'trialing'). Dedup
+  the monthly snapshot grain so each subscription is counted once in the current
+  period.
+expected:
+  kind: sql_shape
+  must_include:
+    - "paid status in the current billing_period"
+    - "single count of each subscription_id (no snapshot double-count)"
+  must_exclude:
+    - "trialing subscriptions"
+    - "engagement-based active users"
+provenance: interview
+status: confirmed
+lineage:
+  - source: dbt_core
+    models: [fct_subscription_periods]

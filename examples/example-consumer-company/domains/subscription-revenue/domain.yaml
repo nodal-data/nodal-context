@@ -1,0 +1,15 @@
+name: subscription-revenue
+summary: Active subscribers, MRR, churn, and trial conversion.
+status: confirmed
+owner: data-team
+grain: subscription_id x billing_period
+tables:
+  canonical: TRANSFORMED.DBT.FCT_SUBSCRIPTION_PERIODS
+  others: [dim_user, dim_plan, dim_platform]
+dashboards:
+  - name: MRR and Churn
+    owner: growth
+    canonical_question: "How many active subscribers do we have, and what is MRR?"
+lineage:
+  - source: dbt_core
+    models: [fct_subscription_periods, dim_user, dim_plan]

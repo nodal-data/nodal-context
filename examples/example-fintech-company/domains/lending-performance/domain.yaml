@@ -1,0 +1,17 @@
+name: lending-performance
+summary: Loan originations, outstanding balance, delinquency, and charge-offs.
+status: confirmed
+owner: data-team
+grain: loan_id x statement_period
+tables:
+  canonical: TRANSFORMED.DBT.FCT_LOAN_PERFORMANCE
+  others: [dim_borrower, dim_partner, dim_loan_product, fct_partner_settlement]
+dashboards:
+  - name: Originations by Partner
+    owner: lending-ops
+    canonical_question: "What was our origination volume by partner, last quarter?"
+lineage:
+  - source: dbt_core
+    models: [fct_loan_performance, dim_borrower, dim_partner]
+  - source: bq_partner_settlements    # federated: partner remittance data on BigQuery
+    models: [fct_partner_settlement]
