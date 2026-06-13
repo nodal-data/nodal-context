@@ -2,7 +2,8 @@
 # "context lives apart from lineage" safe. Every domain MUST carry a lineage
 # pointer so drift detection can fire when an upstream model changes.
 version: 0.1
-warehouse: snowflake            # snowflake | bigquery | databricks | postgres | ...
+warehouse: snowflake            # default platform; a per-source `warehouse:` overrides it
+                                # (snowflake | bigquery | databricks | postgres | ...)
 
 lineage_sources:
   - id: dbt_core
@@ -10,6 +11,14 @@ lineage_sources:
     repo: github.com/your-org/your-dbt
     ref: main
     manifest_path: target/manifest.json
+  # Multiple warehouses / clouds? Tag the non-default source(s) with `warehouse:`,
+  # e.g. a second platform — entries without `warehouse:` inherit the default above:
+  # - id: dbt_bq_marketing
+  #   type: dbt
+  #   warehouse: bigquery
+  #   repo: github.com/your-org/marketing-dbt
+  #   ref: main
+  #   manifest_path: target/manifest.json
 
 domains: {}                     # filled in per domain during the interview, e.g.:
   # session-financials:

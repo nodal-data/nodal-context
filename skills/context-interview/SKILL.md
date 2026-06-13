@@ -41,6 +41,10 @@ down the answers in a format an agent can query and a team can review.
 - **Ask one thing at a time.** These are working analysts. Short, specific
   questions. When you can show a draft and ask "is this right?", do that instead of
   asking open-ended.
+- **Work long lists in small batches.** When a stage yields many items (terms,
+  entities, caveats), elicit the list first as `status: draft` stubs, then confirm
+  1–3 at a time with a visible progress count — never hand the analyst a wall of
+  items to define at once. See "Working a long list" in `references/interview-flow.md`.
 - **Capture the disambiguation, not just the answer.** The eval seed needs the
   *question a user might ask* and the *meaning the analyst confirmed* — the gap
   between them is the thing the agent gets wrong.
@@ -65,14 +69,22 @@ At every stage from 1 onward, emit eval seeds per
 
 1. Read `SPEC.md` so you know the format you're writing.
 2. Copy `template/` into the user's chosen location (default: `./analytics-context/`).
-3. Auto-extract a **draft** to react to — do NOT treat as truth:
-   - warehouse schema (table + column names, types) if a connection is available;
+3. Ask one breadth-first question: *"Which data platforms do your dashboards run on
+   — just one warehouse, or a mix (e.g. Snowflake + BigQuery + Postgres)?"* Record
+   the answer as the top-level `warehouse:` default. For a multi-platform shop, leave
+   the non-default sources' `warehouse:` to be filled in lazily as domains are reached
+   (Stage 2, Q4) — don't enumerate every source now. More than one warehouse
+   connection or warehouse MCP server is itself the signal to ask this rather than
+   assume one platform.
+4. Auto-extract a **draft** to react to — do NOT treat as truth:
+   - warehouse schema (table + column names, types) if connections are available;
    - dbt `manifest.json` / `schema.yml` docs if a dbt project is present;
    - existing BI/dashboard titles if reachable.
    Write these into `context.config.yaml` (lineage sources) and as `status: draft`
    stubs. Tell the analyst: "I pulled a rough draft from your schema and dbt. We'll
-   correct it together — don't trust any of it yet."
-4. Read `references/repo-scaffold.md` for exactly which files to create and how to
+   correct it together — don't trust any of it yet." Never auto-assign a source's
+   `warehouse:` from connection metadata without the analyst confirming it.
+5. Read `references/repo-scaffold.md` for exactly which files to create and how to
    wire `context.config.yaml`'s domain↔lineage map.
 
 ### Stage 1 — Company

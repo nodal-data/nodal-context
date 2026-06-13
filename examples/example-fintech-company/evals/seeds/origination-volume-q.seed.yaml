@@ -1,0 +1,20 @@
+question: "What was our origination volume last quarter?"
+domain: lending-performance
+intent: >
+  Originated principal (new disbursements), not outstanding balance or repayments.
+  Dated by disbursement_date, not application_date or approval_date. Exclude Partner Z
+  (delayed reporting cycle). Dedup the monthly snapshot grain so each loan's principal
+  is counted once at origination.
+expected:
+  kind: sql_shape
+  must_include:
+    - "originated principal dated by disbursement_date"
+    - "single count of each loan_id at origination (no snapshot double-count)"
+  must_exclude:
+    - "Partner Z originations"
+    - "application_date / approval_date as the origination date"
+provenance: interview
+status: confirmed
+lineage:
+  - source: dbt_core
+    models: [fct_loan_performance]

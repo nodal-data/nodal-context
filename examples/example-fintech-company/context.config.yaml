@@ -1,0 +1,26 @@
+# Multi-warehouse worked example: core lending lives in Snowflake (the repo-wide
+# default); partner settlement data the merchants send us lands in BigQuery. The
+# lending-performance domain is federated — it lists one lineage entry per source.
+version: 0.1
+warehouse: snowflake            # default platform; per-source `warehouse:` overrides it
+
+lineage_sources:
+  - id: dbt_core
+    type: dbt                   # no `warehouse:` → inherits the default (snowflake)
+    repo: github.com/example-fintech/fintech-dbt
+    ref: main
+    manifest_path: target/manifest.json
+  - id: bq_partner_settlements
+    type: dbt
+    warehouse: bigquery         # partner remittance data lands on BigQuery
+    repo: github.com/example-fintech/partner-dbt
+    ref: main
+    manifest_path: target/manifest.json
+
+domains:
+  lending-performance:
+    lineage:
+      - source: dbt_core
+        models: [fct_loan_performance, dim_borrower, dim_partner]
+      - source: bq_partner_settlements
+        models: [fct_partner_settlement]

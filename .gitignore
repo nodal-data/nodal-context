@@ -3,3 +3,6 @@ FINDINGS.md
 
 # macOS
 .DS_Store
+
+# Local clean-room test launcher
+clean-test.sh
