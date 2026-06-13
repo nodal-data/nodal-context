@@ -11,6 +11,38 @@ exact phrasing that makes a seed useful.
 
 ---
 
+## Working a long list: elicit, then batch
+
+Several stages produce *many* items — terminology terms (§1), entity
+disambiguations (§3), caveats (§4). Do **not** ask the analyst to name **and** define
+them all in one turn; that's a wall of line items no one can react to. Instead:
+
+1. **Elicit the list first (cheap, breadth-first).** Ask the analyst to just *name*
+   the candidates — "List them; don't define them yet. We'll go through them together
+   a couple at a time." Write each as a `status: draft` stub in the stage's output
+   file, using the no-invented-definitions placeholder: `_To be confirmed._` with a
+   trailing `<!-- status: draft -->`. These stubs are your scratchpad **and** your
+   progress tracker.
+2. **Confirm 1–3 at a time.** Take one to three stubs, ask that stage's probe (meaning
+   + misconception, or the disambiguation), draft it, confirm with the analyst, then
+   flip `draft → confirmed`. Start with one or two; go up to three only if the analyst
+   is moving fast.
+3. **Write the seed right then.** Each confirmed item emits its eval seed *at the
+   moment of confirmation* — small batches don't defer seeds, they make it natural to
+   capture each one immediately (this is the same "don't batch seeds to the end" rule
+   above, not an exception to it).
+4. **Show progress every round.** One line: "Terminology: 3 of 8 confirmed, 5 to go.
+   Next: <item>." The count is just confirmed stubs vs remaining `draft` stubs.
+5. **The list isn't frozen.** Let the analyst add or drop candidates as you go; delete
+   a stub that turns out irrelevant.
+6. **Resume for free.** If the session is interrupted, the remaining `draft` stubs
+   *are* the queue — on return, count them and pick up where you left off (see
+   "Updating an existing repo" in `repo-scaffold.md`).
+
+§1, §3, and §4 below each invoke this pattern.
+
+---
+
 ## §1 — Company
 
 **Goal:** `company/overview.md` and `company/terminology.md`, both confirmed.
@@ -25,14 +57,17 @@ Then:
 1. "In one sentence, what does the business actually sell, and who pays?"
 2. "What's the unit of value you count most — a session, an order, a seat, a
    policy? That's usually the grain of your most important fact table."
-3. "Name the 5–10 terms a new analyst always gets wrong in their first month."
-   For each: "What does it mean here, and what do people *think* it means?"
-   → each of these is a terminology entry **and** an eval seed.
-4. "Are there terms that two teams define differently?" (These are high-value —
-   they're a guaranteed silent-failure source.)
+3. "Name the 5–10 terms a new analyst always gets wrong in their first month — just
+   *name* them, we'll define them together." Then run the **elicit-then-batch**
+   pattern (above): write each named term as a `status: draft` stub in
+   `terminology.md`, then work them 1–3 at a time — for each, "What does it mean here,
+   and what do people *think* it means?" → a terminology entry **and** an eval seed —
+   showing the progress line each round.
+4. While eliciting, also ask "Are there terms that two teams define differently?" Add
+   these to the same list (they're high-value — a guaranteed silent-failure source).
 
-Write `terminology.md` as a glossary. Mark anything you drafted but didn't confirm
-`status: draft` in a trailing comment.
+Write `terminology.md` as a glossary. Anything still unconfirmed stays `status: draft`
+in a trailing comment until the analyst confirms it.
 
 ---
 
@@ -54,9 +89,14 @@ Cluster the dashboards. For each cluster (domain):
 3. "What does one row of that table represent?" → **grain**. Probe hard here;
    wrong grain is the most common wrong-answer mode. ("Is it one row per session,
    or one row per session × service?")
-4. "Where do these models live — which dbt project / repo?" → the **lineage
-   pointer** in `domain.yaml` and `context.config.yaml`. Do not skip this; it's
-   what lets drift detection protect the domain later.
+4. "Where do these models live — which dbt project / repo, and on which platform
+   (Snowflake / BigQuery / Postgres)?" → the **lineage pointer** in `domain.yaml`
+   and `context.config.yaml`. Point the domain at a `lineage_sources` entry by `id`;
+   create that entry now if Stage 0 only captured the platform list. If the source's
+   platform differs from the repo-wide default, set `warehouse:` on the source entry;
+   if it matches, add nothing — it inherits. A domain on two platforms just lists a
+   lineage entry per source. Do not skip this; it's what lets drift detection protect
+   the domain later.
 5. Now build `reference.md` using `reference-doc-skeleton.md`. This is the file the
    agent reads at query time, so write it for retrieval: routing triggers, grain,
    standard hygiene filter, gotchas — not narrative.
@@ -71,7 +111,11 @@ with a `value_at_snapshot` expectation.
 
 **Goal:** the ambiguous terms that map to data values, captured and disambiguated.
 
-For each domain, hunt for three patterns:
+For each domain, run the **elicit-then-batch** pattern (above): first surface the
+candidate ambiguous terms across the three patterns below as `status: draft` stubs in
+`entities/*.yaml` (cross-domain) or `domains/<domain>/entities.yaml`, then disambiguate
+them 1–3 at a time with a progress line — a seed per confirmed term. Hunt for three
+patterns:
 
 1. **Status/lifecycle terms** — "active", "new", "churned", "dormant". For each:
    "What exactly makes a row count as 'active'? What's the lookback? What's
@@ -93,6 +137,12 @@ single-fact-table status/type → `domains/<domain>/entities.yaml`. (See `SPEC.m
 
 **Goal:** `known-issues.md` per domain, and `IF … DO NOT …` routing in
 `reference.md`. These produce the most valuable eval seeds — the silent failures.
+
+Run the **elicit-then-batch** pattern (above) here too. Open with the framing
+question to surface the candidate failure modes, capture each as a `status: draft`
+stub in `known-issues.md`, then work them 1–3 at a time with a progress line —
+writing the routing trigger + seed as each is confirmed. The follow-ups below are
+prompts for surfacing more candidates, not a checklist to answer in one pass.
 
 The framing question:
 > "If I gave a brand-new analyst this data and they wrote the most obvious query,

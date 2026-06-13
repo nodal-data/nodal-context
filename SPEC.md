@@ -78,21 +78,41 @@ The one file that makes "context lives apart from lineage" safe. It maps each
 domain to its upstream lineage source(s), so a change there can flag stale context.
 See [`template/context.config.yaml`](./template/context.config.yaml).
 
+**Multiple warehouses / clouds.** The top-level `warehouse:` is the repo-wide
+*default*. Each `lineage_sources` entry may carry its own `warehouse:` (snowflake |
+bigquery | …) when a company's domains span platforms; an entry without one inherits
+the default. A source's effective platform is `source.warehouse ?? top-level
+warehouse`. There is **no per-domain warehouse field** — a domain's platform is
+derived from whichever sources its `lineage:` references. A single domain whose
+models live on two platforms simply lists one lineage entry per source (the array
+already supports this); don't invent a federated marker. Drift detection must resolve
+each source's platform by this rule and diff against that source's manifest/connection.
+
 ```yaml
 version: 0.1
-warehouse: snowflake            # snowflake | bigquery | databricks | postgres | …
+warehouse: snowflake            # default platform; per-source `warehouse:` overrides it
 lineage_sources:
-  - id: dbt_core
-    type: dbt
+  - id: dbt_snowflake
+    type: dbt                   # no `warehouse:` → inherits the default (snowflake)
     repo: github.com/acme/acme-dbt
+    ref: main
+    manifest_path: target/manifest.json
+  - id: dbt_bq_marketing
+    type: dbt
+    warehouse: bigquery         # this source lives on BigQuery
+    repo: github.com/acme/marketing-dbt
     ref: main
     manifest_path: target/manifest.json
 domains:
   session-financials:
     lineage:
-      - source: dbt_core
+      - source: dbt_snowflake
         models: [fct_session_financials, dim_client, dim_provider]
     # drift fires when any listed model's column set or test set changes
+  marketing-attribution:        # platform derived from the source → BigQuery
+    lineage:
+      - source: dbt_bq_marketing
+        models: [fct_touchpoints]
 ```
 
 ## YAML kinds (full field lists in `schemas/`)

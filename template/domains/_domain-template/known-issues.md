@@ -6,3 +6,4 @@ here should also appear as an `IF … DO NOT …` routing trigger in `reference.
 and as an eval seed.
 
 - **[issue]** — [what goes wrong, and the correct handling]. <!-- -> seed -->
+- **[candidate issue]** — _To be confirmed._ <!-- status: draft -->   <!-- elicited, not yet worked -->
