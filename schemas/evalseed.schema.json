@@ -22,6 +22,10 @@
     },
     "provenance": { "enum": ["interview", "dashboard", "correction", "generated"] },
     "status": { "enum": ["draft", "confirmed"] },
+    "verified_query": {
+      "type": "string",
+      "description": "The blessed read-only SQL whose result the analyst confirmed against a trusted source (the answer key). Set only on a verified match; omit otherwise. Seeds are the ground-truth layer, so SQL/values are allowed here even though context files forbid them."
+    },
     "lineage": { "$ref": "lineage.schema.json" }
   },
   "additionalProperties": false

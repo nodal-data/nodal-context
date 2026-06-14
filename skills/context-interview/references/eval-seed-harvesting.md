@@ -63,7 +63,12 @@ sources, both human-anchored:
 - **Interview-confirmed seeds** (`provenance: interview`, `status: confirmed`) —
   the analyst said "yes, that's the right handling."
 - **Blessed-dashboard seeds** (`provenance: dashboard`) — a dashboard the org
-  already trusts gives a known answer as of a snapshot date.
+  already trusts gives a known answer as of a snapshot date. Stage 5 live
+  verification (`live-verification.md`) produces these by answering live and having
+  the analyst confirm the number; on a match it also stores the blessed read-only
+  SQL in the seed's `verified_query` (the reusable answer key). On a mismatch it
+  instead writes a `provenance: correction` seed and folds the reason into the
+  domain's `reference.md` / `known-issues.md`.
 
 `status: draft` seeds (drafted from auto-extraction, not yet confirmed) are
 **excluded** from the perfect baseline. That's the firewall that keeps

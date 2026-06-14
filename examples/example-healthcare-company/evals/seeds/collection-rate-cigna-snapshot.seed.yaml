@@ -1,0 +1,23 @@
+question: "What is our collection rate by payer, last quarter?"
+domain: session-financials
+intent: >
+  Collection rate on adjudicated claims, resolved per state-specific payer (no
+  cross-state aggregation), counting only sessions >= 45 days old. These are the
+  assumptions the verified query encodes — confirmed against the "Collection Rate
+  by Payer" dashboard.
+expected:
+  kind: value_at_snapshot
+  value: 0.92
+  as_of: "2026-03-31"   # quote it — bare YYYY-MM-DD parses as a date, not a string
+provenance: dashboard
+status: confirmed
+verified_query: |
+  SELECT payer_state, SUM(collected) / NULLIF(SUM(billed), 0) AS collection_rate
+  FROM TRANSFORMED.DBT.FCT_SESSION_FINANCIALS
+  WHERE adjudication_status = 'ADJUDICATED'
+    AND DATEDIFF('day', session_date, CURRENT_DATE) >= 45
+    AND session_date >= '2026-01-01' AND session_date < '2026-04-01'
+  GROUP BY payer_state
+lineage:
+  - source: dbt_core
+    models: [fct_session_financials]

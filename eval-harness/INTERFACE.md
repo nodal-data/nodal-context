@@ -75,7 +75,12 @@ changes.
 
 - **Free / OSS:** the adapters, the NCR spec, the grading definitions, and a
   one-shot local runner that produces the delta report above for a single domain.
-  Enough to see the aha once.
+  Enough to see the aha once. In practice today this runner is the interview's
+  **Stage 5 live verification** (`skills/context-interview/references/live-verification.md`):
+  it answers off vs on against the live warehouse in-session and has the analyst
+  confirm the truth against a dashboard — which is also how it mints the
+  `dashboard`-provenance seeds the NCR otherwise lacks (a non-ACF context has
+  context but no seeds; the interview supplies them).
 - **Paid / Nodal:** the trustworthy hosted "perfect" baseline (managed ground
   truth + blessed-dashboard ingestion), continuous re-evaluation on every PR,
   drift detection wired to `context.config.yaml`, correction harvesting back into

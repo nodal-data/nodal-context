@@ -164,6 +164,18 @@ seed whose `expected` encodes the *correct* handling (right filter, right table,
 
 ---
 
+## §5 — Live Verification
+
+**Goal:** show the context working on this domain and harvest dashboard-anchored
+seeds. At domain close, answer a handful of the domain's questions against the live
+warehouse twice — context off vs on — with parallel in-session subagents, then have
+the analyst confirm the on-answer against their dashboard. Matches become
+`value_at_snapshot` / `dashboard` seeds carrying the blessed `verified_query`;
+mismatches feed a caveat + a `correction` seed. This stage has its own reference —
+read `live-verification.md` when you enter it.
+
+---
+
 ## When the analyst doesn't know
 
 That's a finding, not a failure. Write `_To be confirmed by [owner]._`, mark

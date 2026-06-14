@@ -55,7 +55,8 @@ wrong-answer modes, with no prose it has to wade through.
 │   └── known-issues.md          # data-quality gotchas
 ├── entities/<group>.yaml        # cross-domain entities (payers, clients, geo…)
 └── evals/
-    └── seeds/<name>.seed.yaml   # interview-harvested ground-truth pairs
+    ├── seeds/<name>.seed.yaml   # interview-harvested ground-truth pairs
+    └── runs/                    # live-verification traces (generated; gitignored)
 ```
 
 Placement rule:
@@ -131,9 +132,35 @@ must specify), `caveats`, `common_filters`, `lineage`, `status`.
 ### eval seed (`evals/seeds/*.seed.yaml`)
 `question`, `intent` (the disambiguated meaning), `expected` (one of:
 `semantic_entity` | `sql_shape` | `value_at_snapshot`), `provenance`
-(`interview` | `dashboard` | `correction`), `domain`, `status`. See
+(`interview` | `dashboard` | `correction` | `generated`), `domain`, `status`, and
+the optional `verified_query` (below). See
 [`SPEC` of seeds](./schemas/evalseed.schema.json) and
 [harvesting reference](./skills/context-interview/references/eval-seed-harvesting.md).
+
+**Seeds are the one place numbers and SQL are allowed.** Design rule 2 ("no
+statistics in context") and the template's "no executable SQL" govern *context
+files* — the things the agent reads at query time (`reference.md`, `metrics.yaml`).
+Seeds are the *ground-truth* layer, not context, so a `value_at_snapshot` number
+and a `verified_query` are allowed here — both are pinned (the value to an `as_of`
+date, the query to the snapshot it was verified at) so they don't masquerade as
+live truth.
+
+`verified_query` is the blessed read-only SQL whose result the analyst confirmed
+against a trusted source (a dashboard). It is written **only on a verified match**
+by Stage 5 live verification (below) and is the reusable "answer key" for the seed.
+
+## Live verification (Stage 5) and `evals/runs/`
+
+The interview's [Stage 5](./skills/context-interview/references/live-verification.md)
+answers each candidate question twice — once with context off, once on — against the
+live warehouse, then has the analyst confirm the on-answer against their dashboard.
+A confirmed match upgrades the seed to `provenance: dashboard`,
+`expected.kind: value_at_snapshot` (with `value` + `as_of`) and stores the
+`verified_query`. A mismatch is harvested back into the domain's `reference.md` /
+`known-issues.md` plus a `provenance: correction` seed. The per-answer agent traces
+are written under `evals/runs/<timestamp>/` — these are generated output, not ACF,
+and are gitignored in a generated context repo; the durable outputs are the seeds
+and the updated context files.
 
 ## Versioning
 

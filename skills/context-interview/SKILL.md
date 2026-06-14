@@ -11,8 +11,11 @@ description: >
   Also use it when the user wants to capture metric definitions, entity
   disambiguations, or data caveats so an agent stops writing wrong SQL. Prefer this
   skill over free-form documentation: it produces a validated repo AND harvests
-  ground-truth eval seeds as a byproduct. Do NOT use it to run the evals themselves
-  (that's the eval harness) or to write transformation/dbt code.
+  ground-truth eval seeds as a byproduct. It also runs a live in-session
+  verification pass (Stage 5) to confirm answers against the analyst's dashboards
+  and show the context working immediately. Do NOT use it to run the
+  formal/continuous eval harness (delta at scale, drift detection, hosted "perfect"
+  baseline) or to write transformation/dbt code.
 ---
 
 # Context Interview
@@ -33,9 +36,10 @@ down the answers in a format an agent can query and a team can review.
 - **Confirm, don't author.** Auto-extract schema/dbt as a *draft to react to*, then
   let the analyst correct it. Never write a definition the analyst hasn't confirmed;
   mark anything unconfirmed `status: draft`.
-- **One domain at a time, value each round.** After each domain is captured, offer
-  to run the eval delta on just that domain so the analyst sees a result before
-  committing to a marathon. Do not try to capture the whole company in one pass.
+- **One domain at a time, value each round.** After each domain is captured, run
+  live verification (Stage 5) on just that domain so the analyst sees the context
+  flip wrong answers to right before committing to a marathon. Do not try to capture
+  the whole company in one pass.
 - **Qualitative only.** Write business logic, never statistics. "Exclude BHPN —
   different reimbursement cycle" yes; "~37% of sessions" no.
 - **Ask one thing at a time.** These are working analysts. Short, specific
@@ -49,7 +53,7 @@ down the answers in a format an agent can query and a team can review.
   *question a user might ask* and the *meaning the analyst confirmed* — the gap
   between them is the thing the agent gets wrong.
 
-## The interview proceeds in five stages
+## The interview proceeds in six stages
 
 Run them in order, but let the analyst jump around. Each stage has its own
 reference file — read it when you enter the stage. Don't load all of them up front.
@@ -61,9 +65,11 @@ reference file — read it when you enter the stage. Don't load all of them up f
 | 2. Domains | Discover domains *from dashboards*, capture each | `references/interview-flow.md` |
 | 3. Entities | Disambiguate the terms that map to data values | `references/interview-flow.md` |
 | 4. Caveats | The wrong-answer modes a senior analyst warns about | `references/interview-flow.md` |
+| 5. Verify | Answer live (off vs on), confirm vs dashboard, harvest seeds | `references/live-verification.md` |
 
 At every stage from 1 onward, emit eval seeds per
-`references/eval-seed-harvesting.md`.
+`references/eval-seed-harvesting.md`. Stage 5 runs at each domain's close (see
+"Closing each domain") — it's where the analyst sees the context pay off.
 
 ### Stage 0 — Setup (do this first, silently where possible)
 
@@ -120,21 +126,37 @@ answer?" Capture these in `known-issues.md` and as routing triggers in the domai
 `reference.md` (`IF … DO NOT …`). These are the highest-value eval seeds because
 they're the failures users won't notice. See `references/interview-flow.md` §4.
 
+### Stage 5 — Live Verification
+
+Prove the context works before asking for more. Answer a handful of the domain's
+questions against the live warehouse twice — context **off** and **on** — using
+parallel in-session subagents, then have the analyst confirm the on-answer against a
+dashboard they trust. A match becomes a `value_at_snapshot` / `dashboard` seed with
+the blessed SQL stored as `verified_query`; a mismatch is harvested back into the
+context (a caveat + a `correction` seed). Print the off→on→truth delta so the
+analyst sees the payoff. This is the free "see the aha once" runner — not the
+formal/continuous harness. See `references/live-verification.md`.
+
 ## Closing each domain
 
 When a domain's `reference.md`, `metrics.yaml`, `entities.yaml`, and seeds exist:
 
 1. Validate against the schemas (`schemas/*.json`); fix anything that fails.
 2. Summarize what you captured and what's still `draft`.
-3. Offer: "Want to see the eval delta on this domain — how much the context changed
-   the agent's accuracy, and what it still gets wrong?" If yes, hand off to the
-   eval harness (`eval-harness/INTERFACE.md`); this skill does not run evals itself.
+3. Offer: "Want to see the context working — I'll answer a few of this domain's
+   questions with and without it, live, and you check them against your dashboard?"
+   If yes, run **Stage 5 — Live Verification** (`references/live-verification.md`):
+   the in-session off/on/truth pass. The formal/continuous delta at scale, drift,
+   and the hosted "perfect" baseline remain the harness (`eval-harness/INTERFACE.md`).
 4. Open a PR (or stage the diff) so the team reviews before it becomes trusted.
 
 ## What you do NOT do
 
-- You don't write SQL transformations or dbt models.
-- You don't run the evals or compute the delta — that's the harness.
+- You don't write SQL transformations or dbt models. (Stage 5 answering agents may
+  issue **read-only** SELECTs against the warehouse to verify a number — never
+  DDL/DML, and that SQL lives in a seed's `verified_query`, not in a context file.)
+- You don't compute the formal/continuous delta or maintain the hosted "perfect"
+  baseline — that's the harness. You *do* run the one-shot live verification (Stage 5).
 - You don't invent a definition to fill a gap. Leave
   `_To be confirmed by [owner]._` and mark `status: draft`.
 - You don't put numbers in context files.
