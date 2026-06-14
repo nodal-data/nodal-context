@@ -1,0 +1,6 @@
+# Live-verification run traces are generated output, not context — keep them local.
+evals/runs/*
+!evals/runs/.gitkeep
+
+# macOS
+.DS_Store

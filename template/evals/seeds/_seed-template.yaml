@@ -11,9 +11,32 @@ expected:
   must_exclude: []
   # entity: <name>             # for semantic_entity
   # value: <n>                 # for value_at_snapshot
-  # as_of: <YYYY-MM-DD>        # for value_at_snapshot (pin it!)
+  # as_of: "<YYYY-MM-DD>"      # for value_at_snapshot (pin it! quote it — a bare
+  #                            #   date parses as a YAML date, not the string the schema wants)
 provenance: interview          # interview | dashboard | correction | generated
 status: confirmed              # confirmed | draft  (draft excluded from "perfect")
+# verified_query: |            # set ONLY on a Stage-5 verified match — the blessed
+#   SELECT ...                 #   read-only SQL whose number the analyst confirmed
 lineage:
   - source: dbt_core
     models: []
+
+# --- value_at_snapshot variant (a dashboard-verified seed, the strongest kind) ---
+# Written by Stage 5 when the context-on answer matches the analyst's dashboard:
+#
+# question: "What was our collection rate by payer, last quarter?"
+# domain: session-financials
+# intent: >
+#   Collection rate on adjudicated claims, state-specific payer resolution,
+#   sessions >= 45 days old. (The confirmed assumptions the verified query used.)
+# expected:
+#   kind: value_at_snapshot
+#   value: 0.92                # the number the analyst read off the dashboard
+#   as_of: "2026-03-31"        # pin it (quoted) — a live number with no snapshot tells you nothing
+# provenance: dashboard
+# status: confirmed
+# verified_query: |
+#   SELECT ... FROM fct_session_financials WHERE ...
+# lineage:
+#   - source: dbt_core
+#     models: [fct_session_financials]
