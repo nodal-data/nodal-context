@@ -68,6 +68,18 @@ from drift, so flag it.
 - The validation workflow warns (does not fail) on `draft` so they're visible in
   the PR; the eval workflow excludes `draft` from the perfect baseline.
 
+### dbt draft
+
+When a dbt project is present it's the richest draft source — prefer it over raw
+schema. Run `scripts/dbt_extract.py` and draft from its findings per
+`references/dbt-extraction.md`. Two rules on top of the discipline above:
+
+- Every dbt-derived stub also carries a `# dbt-derived (<node id>)` tag, so its
+  origin is auditable in the PR.
+- The extractor reports an `unavailable` list (what dbt didn't provide — e.g. no
+  exposures, no `accepted_values`); elicit those by hand in the relevant stage rather
+  than leaving silent gaps.
+
 ## Updating an existing repo
 
 If `context.config.yaml` already exists, do not overwrite. Read it, find which

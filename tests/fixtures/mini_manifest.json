@@ -1,0 +1,88 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v11.json",
+    "dbt_version": "1.7.0"
+  },
+  "nodes": {
+    "model.demo.stg_orders": {
+      "resource_type": "model",
+      "name": "stg_orders",
+      "relation_name": "DB.STG.STG_ORDERS",
+      "description": "Order staging",
+      "columns": {},
+      "depends_on": {"nodes": ["source.demo.raw.orders"]},
+      "raw_code": "select * from {{ source('raw','orders') }}"
+    },
+    "model.demo.dim_customer": {
+      "resource_type": "model",
+      "name": "dim_customer",
+      "relation_name": "DB.MART.DIM_CUSTOMER",
+      "description": "Customer dimension",
+      "columns": {
+        "customer_id": {"name": "customer_id", "description": "surrogate key"}
+      },
+      "depends_on": {"nodes": []},
+      "raw_code": "select 1"
+    },
+    "model.demo.fct_orders": {
+      "resource_type": "model",
+      "name": "fct_orders",
+      "relation_name": "DB.MART.FCT_ORDERS",
+      "description": "Orders fact",
+      "columns": {
+        "order_id": {"name": "order_id", "description": "the order id"}
+      },
+      "depends_on": {"nodes": ["model.demo.stg_orders", "model.demo.dim_customer"]},
+      "raw_code": "select * from {{ ref('stg_orders') }}",
+      "compiled_code": "select * from DB.STG.STG_ORDERS"
+    },
+    "test.demo.unique_fct_orders_order_id": {
+      "resource_type": "test",
+      "column_name": "order_id",
+      "attached_node": "model.demo.fct_orders",
+      "test_metadata": {"name": "unique", "kwargs": {"column_name": "order_id"}}
+    },
+    "test.demo.not_null_fct_orders_order_id": {
+      "resource_type": "test",
+      "column_name": "order_id",
+      "attached_node": "model.demo.fct_orders",
+      "test_metadata": {"name": "not_null", "kwargs": {"column_name": "order_id"}}
+    },
+    "test.demo.accepted_values_fct_orders_status": {
+      "resource_type": "test",
+      "column_name": "status",
+      "attached_node": "model.demo.fct_orders",
+      "test_metadata": {"name": "accepted_values", "kwargs": {"column_name": "status", "values": ["new", "shipped", "cancelled"]}}
+    },
+    "test.demo.relationships_fct_orders_customer_id": {
+      "resource_type": "test",
+      "column_name": "customer_id",
+      "attached_node": "model.demo.fct_orders",
+      "test_metadata": {"name": "relationships", "kwargs": {"to": "ref('dim_customer')", "field": "customer_id"}}
+    },
+    "test.demo.unique_combo_dim_customer": {
+      "resource_type": "test",
+      "column_name": null,
+      "attached_node": "model.demo.dim_customer",
+      "test_metadata": {"name": "unique_combination_of_columns", "namespace": "dbt_utils", "kwargs": {"combination_of_columns": ["email", "region"]}}
+    },
+    "test.demo.orphaned_records_custom": {
+      "resource_type": "test",
+      "column_name": null,
+      "attached_node": null,
+      "test_metadata": {"name": "orphaned_records_last_3_months", "kwargs": {}}
+    }
+  },
+  "exposures": {
+    "exposure.demo.orders_dashboard": {
+      "name": "orders_dashboard",
+      "label": "Orders Dashboard",
+      "url": "https://bi.example.com/orders",
+      "maturity": "high",
+      "owner": {"name": "rev-ops", "email": "revops@example.com"},
+      "depends_on": {"nodes": ["model.demo.fct_orders"]}
+    }
+  },
+  "sources": {},
+  "macros": {}
+}
