@@ -80,6 +80,13 @@ own decomposition of itself:
 > "List the dashboards your team maintains and who owns each. I'll group them — each
 > group is usually a 'domain' the agent should know about."
 
+If Stage 0's dbt extraction found **exposures** (`dbt-findings.json` `exposures[]`),
+use them as the dashboard catalog — each exposure is a dashboard plus its dependency
+models, which also seeds the domain boundary. Confirm the clustering with the analyst
+rather than asking them to list from scratch. If `unavailable` includes `exposures`
+(many dbt projects, including ones with no `exposures:` blocks), ask the question
+above instead.
+
 Cluster the dashboards. For each cluster (domain):
 
 1. "What business question is this cluster of dashboards really answering?"

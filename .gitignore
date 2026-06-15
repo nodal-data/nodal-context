@@ -6,3 +6,7 @@ FINDINGS.md
 
 # Local clean-room test launcher
 clean-test.sh
+
+# Python
+__pycache__/
+*.pyc

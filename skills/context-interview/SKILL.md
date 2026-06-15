@@ -60,7 +60,7 @@ reference file — read it when you enter the stage. Don't load all of them up f
 
 | Stage | Goal | Reference |
 |---|---|---|
-| 0. Setup | Lay down the repo, auto-extract a draft | `references/repo-scaffold.md` |
+| 0. Setup | Lay down the repo, auto-extract a draft (dbt if present) | `references/repo-scaffold.md`, `references/dbt-extraction.md` |
 | 1. Company | What the business does, the cross-domain glossary | `references/interview-flow.md` |
 | 2. Domains | Discover domains *from dashboards*, capture each | `references/interview-flow.md` |
 | 3. Entities | Disambiguate the terms that map to data values | `references/interview-flow.md` |
@@ -83,13 +83,20 @@ At every stage from 1 onward, emit eval seeds per
    connection or warehouse MCP server is itself the signal to ask this rather than
    assume one platform.
 4. Auto-extract a **draft** to react to — do NOT treat as truth:
+   - **dbt project, if present — the richest source.** Run the extractor per
+     `references/dbt-extraction.md`: have the analyst `dbt parse` (no warehouse
+     needed) and read `target/manifest.json`, or fall back to parsing dbt source
+     files. It yields grain evidence (uniqueness tests), real table names, value sets
+     (`accepted_values`), join paths (`relationships`), dashboards (`exposures`), and
+     the model dependency graph — each drafted as `status: draft` tagged
+     `# dbt-derived`. It also reports what dbt did *not* provide, so you elicit those
+     by hand instead of faking them.
    - warehouse schema (table + column names, types) if connections are available;
-   - dbt `manifest.json` / `schema.yml` docs if a dbt project is present;
    - existing BI/dashboard titles if reachable.
    Write these into `context.config.yaml` (lineage sources) and as `status: draft`
-   stubs. Tell the analyst: "I pulled a rough draft from your schema and dbt. We'll
-   correct it together — don't trust any of it yet." Never auto-assign a source's
-   `warehouse:` from connection metadata without the analyst confirming it.
+   stubs. Tell the analyst: "I pulled a rough draft from your dbt project and schema.
+   We'll correct it together — don't trust any of it yet." Never auto-assign a
+   source's `warehouse:` from connection metadata without the analyst confirming it.
 5. Read `references/repo-scaffold.md` for exactly which files to create and how to
    wire `context.config.yaml`'s domain↔lineage map.
 

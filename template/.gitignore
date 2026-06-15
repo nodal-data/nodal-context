@@ -2,5 +2,8 @@
 evals/runs/*
 !evals/runs/.gitkeep
 
+# Transient dbt bootstrap summary (Stage 0) — not ACF, discard after drafting.
+.dbt-findings.json
+
 # macOS
 .DS_Store
