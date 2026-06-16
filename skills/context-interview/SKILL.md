@@ -52,6 +52,11 @@ down the answers in a format an agent can query and a team can review.
 - **Capture the disambiguation, not just the answer.** The eval seed needs the
   *question a user might ask* and the *meaning the analyst confirmed* — the gap
   between them is the thing the agent gets wrong.
+- **Names come from people, not schemas.** The company name (and domain names) come
+  from the analyst or their website — *never* inferred from a database, schema,
+  warehouse, or table name. Those are warehouse identifiers and are routinely
+  codenames, acquisitions, or internal project names that differ from the company. If you 
+  don't have the name from the analyst or a URL, **ask** — don't guess from what you queried.
 
 ## The interview proceeds in six stages
 
