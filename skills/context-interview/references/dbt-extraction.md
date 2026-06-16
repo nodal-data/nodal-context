@@ -74,6 +74,10 @@ there — fall back to the interview:
 
 ## Guardrails
 
+- **Never name the company (or a domain) after a database/schema/relation.** Those
+  are warehouse identifiers — often codenames (e.g. `veritas_*` for "3Y Health"). Use
+  `relation` only to fill `domain.yaml.tables`; the company and domain *names* come
+  from the analyst in Stages 1–2, not from what you queried. If unsure, ask.
 - Every dbt-derived line: `status: draft` + `# dbt-derived (<node id>)`.
 - Descriptions and semantic-layer metric defs are **often stale/aspirational** —
   confirm hard before flipping to `confirmed`.
