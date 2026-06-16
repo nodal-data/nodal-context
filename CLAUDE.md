@@ -75,5 +75,22 @@ deliberately revisiting the thesis:
   tool. Keep them consistent with the schemas.
 - After format changes, the cheap check is: does `examples/` still validate against
   `schemas/`, and does `template/` match? That's the regression test until there's
-  a real one.
+  a real one. The ACF schemas `$ref` each other (e.g. `lineage.schema.json`), so a
+  validator must register every schema in `schemas/` by its `$id` before validating
+  — otherwise refs are "Unresolvable" (a setup error, not a content failure). The
+  in-repo CI script (`.ci/validate.py`, referenced by `validate-context.yml`) is not
+  yet shipped; until it is, validate ad hoc with `referencing` + `jsonschema`:
+
+  ```python
+  import json, glob, yaml, jsonschema
+  from referencing import Registry, Resource
+  registry = Registry().with_resources(
+      [(json.load(open(s))["$id"], Resource.from_contents(json.load(open(s))))
+       for s in glob.glob("schemas/*.json")])
+  # pair each doc with its schema: domain.yaml→domain, *.seed.yaml→evalseed, etc.
+  jsonschema.Draft202012Validator(schema, registry=registry).validate(yaml.safe_load(open(doc)))
+  ```
+
+  Markdown-only changes (README/CLAUDE/AGENTS/AUTHORING, skills) can't break schema
+  validation — but still confirm `template/` and `examples/` stay parallel.
 - Commit/push only when asked. Remote: `github.com/nodal-data/nodal-context`.
