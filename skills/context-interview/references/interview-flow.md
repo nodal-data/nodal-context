@@ -50,8 +50,7 @@ them all in one turn; that's a wall of line items no one can react to. Instead:
 **First, get the company's name right — and never infer it.** Take the name from the
 analyst or their website. Do NOT derive it from a database, schema, warehouse, or
 table name you queried: those are warehouse identifiers, frequently codenames,
-acquisitions, or internal project names that differ from the company (e.g. a
-`veritas_*` warehouse belongs to a company called "3Y Health"). If you don't have the
+acquisitions, or internal project names that differ from the company. If you don't have the
 name yet, ask plainly: *"What's the company's name?"* The name anchors `overview.md`
 and the repo, so a wrong guess propagates everywhere.
 

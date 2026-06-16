@@ -59,7 +59,7 @@ one SOAP note, or is the real grain note × service?"*
 
 ## Step 3 — degrade loudly (consume `unavailable[]` and `coverage{}`)
 
-dbt projects vary wildly (veritas, for instance, has **no** exposures,
+dbt projects vary wildly (some, for instance, has **no** exposures,
 accepted_values, or relationships, and 0 documented columns). Do not fake what isn't
 there — fall back to the interview:
 
@@ -75,7 +75,7 @@ there — fall back to the interview:
 ## Guardrails
 
 - **Never name the company (or a domain) after a database/schema/relation.** Those
-  are warehouse identifiers — often codenames (e.g. `veritas_*` for "3Y Health"). Use
+  are warehouse identifiers — often codenames. Use
   `relation` only to fill `domain.yaml.tables`; the company and domain *names* come
   from the analyst in Stages 1–2, not from what you queried. If unsure, ask.
 - Every dbt-derived line: `status: draft` + `# dbt-derived (<node id>)`.
