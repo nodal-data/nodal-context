@@ -3,9 +3,10 @@
 Machine-readable orientation for AI systems consuming this repository.
 
 ## Purpose
-This repo is the **business context layer** for [company]'s analytical data. It is
-read by agents at query time to provide semantic grounding that schema metadata and
-dbt descriptions alone cannot. Built in Analytics Context Format (ACF).
+This repo is the **business context layer** for Example Healthcare Company's
+analytical data. It is read by agents at query time to provide semantic grounding
+that schema metadata and dbt descriptions alone cannot. Built in Analytics Context
+Format (ACF).
 
 ## Navigation
 1. Read `company/overview.md` and `company/terminology.md`.
