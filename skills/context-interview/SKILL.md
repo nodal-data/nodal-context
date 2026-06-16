@@ -73,6 +73,11 @@ At every stage from 1 onward, emit eval seeds per
 
 ### Stage 0 — Setup (do this first, silently where possible)
 
+0. **Mode check (testing).** Look for a `.sim-analyst.json` marker at the repo root.
+   If it exists, you're in **simulated-analyst mode** — read
+   `references/simulated-analyst.md` and follow it for every question in all stages (a
+   subagent answers from a brief; you escalate to the human only when it's not
+   confident). If the marker is absent, ignore this and run the normal human interview.
 1. Read `SPEC.md` so you know the format you're writing.
 2. Copy `template/` into the user's chosen location (default: `./analytics-context/`).
 3. Ask one breadth-first question: *"Which data platforms do your dashboards run on
