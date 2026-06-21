@@ -7,11 +7,21 @@ per project.
 
 1. Copy `template/` to the target dir (default `./analytics-context/`). The
    template ships empty `company/`, a `_domain-template/`, `entities/`,
-   `evals/seeds/`, `AGENTS.md`, `CLAUDE.md`, and `context.config.yaml`.
+   `evals/seeds/`, `AGENTS.md`, `CLAUDE.md` (consumption-first — how an agent
+   answers questions from this repo), `AUTHORING.md` (how to edit it), `README.md`
+   (the end-user getting-started doc), `.claude/skills/data-question/` (the bundled
+   "answer a question from this context" skill), and `context.config.yaml`.
 2. Copy `.github/workflows/` into the target repo so validation, drift, and the
    eval delta run on PRs from day one.
 3. For each domain discovered in Stage 2, copy `_domain-template/` to
    `domains/<domain>/` and fill it in.
+4. Replace the `[company]` placeholder in `README.md` and `CLAUDE.md` with the
+   company name (from the analyst or their website — never from a schema).
+5. **Initialize the repo.** Run `git init` in the target dir and make an initial
+   commit once the scaffold is in place (`git add -A && git commit -m "Initial
+   analytics context scaffold"`). This is safe, offline, and reversible, and makes
+   the "review by PR" workflow real from the first domain. Do *not* create or push a
+   GitHub remote here — that's the wrap-up offer in `SKILL.md`.
 
 ## Wire `context.config.yaml` (do not defer this)
 

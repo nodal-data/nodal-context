@@ -40,8 +40,11 @@ wrong-answer modes, with no prose it has to wade through.
 ```
 <your-context-repo>/
 ├── context.config.yaml          # repo metadata + domain↔lineage source map
-├── AGENTS.md                    # machine orientation (how an agent should navigate)
-├── CLAUDE.md                    # authoring rules for agents editing this repo
+├── README.md                    # end-user getting-started (how a team uses this repo)
+├── AGENTS.md                    # machine orientation (navigate + answer a question)
+├── CLAUDE.md                    # consumption-first: how an agent answers from this repo
+├── AUTHORING.md                 # authoring rules for agents editing this repo
+├── .claude/skills/data-question/ # bundled skill: answer a question from this context
 ├── company/
 │   ├── overview.md              # business model, what the company does
 │   ├── terminology.md           # cross-domain glossary

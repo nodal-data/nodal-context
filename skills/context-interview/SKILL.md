@@ -85,6 +85,9 @@ At every stage from 1 onward, emit eval seeds per
    confident). If the marker is absent, ignore this and run the normal human interview.
 1. Read `SPEC.md` so you know the format you're writing.
 2. Copy `template/` into the user's chosen location (default: `./analytics-context/`).
+   This includes the end-user `README.md`, the consumption-first `CLAUDE.md`, and the
+   bundled `.claude/skills/data-question/` skill, then `git init` + an initial commit
+   — see `references/repo-scaffold.md` for the exact file list and steps.
 3. Ask one breadth-first question: *"Which data platforms do your dashboards run on
    — just one warehouse, or a mix (e.g. Snowflake + BigQuery + Postgres)?"* Record
    the answer as the top-level `warehouse:` default. For a multi-platform shop, leave
@@ -166,6 +169,25 @@ When a domain's `reference.md`, `metrics.yaml`, `entities.yaml`, and seeds exist
    the in-session off/on/truth pass. The formal/continuous delta at scale, drift,
    and the hosted "perfect" baseline remain the harness (`eval-harness/INTERFACE.md`).
 4. Open a PR (or stage the diff) so the team reviews before it becomes trusted.
+
+## Wrap-up: hand the repo off to GitHub
+
+Once the analyst is done for the session, offer to put the repo on GitHub so the team
+can review by PR and the CI workflows run. Ask first — pushing the team's context is
+their call, not yours.
+
+- Check `gh auth status`. If it succeeds, offer: *"Want me to create the GitHub repo
+  and push? I'll run `gh repo create <name> --private --source . --push`."* Run it
+  only on an explicit yes.
+- If `gh` is missing or unauthenticated, don't fail — print the manual commands for
+  them to run:
+  ```
+  git remote add origin git@github.com:<your-org>/<repo>.git
+  git push -u origin main
+  ```
+- Either way the local `git init` + initial commit from Stage 0 already exists, so
+  there is always something to push. Point the analyst at the repo's `README.md` for
+  how their team then uses it with Claude Code.
 
 ## What you do NOT do
 

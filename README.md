@@ -61,16 +61,26 @@ delta the same way. Bring whatever context you already have.
 
 ## Quickstart
 
+**Prerequisite:** a **warehouse MCP server** (e.g. Snowflake/BigQuery) configured in
+your agent. The interview verifies answers against your live warehouse, and the
+generated repo's `data-question` skill queries it — both need read-only warehouse
+access.
+
 ```bash
 # 1. Get the interview skill into your agent (Claude Code / Codex / Cursor)
-npx degit <org>/nodal-context/skills/context-interview .claude/skills/context-interview
+npx degit nodal-data/nodal-context/skills/context-interview .claude/skills/context-interview
 #    (or copy skills/context-interview/ into your agent's skills dir)
 
 # 2. In your agent, from your data project:
 #    "Build my analytics context."  → the context-interview skill takes over.
+#    It writes a reviewable ./analytics-context/ repo (git-initialized) and, at the
+#    end, offers to push it to GitHub.
 
 # 3. After the first domain, see the delta:
 #    "Run the eval delta on session-financials."
+
+# 4. Use the context day-to-day: cd into the generated repo and ask Claude Code a
+#    real question — see that repo's README.md (Claude Code base case + Codex).
 ```
 
 ## Repo layout

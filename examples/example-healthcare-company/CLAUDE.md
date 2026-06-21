@@ -1,8 +1,9 @@
 # CLAUDE.md
 
-This repo is the **business context layer** for [company]'s analytical data, in
-Analytics Context Format (ACF). When you are run from this directory, use it to
-answer data questions accurately — don't write SQL from raw schema alone.
+This repo is the **business context layer** for Example Healthcare Company's
+analytical data, in Analytics Context Format (ACF). When you are run from this
+directory, use it to answer data questions accurately — don't write SQL from raw
+schema alone.
 
 ## Answering a data question
 
