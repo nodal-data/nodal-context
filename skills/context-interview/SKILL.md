@@ -84,7 +84,8 @@ At every stage from 1 onward, emit eval seeds per
    subagent answers from a brief; you escalate to the human only when it's not
    confident). If the marker is absent, ignore this and run the normal human interview.
 1. Read `SPEC.md` so you know the format you're writing.
-2. Copy `template/` into the user's chosen location (default: `./analytics-context/`).
+2. Copy `template/` into the user's chosen location (default: `../analytics-context/` — a
+   sibling of the tool repo, which stays read-only; never author into the tool clone).
    This includes the end-user `README.md`, the consumption-first `CLAUDE.md`, and the
    bundled `.claude/skills/data-question/` skill, then `git init` + an initial commit
    — see `references/repo-scaffold.md` for the exact file list and steps.

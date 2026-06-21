@@ -5,7 +5,8 @@ per project.
 
 ## Lay down the files
 
-1. Copy `template/` to the target dir (default `./analytics-context/`). The
+1. Copy `template/` to the target dir (default `../analytics-context/` — a sibling of the
+   cloned tool repo, so the tool repo is never authored into). The
    template ships empty `company/`, a `_domain-template/`, `entities/`,
    `evals/seeds/`, `AGENTS.md`, `CLAUDE.md` (consumption-first — how an agent
    answers questions from this repo), `AUTHORING.md` (how to edit it), `README.md`
