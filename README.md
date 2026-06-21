@@ -121,6 +121,21 @@ for team-scale distribution, not a lock on the format: the files stay open, self
 an agent against the raw repo is always free, and the tool surface is documented in the
 generated repo's `README.md` if you'd rather build the server yourself.
 
+## Keep context in sync with your dbt repo
+
+Context goes stale the moment a dbt model changes underneath it — a renamed column, a
+redefined metric, a dropped table — and stale context is worse than none, because the
+agent trusts it. The free CI contract catches this: the bundled `context-drift` workflow
+flags, on every PR, when an upstream dbt model a domain depends on has changed, so a
+human re-confirms the definition.
+
+Nodal offers the **managed version of that loop**: connect your dbt repo and changes
+there propagate into the business context automatically — the affected definitions are
+re-drafted from the new dbt source and routed to the analyst to confirm (still
+interview-built — a human owns every definition, the sync just keeps the draft current).
+This rides on the same `lineage:` pointer ACF already keeps per domain. It's an
+**optional, paid** add-on, deployable in your cloud/VPC or ours.
+
 ## The free / paid line, explicitly
 
 | Capability | Where | Cost |
@@ -131,6 +146,7 @@ generated repo's `README.md` if you'd rather build the server yourself.
 | One-shot eval delta (on/off, run locally) | the harness, self-run | Free |
 | Self-hosted agent against the raw context files | your agent | Free |
 | **Team-shared MCP endpoint (governed answers + escalation for non-technical users, auth, usage logging)** | Nodal (hosted) | **Paid** |
+| **dbt-repo sync (auto-propagate dbt changes into the context, analyst-confirmed)** | Nodal (hosted) | **Paid** |
 | **Trustworthy ground truth, continuous re-eval, drift detection, observability, correction harvesting** | Nodal (hosted) | **Paid** |
 
 ## License
