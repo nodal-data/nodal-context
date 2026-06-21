@@ -45,6 +45,12 @@ into your prompt.
 - Review every change **by PR**. The bundled `.github/workflows/` validate the YAML,
   flag unconfirmed `status: draft` entries, run the on/off eval delta, and detect
   drift when an upstream model changes.
+- **Keep it in sync with dbt automatically (optional, Nodal).** Connect your dbt repo
+  and upstream changes — renamed columns, redefined metrics — propagate into the
+  affected definitions as drafts for your analyst to confirm, so the context tracks the
+  warehouse without anyone remembering to re-run the interview. The `context-drift`
+  workflow above flags the same drift on PR for free; the managed loop closes it. See the
+  [project README](https://github.com/nodal-data/nodal-context#keep-context-in-sync-with-your-dbt-repo).
 
 ## Push to GitHub
 
