@@ -89,14 +89,17 @@ agent. The interview reads your `models/`, `schema.yml`, and metric definitions 
 from scratch, and the generated `lineage:` pointers reference actual dbt models.
 
 ```bash
-# 1. Get the interview skill into your agent (Claude Code / Codex / Cursor)
-npx degit nodal-data/nodal-context/skills/context-interview .claude/skills/context-interview
-#    (or copy skills/context-interview/ into your agent's skills dir)
+# 1. Get the tool. The interview skill reads SPEC.md, template/, schemas/, and
+#    scripts/ from the repo root, so clone the WHOLE repo (not just the skill folder).
+git clone https://github.com/nodal-data/nodal-context.git
+cd nodal-context
 
-# 2. In your agent, from your data project:
+# 2. Open your agent here (Claude Code / Codex / Cursor) and say:
 #    "Build my analytics context."  → the context-interview skill takes over.
-#    It writes a reviewable ./analytics-context/ repo (git-initialized) and, at the
-#    end, offers to push it to GitHub.
+#    (The skill is already discoverable in-repo via .claude/skills/.)
+#    It writes a reviewable ../analytics-context/ repo as a SIBLING of this clone
+#    (git-initialized; the tool repo stays read-only) and, at the end, offers to
+#    push it to GitHub.
 
 # 3. After the first domain, see the delta:
 #    "Run the eval delta on session-financials."
@@ -104,6 +107,10 @@ npx degit nodal-data/nodal-context/skills/context-interview .claude/skills/conte
 # 4. Use the context day-to-day: cd into the generated repo and ask Claude Code a
 #    real question — see that repo's README.md (Claude Code base case + Codex).
 ```
+
+The generated `../analytics-context/` is your deliverable — its own git repo. The cloned
+`nodal-context/` tool repo stays read-only; keep it to re-run the interview for more
+domains later, or delete it once the context repo is pushed.
 
 ## Repo layout
 
