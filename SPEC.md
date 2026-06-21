@@ -58,7 +58,8 @@ wrong-answer modes, with no prose it has to wade through.
 │   └── known-issues.md          # data-quality gotchas
 ├── entities/<group>.yaml        # cross-domain entities (payers, clients, geo…)
 └── evals/
-    ├── seeds/<name>.seed.yaml   # interview-harvested ground-truth pairs
+    ├── seeds/<name>.seed.yaml   # interview-harvested ground-truth pairs (committed)
+    ├── verified/<name>.sql      # blessed read-only SQL per seed (LOCAL ONLY; gitignored)
     └── runs/                    # live-verification traces (generated; gitignored)
 ```
 
@@ -136,21 +137,25 @@ must specify), `caveats`, `common_filters`, `lineage`, `status`.
 `question`, `intent` (the disambiguated meaning), `expected` (one of:
 `semantic_entity` | `sql_shape` | `value_at_snapshot`), `provenance`
 (`interview` | `dashboard` | `correction` | `generated`), `domain`, `status`, and
-the optional `verified_query` (below). See
+the optional `verified_query_file` (below). See
 [`SPEC` of seeds](./schemas/evalseed.schema.json) and
 [harvesting reference](./skills/context-interview/references/eval-seed-harvesting.md).
 
-**Seeds are the one place numbers and SQL are allowed.** Design rule 2 ("no
-statistics in context") and the template's "no executable SQL" govern *context
-files* — the things the agent reads at query time (`reference.md`, `metrics.yaml`).
-Seeds are the *ground-truth* layer, not context, so a `value_at_snapshot` number
-and a `verified_query` are allowed here — both are pinned (the value to an `as_of`
-date, the query to the snapshot it was verified at) so they don't masquerade as
-live truth.
+**Seeds are the one place a number is allowed — but the SQL is never committed.**
+Design rule 2 ("no statistics in context") and the template's "no executable SQL"
+govern *context files* — the things the agent reads at query time (`reference.md`,
+`metrics.yaml`). A seed is the *ground-truth* layer, not context, so a
+`value_at_snapshot` number is allowed in the seed YAML, pinned to an `as_of` date so
+it can't masquerade as live truth. The blessed SQL, however, is **deliberately kept
+out of git**: SQL goes stale fast and must not be cloneable from a published context
+repo, so it lives in a local, gitignored sidecar (`evals/verified/<name>.sql`) and
+the committed seed carries only a `verified_query_file` pointer to it.
 
-`verified_query` is the blessed read-only SQL whose result the analyst confirmed
-against a trusted source (a dashboard). It is written **only on a verified match**
-by Stage 5 live verification (below) and is the reusable "answer key" for the seed.
+`verified_query_file` is the relative path to that sidecar — the blessed read-only
+SQL whose result the analyst confirmed against a trusted source (a dashboard). It is
+written **only on a verified match** by Stage 5 live verification (below) and is the
+reusable "answer key" for the seed; the harness reads it locally where present and
+degrades to grading `value_at_snapshot` / `sql_shape` where it is absent.
 
 ## Live verification (Stage 5) and `evals/runs/`
 
@@ -158,8 +163,9 @@ The interview's [Stage 5](./skills/context-interview/references/live-verificatio
 answers each candidate question twice — once with context off, once on — against the
 live warehouse, then has the analyst confirm the on-answer against their dashboard.
 A confirmed match upgrades the seed to `provenance: dashboard`,
-`expected.kind: value_at_snapshot` (with `value` + `as_of`) and stores the
-`verified_query`. A mismatch is harvested back into the domain's `reference.md` /
+`expected.kind: value_at_snapshot` (with `value` + `as_of`) and writes the blessed
+SQL to the gitignored sidecar `evals/verified/<name>.sql`, pointed to by the seed's
+`verified_query_file`. A mismatch is harvested back into the domain's `reference.md` /
 `known-issues.md` plus a `provenance: correction` seed. The per-answer agent traces
 are written under `evals/runs/<timestamp>/` — these are generated output, not ACF,
 and are gitignored in a generated context repo; the durable outputs are the seeds

@@ -33,7 +33,7 @@ BI layer, and query history and *auto-generate* the context. We deliberately don
 lead with that, because the teams who've measured it found it doesn't work as a
 source of truth:
 
-- Anthropic's own data team reported that auto-generating metric definitions from
+- Anthropic's data team reported that auto-generating metric definitions from
   raw tables and query logs "encoded the very ambiguities we were trying to
   eliminate" and was **net-negative on evals** vs a smaller human-curated layer.
 - They also gave an agent grep access to thousands of prior queries and accuracy
@@ -51,7 +51,7 @@ The bonus: every disambiguation the analyst makes in the interview ("active clie
 means X, not Y") is simultaneously a context entry **and** a labeled eval pair. The
 act of building context is the act of harvesting ground truth.
 
-## The format is not the moat 
+## The format is readible and open-source (markdown + YAML )
 
 This repo defines a context format (ACF — see [`SPEC.md`](./SPEC.md)). But you are
 **not required to use it** to use the measurement seam. The harness
@@ -98,6 +98,25 @@ nodal-context/
 └── .github/workflows/          # validate context, detect drift, run eval delta on PR
 ```
 
+## Sharing it across your team (MCP)
+
+A context repo is just Markdown + YAML, so a single analyst can point their own agent
+at the files and get governed answers **for free** — clone it, read it locally, done.
+That works great for one person on one machine.
+
+To put the same context in front of the *whole team* — so a non-technical business
+user asks a question in their own agent and gets the answer the analyst would give —
+connect over **MCP**. A hosted MCP endpoint serves the context layer (and the query
+hub it grows into) as tools any agent can call: it retrieves the right definitions and
+canonical queries for a question, answers when it's confident, and **escalates to the
+analyst when it isn't** — then learns from the verified answer so the next identical
+question is instant.
+
+Running that shared endpoint — access control, escalation routing, and usage logging
+across the team — is **optional and paid**. It's a convenience for team-scale
+distribution, not a lock on the format: the files stay open, and self-hosting an agent
+against the raw repo is always free.
+
 ## The free / paid line, explicitly
 
 | Capability | Where | Cost |
@@ -106,6 +125,8 @@ nodal-context/
 | Interview skill | `skills/context-interview/` | Free |
 | Eval-seed harvesting (interview → labeled pairs) | the skill | Free |
 | One-shot eval delta (on/off, run locally) | the harness, self-run | Free |
+| Self-hosted agent against the raw context files | your agent | Free |
+| **Team-shared MCP endpoint (governed answers + escalation for non-technical users, auth, usage logging)** | Nodal (hosted) | **Paid** |
 | **Trustworthy ground truth, continuous re-eval, drift detection, observability, correction harvesting** | Nodal (hosted) | **Paid** |
 
 ## License

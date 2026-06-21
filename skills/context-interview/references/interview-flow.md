@@ -114,6 +114,13 @@ Cluster the dashboards. For each cluster (domain):
 5. Now build `reference.md` using `reference-doc-skeleton.md`. This is the file the
    agent reads at query time, so write it for retrieval: routing triggers, grain,
    standard hygiene filter, gotchas — not narrative.
+6. **Record ownership in two places, together.** You already asked who owns each
+   dashboard at the top of this stage. When a domain's owner is confirmed, set
+   `owner:` in its `domain.yaml` **and** add/update that domain's row in
+   `company/org-structure.md` (Domain | Owner | Team | Status). These must stay in
+   sync — `org-structure.md` is the routing roster, `domain.yaml` is the per-domain
+   record. If the owner isn't known yet, write `_To be confirmed._` and leave the
+   row's status `draft`; don't guess.
 
 For each dashboard, ask: "What's the canonical question this dashboard answers, and
 what's the right answer as of a fixed date?" → a `dashboard`-provenance eval seed
@@ -184,8 +191,9 @@ seed whose `expected` encodes the *correct* handling (right filter, right table,
 seeds. At domain close, answer a handful of the domain's questions against the live
 warehouse twice — context off vs on — with parallel in-session subagents, then have
 the analyst confirm the on-answer against their dashboard. Matches become
-`value_at_snapshot` / `dashboard` seeds carrying the blessed `verified_query`;
-mismatches feed a caveat + a `correction` seed. This stage has its own reference —
+`value_at_snapshot` / `dashboard` seeds whose blessed SQL is written to a gitignored
+sidecar (`evals/verified/`) and referenced by `verified_query_file`; mismatches feed
+a caveat + a `correction` seed. This stage has its own reference —
 read `live-verification.md` when you enter it.
 
 ---

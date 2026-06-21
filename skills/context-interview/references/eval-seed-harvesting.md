@@ -65,10 +65,11 @@ sources, both human-anchored:
 - **Blessed-dashboard seeds** (`provenance: dashboard`) — a dashboard the org
   already trusts gives a known answer as of a snapshot date. Stage 5 live
   verification (`live-verification.md`) produces these by answering live and having
-  the analyst confirm the number; on a match it also stores the blessed read-only
-  SQL in the seed's `verified_query` (the reusable answer key). On a mismatch it
-  instead writes a `provenance: correction` seed and folds the reason into the
-  domain's `reference.md` / `known-issues.md`.
+  the analyst confirm the number; on a match it also writes the blessed read-only
+  SQL to a gitignored sidecar (`evals/verified/<name>.sql`, pointed to by the seed's
+  `verified_query_file`) — the reusable answer key, kept local so stale SQL is never
+  committed or cloneable. On a mismatch it instead writes a `provenance: correction`
+  seed and folds the reason into the domain's `reference.md` / `known-issues.md`.
 
 `status: draft` seeds (drafted from auto-extraction, not yet confirmed) are
 **excluded** from the perfect baseline. That's the firewall that keeps

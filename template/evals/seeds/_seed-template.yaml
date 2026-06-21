@@ -15,8 +15,9 @@ expected:
   #                            #   date parses as a YAML date, not the string the schema wants)
 provenance: interview          # interview | dashboard | correction | generated
 status: confirmed              # confirmed | draft  (draft excluded from "perfect")
-# verified_query: |            # set ONLY on a Stage-5 verified match — the blessed
-#   SELECT ...                 #   read-only SQL whose number the analyst confirmed
+# verified_query_file: evals/verified/<name>.sql   # set ONLY on a Stage-5 verified
+#   match — points at a LOCAL, gitignored sidecar holding the blessed read-only SQL.
+#   The SQL body is kept OUT of git (it goes stale fast); only this pointer is committed.
 lineage:
   - source: dbt_core
     models: []
@@ -35,8 +36,7 @@ lineage:
 #   as_of: "2026-03-31"        # pin it (quoted) — a live number with no snapshot tells you nothing
 # provenance: dashboard
 # status: confirmed
-# verified_query: |
-#   SELECT ... FROM fct_session_financials WHERE ...
+# verified_query_file: evals/verified/collection-rate.sql   # gitignored sidecar; SQL stays local
 # lineage:
 #   - source: dbt_core
 #     models: [fct_session_financials]
