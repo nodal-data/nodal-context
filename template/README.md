@@ -10,9 +10,19 @@ confirmed definition is also a labeled eval pair under `evals/seeds/`.
 
 ## Prerequisite: a warehouse MCP server
 
-Answering a question requires the agent to run read-only SQL against your warehouse.
-Configure a warehouse MCP server (e.g. Snowflake/BigQuery) in your agent before you
-start — without it the agent can read this context but cannot fetch live numbers.
+Answering a question requires the agent to run **read-only** SQL against your warehouse.
+Configure a warehouse MCP server in your agent before you start — without it the agent can
+read this context but cannot fetch live numbers. Pick the server for your warehouse:
+
+| Warehouse | MCP server |
+|---|---|
+| Snowflake | [Snowflake MCP](https://github.com/Snowflake-Labs/mcp) |
+| BigQuery | [MCP Toolbox for Databases](https://github.com/googleapis/genai-toolbox) (Google) |
+| Redshift | [AWS Labs MCP servers](https://github.com/awslabs/mcp) (Redshift) |
+| Databricks | [Databricks MCP](https://github.com/databricks/databricks-mcp) |
+| Other / general | [Model Context Protocol servers](https://github.com/modelcontextprotocol/servers) |
+
+Use a **read-only role/credential** — answering only ever runs `SELECT`.
 
 ## Use it with Claude Code (base case)
 

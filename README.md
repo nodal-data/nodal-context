@@ -61,10 +61,32 @@ delta the same way. Bring whatever context you already have.
 
 ## Quickstart
 
-**Prerequisite:** a **warehouse MCP server** (e.g. Snowflake/BigQuery) configured in
-your agent. The interview verifies answers against your live warehouse, and the
-generated repo's `data-question` skill queries it — both need read-only warehouse
-access.
+Before the interview, give the context builder the two things it works from. Both are
+optional-to-have-perfect but make the interview **faster and more accurate** — the agent
+verifies definitions against live data and reads your existing transformations instead of
+guessing.
+
+**1. Connect a warehouse over MCP (required).** The interview verifies answers against
+your live warehouse, and the generated repo's `data-question` skill queries it — both need
+**read-only** warehouse access. Pick the MCP server for your warehouse and add it to your
+agent:
+
+| Warehouse | MCP server |
+|---|---|
+| Snowflake | [Snowflake MCP](https://github.com/Snowflake-Labs/mcp) |
+| BigQuery | [MCP Toolbox for Databases](https://github.com/googleapis/genai-toolbox) (Google) |
+| Redshift | [AWS Labs MCP servers](https://github.com/awslabs/mcp) (Redshift) |
+| Databricks | [Databricks MCP](https://github.com/databricks/databricks-mcp) |
+| Other / general | [Model Context Protocol servers](https://github.com/modelcontextprotocol/servers) |
+
+Use a **read-only role/credential** — the interview and the data-question skill only ever
+`SELECT`. See your agent's MCP docs (e.g. Claude Code: `claude mcp add`) for wiring it in.
+
+**2. Clone your dbt repo locally (recommended).** If you use dbt, `git clone` your dbt
+project into a sibling directory and start the interview with both repos visible to the
+agent. The interview reads your `models/`, `schema.yml`, and metric definitions as a
+**draft to confirm** — so the analyst corrects real definitions instead of describing them
+from scratch, and the generated `lineage:` pointers reference actual dbt models.
 
 ```bash
 # 1. Get the interview skill into your agent (Claude Code / Codex / Cursor)
