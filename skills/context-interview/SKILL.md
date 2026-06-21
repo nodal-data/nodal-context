@@ -96,7 +96,15 @@ At every stage from 1 onward, emit eval seeds per
    connection or warehouse MCP server is itself the signal to ask this rather than
    assume one platform.
 4. Auto-extract a **draft** to react to — do NOT treat as truth:
-   - **dbt project, if present — the richest source.** Run the extractor per
+   - **dbt project, if present — the richest source.** Before extracting, check
+     whether the analyst's dbt project is reachable on disk (a sibling directory, or a
+     path they give). **If you can't find one, ask them to clone it locally now** — e.g.
+     *"Do you use dbt? If so, `git clone` your dbt repo into a sibling directory and
+     point me at it — I'll draft your tables, grain, and metrics from it so you correct
+     real definitions instead of describing them from scratch."* It's the single
+     highest-leverage input to a fast, accurate interview; wait for it if they're
+     willing to grab it. If they don't use dbt or can't share it, proceed without —
+     don't block. Then run the extractor per
      `references/dbt-extraction.md`: have the analyst `dbt parse` (no warehouse
      needed) and read `target/manifest.json`, or fall back to parsing dbt source
      files. It yields grain evidence (uniqueness tests), real table names, value sets
