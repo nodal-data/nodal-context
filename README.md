@@ -110,12 +110,16 @@ connect over **MCP**. A hosted MCP endpoint serves the context layer (and the qu
 hub it grows into) as tools any agent can call: it retrieves the right definitions and
 canonical queries for a question, answers when it's confident, and **escalates to the
 analyst when it isn't** — then learns from the verified answer so the next identical
-question is instant.
+question is instant. An optional second connector exposes your **dbt/warehouse
+lineage** the same way, so the agent can check *how* a metric is computed, not just
+what it means.
 
 Running that shared endpoint — access control, escalation routing, and usage logging
-across the team — is **optional and paid**. It's a convenience for team-scale
-distribution, not a lock on the format: the files stay open, and self-hosting an agent
-against the raw repo is always free.
+across the team — is **optional and paid**, and we can deploy it **in your cloud/VPC or
+ours** depending on your data-residency and security requirements. It's a convenience
+for team-scale distribution, not a lock on the format: the files stay open, self-hosting
+an agent against the raw repo is always free, and the tool surface is documented in the
+generated repo's `README.md` if you'd rather build the server yourself.
 
 ## The free / paid line, explicitly
 
