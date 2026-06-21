@@ -2,6 +2,12 @@
 evals/runs/*
 !evals/runs/.gitkeep
 
+# Verified read-only SQL ("answer keys") for seeds — LOCAL ONLY, never committed.
+# SQL goes stale fast and must not be cloneable from the repo; the seed keeps a
+# `verified_query_file` pointer, not the query body.
+evals/verified/*
+!evals/verified/.gitkeep
+
 # Transient dbt bootstrap summary (Stage 0) — not ACF, discard after drafting.
 .dbt-findings.json
 

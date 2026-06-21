@@ -22,9 +22,9 @@
     },
     "provenance": { "enum": ["interview", "dashboard", "correction", "generated"] },
     "status": { "enum": ["draft", "confirmed"] },
-    "verified_query": {
+    "verified_query_file": {
       "type": "string",
-      "description": "The blessed read-only SQL whose result the analyst confirmed against a trusted source (the answer key). Set only on a verified match; omit otherwise. Seeds are the ground-truth layer, so SQL/values are allowed here even though context files forbid them."
+      "description": "Relative path to a LOCAL, gitignored sidecar holding the blessed read-only SQL the analyst confirmed (the answer key) — conventionally evals/verified/<seed-name>.sql. The SQL body is deliberately kept out of git: it goes stale fast and must not be cloneable from the repo. The seed (question/intent/expected/value+as_of) stays committed and is the durable ground truth; only the SQL lives in the sidecar. Set only on a verified match; omit otherwise."
     },
     "lineage": { "$ref": "lineage.schema.json" }
   },

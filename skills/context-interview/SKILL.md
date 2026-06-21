@@ -123,9 +123,11 @@ A domain is *how the company already thinks about a slice of the business.* The
 best proxy is the dashboard catalog. Ask: "What are the dashboards your team
 maintains, and who owns each?" Cluster them. Each coherent cluster is a domain.
 For each domain capture `domain.yaml` (tables, grain, dashboards, **lineage
-pointer**), a narrative `context.md`, and — the important one — a `reference.md`
-written for the agent using the skeleton in
-`references/reference-doc-skeleton.md`. See `references/interview-flow.md` §2.
+pointer**, **owner**), a narrative `context.md`, and — the important one — a
+`reference.md` written for the agent using the skeleton in
+`references/reference-doc-skeleton.md`. When you confirm a domain's owner, record it
+in both `domain.yaml: owner` and a row in `company/org-structure.md` (the routing
+roster) — keep the two in sync. See `references/interview-flow.md` §2.
 
 ### Stage 3 — Entities
 
@@ -148,9 +150,10 @@ they're the failures users won't notice. See `references/interview-flow.md` §4.
 Prove the context works before asking for more. Answer a handful of the domain's
 questions against the live warehouse twice — context **off** and **on** — using
 parallel in-session subagents, then have the analyst confirm the on-answer against a
-dashboard they trust. A match becomes a `value_at_snapshot` / `dashboard` seed with
-the blessed SQL stored as `verified_query`; a mismatch is harvested back into the
-context (a caveat + a `correction` seed). Print the off→on→truth delta so the
+dashboard they trust. A match becomes a `value_at_snapshot` / `dashboard` seed; the
+blessed SQL is written to a gitignored sidecar (`evals/verified/<name>.sql`) that the
+seed's `verified_query_file` points at — never committed. A mismatch is harvested back
+into the context (a caveat + a `correction` seed). Print the off→on→truth delta so the
 analyst sees the payoff. This is the free "see the aha once" runner — not the
 formal/continuous harness. See `references/live-verification.md`.
 
@@ -159,7 +162,8 @@ formal/continuous harness. See `references/live-verification.md`.
 When a domain's `reference.md`, `metrics.yaml`, `entities.yaml`, and seeds exist:
 
 1. Validate against the schemas (`schemas/*.json`); fix anything that fails.
-2. Summarize what you captured and what's still `draft`.
+2. Summarize what you captured and what's still `draft`. Confirm the domain's owner
+   is recorded in both `domain.yaml` and `company/org-structure.md` (they must agree).
 3. Offer: "Want to see the context working — I'll answer a few of this domain's
    questions with and without it, live, and you check them against your dashboard?"
    If yes, run **Stage 5 — Live Verification** (`references/live-verification.md`):
@@ -171,7 +175,8 @@ When a domain's `reference.md`, `metrics.yaml`, `entities.yaml`, and seeds exist
 
 - You don't write SQL transformations or dbt models. (Stage 5 answering agents may
   issue **read-only** SELECTs against the warehouse to verify a number — never
-  DDL/DML, and that SQL lives in a seed's `verified_query`, not in a context file.)
+  DDL/DML, and that SQL lives in a seed's gitignored `evals/verified/` sidecar, not
+  in a context file or the committed seed itself.)
 - You don't compute the formal/continuous delta or maintain the hosted "perfect"
   baseline — that's the harness. You *do* run the one-shot live verification (Stage 5).
 - You don't invent a definition to fill a gap. Leave

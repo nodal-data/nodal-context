@@ -80,9 +80,13 @@ date?"* Record the value and the `as_of` date. (Let the analyst set the toleranc
 2. Write/upgrade the seed:
    - `provenance: dashboard`, `status: confirmed`
    - `expected.kind: value_at_snapshot`, `value: <dashboard number>`, `as_of: <date>`
-   - `verified_query: |` ← the blessed context-on SQL
    - `intent:` ← the confirmed assumptions (the disambiguation it got right)
-   This is the strongest seed you can produce: number + date + reusable SQL.
+   - write the blessed context-on SQL to `evals/verified/<seed-name>.sql` (a LOCAL,
+     gitignored sidecar — **do not commit the SQL**) and point the seed at it with
+     `verified_query_file: evals/verified/<seed-name>.sql`. The seed (committed) holds
+     the answer key (value + date); the SQL (local) stays out of git because it goes
+     stale fast and must not be cloneable from a published context repo.
+   This is the strongest seed you can produce: number + date + reusable (local) SQL.
 
 ## 6. On a mismatch (on-answer != dashboard)
 
@@ -94,8 +98,8 @@ the Stage-4 way:
   trigger to its `reference.md`, and
 - write a `provenance: correction`, `status: confirmed` seed whose `expected.kind:
   sql_shape` encodes the *correct* handling (`must_include` / `must_exclude`).
-- Do **not** store the wrong SQL as `verified_query`. Leave the value unpinned until
-  a re-run verifies it.
+- Do **not** write the wrong SQL to `evals/verified/` or set `verified_query_file`.
+  Leave the value unpinned until a re-run verifies it.
 
 A failed live eval thus feeds straight back into the context — the loop closes in
 the same session.
