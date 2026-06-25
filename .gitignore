@@ -19,3 +19,5 @@ __pycache__/
 # Generated context output + dbt bootstrap artifact (if written inside the clone)
 analytics-context/
 .dbt-findings.json
+
+toolbox 
