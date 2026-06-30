@@ -1,19 +1,92 @@
 # Fire when an upstream lineage source changes, and flag context that may be stale.
 # This is what makes "context separate from lineage" safe: the link is enforced
 # by automation even though the files live in different repos.
+#
+# How a model change reaches here:
+#   - The dbt repo's CI posts a `repository_dispatch` of type `lineage-changed`,
+#     ideally with client_payload.manifests = {source_id: "<base64 manifest.json>"}
+#     so we can diff without cloning. (See .ci/collect_manifests.py.)
+#   - A weekly cron is the safety net if nothing dispatches.
+#   - workflow_dispatch lets you run it by hand.
 name: context-drift
 on:
   repository_dispatch:
-    types: [lineage-changed]     # dbt repo CI posts here on model change
+    types: [lineage-changed]
   schedule:
-    - cron: '0 7 * * 1'          # weekly safety net
+    - cron: '0 7 * * 1'          # weekly safety net (Mondays 07:00 UTC)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   drift:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Diff lineage manifest vs context.config.yaml pointers
-        run: python .ci/drift.py   # for each domain, compare model column/test sets
-        # On change: open an issue/PR tagged to the domain owner listing the
-        # affected reference.md / metrics.yaml / entities.yaml. The fix path is
-        # deliberately boring: edit the markdown, merge, re-validate.
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pyyaml
+
+      # Gather each lineage source's manifest (dispatch payload first, else clone the
+      # dbt repo named in context.config.yaml using DBT_REPO_TOKEN). Sources we can't
+      # acquire are reported by drift.py as "unchecked", never silently skipped.
+      - name: Collect dbt manifests
+        id: collect
+        env:
+          DBT_REPO_TOKEN: ${{ secrets.DBT_REPO_TOKEN }}
+        run: |
+          python .ci/collect_manifests.py --out-dir .manifests > manifest-args.txt
+          echo "manifest args: $(cat manifest-args.txt)"
+
+      # Diff column/test sets vs the committed baseline. Exit 1 == drift; we capture
+      # it so we can open the issue before failing the check.
+      - name: Detect drift
+        id: drift
+        run: |
+          set +e
+          python .ci/drift.py $(cat manifest-args.txt) --out drift-report.md
+          echo "rc=$?" >> "$GITHUB_OUTPUT"
+
+      # Optional BYO-key step: if ANTHROPIC_API_KEY is configured, draft status:draft
+      # ACF edits from the report. Runs in the customer's own runner with their key —
+      # zero LLM cost to Nodal, no data leaves the repo. Skipped when the secret is unset.
+      - name: Suggest draft edits (optional)
+        if: steps.drift.outputs.rc == '1' && env.ANTHROPIC_API_KEY != ''
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          pip install anthropic
+          python .ci/suggest.py --report drift-report.md --out drift-suggestions.md
+
+      - name: Open or update drift issue
+        if: steps.drift.outputs.rc == '1'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const suggestions = fs.existsSync('drift-suggestions.md')
+              ? '\n\n' + fs.readFileSync('drift-suggestions.md', 'utf8') : '';
+            const body = fs.readFileSync('drift-report.md', 'utf8') + suggestions
+              + '\n\n_Filed automatically by the context-drift workflow._';
+            const title = 'Context drift detected';
+            const { owner, repo } = context.repo;
+            const existing = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: 'context-drift', per_page: 1,
+            });
+            if (existing.data.length) {
+              await github.rest.issues.update({
+                owner, repo, issue_number: existing.data[0].number, body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner, repo, title, body, labels: ['context-drift'],
+              });
+            }
+
+      - name: Fail the check if drift was found
+        if: steps.drift.outputs.rc == '1'
+        run: exit 1

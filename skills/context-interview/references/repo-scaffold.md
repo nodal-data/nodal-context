@@ -13,7 +13,14 @@ per project.
    (the end-user getting-started doc), `.claude/skills/data-question/` (the bundled
    "answer a question from this context" skill), and `context.config.yaml`.
 2. Copy `.github/workflows/` into the target repo so validation, drift, and the
-   eval delta run on PRs from day one.
+   eval delta run on PRs from day one. Also copy `.ci/` (the workflow scripts —
+   `validate.py`, `drift.py`, `collect_manifests.py`, `suggest.py`), `schemas/`
+   (the ACF JSON Schemas — `.ci/validate.py` validates the repo's YAML against them
+   locally, with no network), and `scripts/dbt_extract.py` (which `drift.py` imports).
+   The validate + drift workflows need these present in the context repo. Once a dbt
+   manifest is available, establish the baseline once and commit it:
+   `python .ci/drift.py --update-baseline --manifest <source_id>=<path>` writes
+   `.ci/lineage-baseline.json` (the snapshot drift compares against).
 3. For each domain discovered in Stage 2, copy `_domain-template/` to
    `domains/<domain>/` and fill it in.
 4. Replace the `[company]` placeholder in `README.md` and `CLAUDE.md` with the
