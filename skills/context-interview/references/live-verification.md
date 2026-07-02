@@ -8,7 +8,7 @@ is the strongest kind of eval seed: a real number, pinned to a date, with the SQ
 that produced it.
 
 This is the free, in-session realization of the eval harness's "one-shot runner that
-lets you see the aha once" (`eval-harness/INTERFACE.md`). It is **not** the
+lets you see the aha once" (`eval_harness/INTERFACE.md`). It is **not** the
 formal/continuous harness — you are not computing a hosted "perfect" baseline or
 re-running on every PR. You are running a single live off/on/truth pass and
 harvesting ground truth from it.

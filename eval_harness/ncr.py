@@ -1,6 +1,6 @@
 """Normalized Context Representation (NCR) — the intermediate every adapter maps into.
 
-Per eval-harness/INTERFACE.md the format isn't the moat: every source (ACF, dbt docs,
+Per eval_harness/INTERFACE.md the format isn't the moat: every source (ACF, dbt docs,
 raw markdown, …) collapses to this, and the delta is computed on it. Kept deliberately
 small: the runner needs the seeds (ground truth) and a per-domain context blob to inject
 for the context-on condition.

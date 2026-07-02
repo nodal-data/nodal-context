@@ -180,7 +180,7 @@ When a domain's `reference.md`, `metrics.yaml`, `entities.yaml`, and seeds exist
    questions with and without it, live, and you check them against your dashboard?"
    If yes, run **Stage 5 — Live Verification** (`references/live-verification.md`):
    the in-session off/on/truth pass. The formal/continuous delta at scale, drift,
-   and the hosted "perfect" baseline remain the harness (`eval-harness/INTERFACE.md`).
+   and the hosted "perfect" baseline remain the harness (`eval_harness/INTERFACE.md`).
 4. Open a PR (or stage the diff) so the team reviews before it becomes trusted.
 
 ## Wrap-up: hand the repo off to GitHub

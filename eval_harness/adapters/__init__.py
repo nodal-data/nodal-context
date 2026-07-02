@@ -1,6 +1,6 @@
 """Adapter registry: source format -> NCR builder.
 
-ACF is the first adapter; the contract (eval-harness/INTERFACE.md) names more
+ACF is the first adapter; the contract (eval_harness/INTERFACE.md) names more
 (`raw`, `dbt`, `ktx`, …). They're future drop-ins on the same NCR — the runner,
 grader, and reporter never touch a source format directly.
 """
