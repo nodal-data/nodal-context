@@ -5,21 +5,46 @@ name: eval-delta
 on:
   pull_request:
     paths: ['domains/**', 'entities/**', 'evals/seeds/**']
+permissions:
+  contents: read
+  pull-requests: write      # to post the delta report as a PR comment
 jobs:
   delta:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # full history so changed_domains.py can diff vs the base ref
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install anthropic pyyaml
       - name: Identify changed domains
         id: changed
         run: python .ci/changed_domains.py >> "$GITHUB_OUTPUT"
       - name: Run on/off/perfect delta (OSS one-shot runner)
+        if: steps.changed.outputs.domains != ''
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # BYO key; no key -> graceful skip
         run: |
           python -m eval_harness.run \
             --adapter acf \
             --domains "${{ steps.changed.outputs.domains }}" \
-            --report pr-comment
+            --report pr-comment | tee eval-report.md
         # Excludes status: draft seeds from the "perfect" baseline.
+      - name: Post delta report as a PR comment
+        if: steps.changed.outputs.domains != '' && hashFiles('eval-report.md') != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('eval-report.md', 'utf8').trim();
+            if (!body) return;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
       # - name: Hosted continuous eval + regression gate (Nodal) [paid]
       #   uses: nodaldata/eval-action@v1
       #   with: { gate-threshold: 0.90, ground-truth: managed }
