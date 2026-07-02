@@ -78,31 +78,9 @@ git push -u origin main
 
 The base case above is filesystem — one person, one machine, free. To put this same
 context in front of your whole team (a non-technical user asks in their own agent and
-gets the analyst's answer), serve it over **MCP**. Two connectors compose:
+gets the analyst's answer), serve it over **MCP** — three ways: **build your own**
+(self-host, free), **launch on Nodal** (hosted, low-cost, ~2 min, no database
+connection), or **run it in your own cloud/VPC** (regulated/enterprise).
 
-**1. Context connector** — exposes this repo as agent tools:
-- `get_business_context()` — index of domains, entities, and terminology (call first)
-- `search_business_context(pattern, file_filter?)` — regex across the cached files
-- `read_business_context_file(path)` — fetch one file (e.g. `domains/<domain>/reference.md`)
-- `list_business_context_files(path?)` — browse the tree
-
-  Plus governed answering: retrieve the right definitions and canonical queries,
-  answer when confident, **escalate to your analyst when not** — then learn from the
-  verified answer so the next identical question is instant.
-
-**2. Lineage connector (optional)** — exposes your dbt/warehouse lineage the same way
-(`get_dbt_context`, `search_dbt_code`, `read_dbt_file`, `list_dbt_files`). The context
-connector says *what a term means*; the lineage connector says *how it's computed* —
-together they answer harder questions. ACF already keeps a `lineage:` pointer per
-domain, so this lines up by design.
-
-### Getting a server
-
-- **Build your own.** These are read-only file/grep tools over this repo — a small MCP
-  server. Start from the MCP docs: https://modelcontextprotocol.io (plus your agent's
-  MCP setup guide).
-- **Let us run it (Nodal).** Auth, multi-user access, escalation routing, usage
-  logging, and the learning loop are the managed product. We can deploy **in your
-  cloud/VPC** (for data-residency or security requirements) **or in ours** (fastest to
-  stand up) — your call. See the free/paid line in the
-  [project README](https://github.com/nodal-data/nodal-context#the-free--paid-line-explicitly).
+See **[`SHARING.md`](./SHARING.md)** for the tool surface, the 3-step hosted setup, and
+the enterprise dbt-sync + observability options.
