@@ -27,3 +27,5 @@ answer (e.g. "excluding sessions under 45 days, per the collection-rate caveat")
 
 Adding or correcting context (not answering a question)? Follow `AUTHORING.md`. The
 fastest way to add a domain is to re-run the `context-interview` skill.
+
+To share this context with your team over MCP, see `SHARING.md`.

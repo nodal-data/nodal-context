@@ -8,6 +8,8 @@ analytical data. It is read by agents at query time to provide semantic groundin
 that schema metadata and dbt descriptions alone cannot. Built in Analytics Context
 Format (ACF).
 
+To serve this context to a whole team over MCP, see `SHARING.md`.
+
 ## Navigation
 1. Read `company/overview.md` and `company/terminology.md`.
 2. Identify the domain; read `domains/<domain>/reference.md` (the agent-facing

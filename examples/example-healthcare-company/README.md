@@ -62,11 +62,12 @@ git remote add origin git@github.com:<your-org>/<repo>.git
 git push -u origin main
 ```
 
-## Advanced: serve via MCP (planned)
+## Share with your team: serve over MCP
 
-Today agents read this repo from the filesystem. A planned option is a small
-read-only MCP server that exposes each `domains/<domain>/reference.md` and
-`company/terminology.md` as MCP **resources** plus a
-`route_question(question) -> {domain, reference_md, caveats}` **tool** — mirroring the
-Normalized Context Representation in the harness contract
-(`eval-harness/INTERFACE.md`). Not required for the base case above.
+The base case above is filesystem — one person, one machine, free. To put this same
+context in front of your whole team, serve it over **MCP** — three ways: **build your
+own** (self-host, free), **launch on Nodal** (hosted, low-cost, ~2 min, no database
+connection), or **run it in your own cloud/VPC** (regulated/enterprise).
+
+See **[`SHARING.md`](./SHARING.md)** for the tool surface, the 3-step hosted setup, and
+the enterprise dbt-sync + observability options.

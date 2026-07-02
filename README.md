@@ -143,12 +143,20 @@ question is instant. An optional second connector exposes your **dbt/warehouse
 lineage** the same way, so the agent can check *how* a metric is computed, not just
 what it means.
 
-Running that shared endpoint — access control, escalation routing, and usage logging
-across the team — is **optional and paid**, and we can deploy it **in your cloud/VPC or
-ours** depending on your data-residency and security requirements. It's a convenience
-for team-scale distribution, not a lock on the format: the files stay open, self-hosting
-an agent against the raw repo is always free, and the tool surface is documented in the
-generated repo's `README.md` if you'd rather build the server yourself.
+There are **three ways** to serve it:
+
+- **Build your own** — self-host a small read-only MCP server against the raw repo.
+  Always free, no lock-in.
+- **Launch on Nodal (hosted)** — the low-cost, self-serve path: subscribe, add a
+  read-only GitHub token in the admin, share the endpoint. **No database connection
+  needed** — Nodal serves the context repo, not your data.
+- **Run it in your own cloud/VPC** — for data-residency or security requirements;
+  **contact sales**.
+
+Auth, escalation routing, usage logging, and the learning loop are the managed product —
+a convenience for team-scale distribution, not a lock on the format: the files stay open
+and self-hosting is always free. The generated repo ships a `SHARING.md` with the tool
+surface and the 3-step hosted setup.
 
 ## Keep context in sync with your dbt repo
 
@@ -177,6 +185,11 @@ This rides on the same `lineage:` pointer ACF already keeps per domain. It's an
 | **Team-shared MCP endpoint (governed answers + escalation for non-technical users, auth, usage logging)** | Nodal (hosted) | **Paid** |
 | **dbt-repo sync (auto-propagate dbt changes into the context, analyst-confirmed)** | Nodal (hosted) | **Paid** |
 | **Trustworthy ground truth, continuous re-eval, drift detection, observability, correction harvesting** | Nodal (hosted) | **Paid** |
+
+The hosted MCP endpoint is low-cost and self-serve. The dbt-repo sync and the
+observability/eval system are how data teams keep context correct — and see who's asking
+what — as they scale self-service analytics; for a demo, requirements, or pricing,
+**contact sales** at info@nodaldata.io.
 
 ## License
 
