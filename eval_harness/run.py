@@ -5,7 +5,7 @@
 For each requested domain: answer every confirmed seed context-off and context-on (one LLM
 generation each), grade the SQL shape with an LLM judge, and print the delta report. No
 warehouse; BYO ANTHROPIC_API_KEY only (no key -> graceful skip, exit 0, so CI stays green).
-Honors the contract's free/paid line — see eval-harness/INTERFACE.md.
+Honors the contract's free/paid line — see eval_harness/INTERFACE.md.
 """
 import argparse
 import sys

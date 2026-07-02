@@ -7,7 +7,7 @@ inheriting stale context from Notion, Slack, or auto-generated dbt docs. It ship
 three things: a context **format** (ACF, see `SPEC.md`), an **interview skill** that
 fills it in (`skills/context-interview/`), and a format-agnostic **eval harness
 contract** that measures whether the context made the agent more accurate
-(`eval-harness/INTERFACE.md`). The thesis — interview-built beats auto-built — and
+(`eval_harness/INTERFACE.md`). The thesis — interview-built beats auto-built — and
 the free/paid line are argued in `README.md`; read it before changing the pitch.
 
 ## This is a test bed, optimized for iteration speed

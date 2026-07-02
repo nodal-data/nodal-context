@@ -1,7 +1,7 @@
 """Render the on/off/perfect delta report (the `--report pr-comment` markdown).
 
 Pure: takes already-computed per-domain results, returns a markdown string. Shape follows
-eval-harness/INTERFACE.md — three percentages + the "still wrong with context on" punch-list.
+eval_harness/INTERFACE.md — three percentages + the "still wrong with context on" punch-list.
 """
 from .grader import PASS, FAIL, SKIPPED
 

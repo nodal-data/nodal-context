@@ -182,5 +182,5 @@ v0.x, the major after 1.0.
 ACF is **one** input to the measurement harness, not a prerequisite. The harness
 also reads Kaelio `ktx` (`semantic-layer/*.yaml` + `wiki/*.md`), dbt
 (`manifest.json` + `schema.yml` docs), and raw markdown. See
-[`eval-harness/INTERFACE.md`](./eval-harness/INTERFACE.md) for the normalized
+[`eval_harness/INTERFACE.md`](./eval_harness/INTERFACE.md) for the normalized
 intermediate representation all of these map into.

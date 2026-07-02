@@ -55,7 +55,7 @@ act of building context is the act of harvesting ground truth.
 
 This repo defines a context format (ACF — see [`SPEC.md`](./SPEC.md)). But you are
 **not required to use it** to use the measurement seam. The harness
-([`eval-harness/INTERFACE.md`](./eval-harness/INTERFACE.md)) reads ACF, Kaelio
+([`eval_harness/INTERFACE.md`](./eval_harness/INTERFACE.md)) reads ACF, Kaelio
 `ktx` YAML, dbt models/docs, or raw markdown, normalizes them, and measures the
 delta the same way. Bring whatever context you already have.
 
@@ -123,7 +123,7 @@ nodal-context/
 ├── schemas/                    # JSON Schemas that make the YAML CI-checkable
 ├── template/                   # the empty scaffold the interview fills in
 ├── examples/example-healthcare-company/         # a worked example in the ACF format
-├── eval-harness/INTERFACE.md   # format-agnostic seam → on/off/perfect delta
+├── eval_harness/               # OSS eval runner + its contract (INTERFACE.md, README.md)
 └── .github/workflows/          # validate context, detect drift, run eval delta on PR
 ```
 
