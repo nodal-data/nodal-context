@@ -11,9 +11,7 @@ analyst would give — serve it over **MCP** (Model Context Protocol).
 An MCP server turns this repo into agent tools over two connectors:
 
 - **Context connector** — reads this repo (index, regex search, file fetch, browse)
-  plus governed answering: retrieve the right definitions and canonical queries,
-  answer when confident, **escalate to your analyst when not** — then learn from the
-  verified answer so the next identical question is instant.
+  plus governed answering.
 - **Lineage connector (optional)** — your dbt/warehouse lineage the same way. The
   context connector says *what a term means*; the lineage connector says *how it's
   computed*.
