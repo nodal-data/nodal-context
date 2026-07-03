@@ -59,8 +59,8 @@ into your prompt.
   and upstream changes — renamed columns, redefined metrics — propagate into the
   affected definitions as drafts for your analyst to confirm, so the context tracks the
   warehouse without anyone remembering to re-run the interview. The `context-drift`
-  workflow above flags the same drift on PR for free; the managed loop closes it. See the
-  [project README](https://github.com/nodal-data/nodal-context#keep-context-in-sync-with-your-dbt-repo).
+  workflow above flags the same drift on PR for free; the managed loop closes it. See
+  [docs.nodaldata.io](https://docs.nodaldata.io/enterprise/overview).
 
 ## Push to GitHub
 
