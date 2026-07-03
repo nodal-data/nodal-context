@@ -4,6 +4,8 @@
 > format-agnostic harness that measures whether your context actually makes the
 > agent more accurate.
 
+📖 **Docs:** [docs.nodaldata.io](https://docs.nodaldata.io) · 🌐 **Website:** [nodaldata.io](https://nodaldata.io)
+
 ---
 
 ## What this is
@@ -188,8 +190,10 @@ This rides on the same `lineage:` pointer ACF already keeps per domain. It's an
 
 The hosted MCP endpoint is low-cost and self-serve. The dbt-repo sync and the
 observability/eval system are how data teams keep context correct — and see who's asking
-what — as they scale self-service analytics; for a demo, requirements, or pricing,
-**contact sales** at info@nodaldata.io.
+what — as they scale self-service analytics. Learn more at
+[nodaldata.io](https://nodaldata.io), read the docs at
+[docs.nodaldata.io](https://docs.nodaldata.io), or for a demo, requirements, or
+pricing, **contact sales** at info@nodaldata.io.
 
 ## License
 
