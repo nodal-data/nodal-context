@@ -33,7 +33,7 @@ The fastest way to share with the whole team. **No warehouse/database connection
 required** — Nodal serves this context repo, not your data. In short: subscribe, add a
 **read-only GitHub token** scoped to this repo in the Nodal admin, and share the
 endpoint — your team adds it in their own agent and asks questions in plain language.
-You get multi-user auth, analyst **escalation + learning loop**, and usage logging out
+You get multi-user auth, simple evaluation and usage logging out
 of the box.
 
 Follow the current subscribe link, pricing, and endpoint in the

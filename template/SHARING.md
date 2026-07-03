@@ -12,9 +12,8 @@ An MCP server turns this repo into agent tools over two connectors:
 
 - **Context connector** — reads this repo (index, regex search, file fetch, browse)
   plus governed answering: retrieve the right definitions and canonical queries,
-  answer when confident, **escalate to your analyst when not** — then learn from the
-  verified answer so the next identical question is instant.
-- **Lineage connector (optional)** — your dbt/warehouse lineage the same way. The
+  answer when confident. 
+- **Lineage connector (optional, no extra cost)** — your dbt/warehouse lineage the same way. The
   context connector says *what a term means*; the lineage connector says *how it's
   computed*.
 
@@ -33,7 +32,7 @@ The fastest way to share with the whole team. **No warehouse/database connection
 required** — Nodal serves this context repo, not your data. In short: subscribe, add a
 **read-only GitHub token** scoped to this repo in the Nodal admin, and share the
 endpoint — your team adds it in their own agent and asks questions in plain language.
-You get multi-user auth, analyst **escalation + learning loop**, and usage logging out
+You get multi-user auth, simple evaluations, and usage logging out
 of the box.
 
 Follow the current subscribe link, pricing, and endpoint in the
