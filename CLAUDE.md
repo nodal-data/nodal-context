@@ -73,24 +73,19 @@ deliberately revisiting the thesis:
 - `.github/workflows/` (`validate-context`, `eval-delta`, `context-drift`) act on a
   *context* repo's contents; they're the CI contract we hand users, not CI for this
   tool. Keep them consistent with the schemas.
-- After format changes, the cheap check is: does `examples/` still validate against
-  `schemas/`, and does `template/` match? That's the regression test until there's
-  a real one. The ACF schemas `$ref` each other (e.g. `lineage.schema.json`), so a
-  validator must register every schema in `schemas/` by its `$id` before validating
-  — otherwise refs are "Unresolvable" (a setup error, not a content failure). The
-  in-repo CI script (`.ci/validate.py`, referenced by `validate-context.yml`) is not
-  yet shipped; until it is, validate ad hoc with `referencing` + `jsonschema`:
-
-  ```python
-  import json, glob, yaml, jsonschema
-  from referencing import Registry, Resource
-  registry = Registry().with_resources(
-      [(json.load(open(s))["$id"], Resource.from_contents(json.load(open(s))))
-       for s in glob.glob("schemas/*.json")])
-  # pair each doc with its schema: domain.yaml→domain, *.seed.yaml→evalseed, etc.
-  jsonschema.Draft202012Validator(schema, registry=registry).validate(yaml.safe_load(open(doc)))
-  ```
-
-  Markdown-only changes (README/CLAUDE/AGENTS/AUTHORING, skills) can't break schema
-  validation — but still confirm `template/` and `examples/` stay parallel.
+- After format changes, the cheap check is `python3 .ci/validate.py` from the repo
+  root: it strictly validates each `examples/*/` and structurally checks `template/`
+  (dual-mode; in a *context* repo it strictly validates that repo instead). It
+  already handles the `$ref` wiring (the ACF schemas `$ref` each other, e.g.
+  `lineage.schema.json`, so every schema must be registered by its `$id` before
+  validating — otherwise refs are "Unresolvable", a setup error, not a content
+  failure). Needs `pip install jsonschema pyyaml`. Markdown-only changes
+  (README/CLAUDE/AGENTS/AUTHORING, skills) can't break schema validation — but
+  still confirm `template/` and `examples/` stay parallel.
+- Generated context repos are laid down (and later upgraded) by
+  `scripts/scaffold.py` — its module-level copy manifest is the single source of
+  truth for what ships into a context repo (template + `.github/workflows/` +
+  `.ci/` + `schemas/` + `scripts/dbt_extract.py` + vendored `eval_harness/`).
+  `skills/context-interview/references/repo-scaffold.md` describes it in prose —
+  change the two together.
 - Commit/push only when asked. Remote: `github.com/nodal-data/nodal-context`.

@@ -11,5 +11,9 @@ evals/verified/*
 # Transient dbt bootstrap summary (Stage 0) — not ACF, discard after drafting.
 .dbt-findings.json
 
+# Python bytecode from the vendored CI tooling (.ci/, eval_harness/, scripts/)
+__pycache__/
+*.pyc
+
 # macOS
 .DS_Store
