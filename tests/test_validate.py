@@ -41,6 +41,20 @@ def run():
         assert validate.main([str(ctx), "--schemas", "schemas"]) == 1, \
             "expected strict validation to fail on a bad status enum"
 
+    # --- lineage warning: local repo path warns but does not fail ---
+    with tempfile.TemporaryDirectory() as td:
+        ctx = Path(td) / "ctx"
+        shutil.copytree(ROOT / "examples" / "example-fintech-company", ctx)
+        cfg = ctx / "context.config.yaml"
+        cfg.write_text(cfg.read_text().replace(
+            "repo: github.com/", "repo: local:/Users/someone/", 1))
+        import yaml as y
+        warns = validate.lineage_repo_warnings(validate.discover_docs(ctx), y)
+        assert warns and "local repo path" in warns[0], \
+            f"expected a local-repo-path warning, got {warns}"
+        assert validate.main([str(ctx), "--schemas", "schemas"]) == 0, \
+            "a local repo path must warn, not fail"
+
     # --- structural failure: unknown field in a copied template doc ---
     with tempfile.TemporaryDirectory() as td:
         tpl = Path(td) / "template"

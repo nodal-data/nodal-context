@@ -107,6 +107,33 @@ def validate_strict(docs, schemas, validator_cls, registry, yaml):
     return errors, drafts
 
 
+# ----- lineage repo sanity (warn, never fail) --------------------------------
+
+def lineage_repo_warnings(docs, yaml):
+    """Warn when a lineage source's `repo` is a local filesystem path. The drift
+    workflow clones `repo` in CI, so a local path means drift can never run for
+    that source. Extraction-time clone paths are session state — the durable value
+    is the git remote (github.com/org/repo), or omit `repo:` if none exists yet."""
+    warns = []
+    for path, kind in docs:
+        if kind != "config":
+            continue
+        doc = _load_yaml(path, yaml)
+        if not isinstance(doc, dict):
+            continue
+        for src in doc.get("lineage_sources") or []:
+            if not isinstance(src, dict):
+                continue
+            repo = str(src.get("repo") or "")
+            if repo.startswith(("local:", "file:", "/", "~", ".")):
+                warns.append(
+                    f"{path}: lineage source '{src.get('id')}' has a local repo path "
+                    f"('{repo}') — CI cannot clone it, so drift monitoring is off for "
+                    "this source. Set `repo:` to the git remote (e.g. "
+                    "github.com/org/repo), or omit it until one exists.")
+    return warns
+
+
 # ----- lenient (structural) check for template/ ------------------------------
 
 def check_structure(docs, raw_schemas, yaml):
@@ -184,7 +211,7 @@ def main(argv=None):
         print("validate: no ACF docs found to validate")
         return 0
 
-    all_errors, total_docs, total_drafts = [], 0, 0
+    all_errors, all_warnings, total_docs, total_drafts = [], [], 0, 0
 
     for root in strict_roots:
         docs = discover_docs(root)
@@ -192,6 +219,7 @@ def main(argv=None):
         errs, drafts = validate_strict(docs, raw, validator_cls, registry, yaml)
         total_drafts += drafts
         all_errors += errs
+        all_warnings += lineage_repo_warnings(docs, yaml)
         print(f"validate: {root}/ — {len(docs)} doc(s), "
               f"{len(errs)} error(s), {drafts} draft(s)")
 
@@ -200,8 +228,15 @@ def main(argv=None):
         total_docs += len(docs)
         errs = check_structure(docs, raw, yaml)
         all_errors += errs
+        all_warnings += lineage_repo_warnings(docs, yaml)
         print(f"validate: {structural_root}/ — {len(docs)} doc(s) (structural), "
               f"{len(errs)} error(s)")
+
+    if all_warnings:
+        print(f"\nvalidate: WARNING — {len(all_warnings)} lineage problem(s) "
+              "(not a failure):")
+        for w in all_warnings:
+            print(f"  - {w}")
 
     if total_drafts:
         print(f"\nvalidate: NOTE: {total_drafts} definition(s) still `status: draft` "
