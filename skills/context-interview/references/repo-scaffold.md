@@ -137,6 +137,21 @@ domains are already captured, and resume — ask the analyst which domain to wor
 rather than starting over. Append new seeds; never rewrite confirmed ones without
 asking.
 
+**A fresh clone (teammate handoff) is the same resume.** A teammate who clones the
+context repo on another machine already has everything committed — the authored
+content *and* the full CI support set — so there is nothing to scaffold. Run
+`python3 scripts/scaffold.py --check <target-dir>` once to confirm the clone is
+intact, then resume as above. Two things deliberately do **not** travel with the
+clone:
+
+- **`evals/verified/*` sidecars** are gitignored — local to the machine that ran
+  Stage 5. Never fabricate them; re-run Stage 5 live verification to mint new ones.
+- **The local dbt clone.** When drafting a new domain, re-clone from the
+  `lineage_sources[].repo` URL already recorded in `context.config.yaml` and
+  `dbt parse` — don't ask the analyst where the project lives. If the new domain
+  added models, refresh the drift baseline afterwards:
+  `python .ci/drift.py --update-baseline --manifest <source_id>=<path>`.
+
 To refresh an existing repo's CI support set (workflows, `.ci/`, `schemas/`,
 `scripts/dbt_extract.py`, `eval_harness/`) — e.g. after the tool repo ships fixes,
 or to repair a repo scaffolded before the support set existed — run:

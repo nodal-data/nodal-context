@@ -51,7 +51,9 @@ into your prompt.
 ## Keep it fresh
 
 - Add a domain or correct a definition by **re-running the `context-interview`
-  skill** — it resumes from `context.config.yaml` rather than starting over.
+  skill** — it resumes from `context.config.yaml` rather than starting over. For
+  picking the work up on another machine or handing it to a teammate, see
+  "Continuing this repo" in [`AUTHORING.md`](./AUTHORING.md).
 - Review every change **by PR**. The bundled `.github/workflows/` validate the YAML,
   flag unconfirmed `status: draft` entries, run the on/off eval delta, and detect
   drift when an upstream model changes.
