@@ -84,11 +84,15 @@ At every stage from 1 onward, emit eval seeds per
    subagent answers from a brief; you escalate to the human only when it's not
    confident). If the marker is absent, ignore this and run the normal human interview.
 1. Read `SPEC.md` so you know the format you're writing.
-2. Copy `template/` into the user's chosen location (default: `../analytics-context/` — a
-   sibling of the tool repo, which stays read-only; never author into the tool clone).
-   This includes the end-user `README.md`, the consumption-first `CLAUDE.md`, and the
-   bundled `.claude/skills/data-question/` skill, then `git init` + an initial commit
-   — see `references/repo-scaffold.md` for the exact file list and steps.
+2. Scaffold the repo: run `python3 scripts/scaffold.py <target>` from the tool-repo
+   clone (default target: `../analytics-context/` — a sibling of the tool repo, which
+   stays read-only; never author into the tool clone). The script copies the template
+   (end-user `README.md`, consumption-first `CLAUDE.md`, the bundled
+   `.claude/skills/data-question/` skill, …) **plus** the CI support set
+   (`.github/workflows/`, `.ci/`, `schemas/`, `scripts/dbt_extract.py`,
+   `eval_harness/`) and self-checks the result. **Confirm the self-check passes
+   before continuing.** Then `git init` + an initial commit — see
+   `references/repo-scaffold.md` for details.
 3. Ask one breadth-first question: *"Which data platforms do your dashboards run on
    — just one warehouse, or a mix (e.g. Snowflake + BigQuery + Postgres)?"* Record
    the answer as the top-level `warehouse:` default. For a multi-platform shop, leave
@@ -112,7 +116,11 @@ At every stage from 1 onward, emit eval seeds per
      (`accepted_values`), join paths (`relationships`), dashboards (`exposures`), and
      the model dependency graph — each drafted as `status: draft` tagged
      `# dbt-derived`. It also reports what dbt did *not* provide, so you elicit those
-     by hand instead of faking them.
+     by hand instead of faking them. The local clone path is for extraction only —
+     never persist it into `context.config.yaml`: derive the durable `repo:` from
+     `git -C <local-dbt> remote get-url origin` and confirm it with the analyst; if
+     the clone has no remote, omit `repo:` and flag it for wrap-up (see
+     `references/repo-scaffold.md`).
    - warehouse schema (table + column names, types) if connections are available;
    - existing BI/dashboard titles if reachable.
    Write these into `context.config.yaml` (lineage sources) and as `status: draft`
@@ -201,6 +209,11 @@ their call, not yours.
 - Either way the local `git init` + initial commit from Stage 0 already exists, so
   there is always something to push. Point the analyst at the repo's `README.md` for
   how their team then uses it with Claude Code.
+- **Re-check lineage sources now that CI is real.** If any `context.config.yaml`
+  lineage source has no cloneable `repo:` (a local-only dbt project, flagged in
+  Stage 0), tell the analyst: *"drift monitoring for `<source_id>` stays off until
+  that dbt project is on GitHub — when it is, set `repo:` to its `github.com/org/repo`
+  path."* If the remote exists by now, offer to fill it in before pushing.
 
 ## Wrap-up: offer to share it with the team (over MCP)
 
