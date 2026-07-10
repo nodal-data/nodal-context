@@ -5,6 +5,7 @@ FINDINGS.md
 # (Inline comments are NOT allowed on gitignore pattern lines — keep them above.)
 responses*.md
 RESPONSES.md
+shorelane.context.md
 
 # macOS
 .DS_Store
