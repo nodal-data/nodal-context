@@ -84,15 +84,31 @@ At every stage from 1 onward, emit eval seeds per
    subagent answers from a brief; you escalate to the human only when it's not
    confident). If the marker is absent, ignore this and run the normal human interview.
 1. Read `SPEC.md` so you know the format you're writing.
-2. Scaffold the repo: run `python3 scripts/scaffold.py <target>` from the tool-repo
-   clone (default target: `../analytics-context/` — a sibling of the tool repo, which
-   stays read-only; never author into the tool clone). The script copies the template
-   (end-user `README.md`, consumption-first `CLAUDE.md`, the bundled
-   `.claude/skills/data-question/` skill, …) **plus** the CI support set
-   (`.github/workflows/`, `.ci/`, `schemas/`, `scripts/dbt_extract.py`,
-   `eval_harness/`) and self-checks the result. **Confirm the self-check passes
-   before continuing.** Then `git init` + an initial commit — see
-   `references/repo-scaffold.md` for details.
+2. **Fresh start or resume?** Check whether the target repo (default:
+   `../analytics-context/` — a sibling of the tool repo, which stays read-only;
+   never author into the tool clone — but the analyst may point you at another
+   path, e.g. a freshly cloned existing context repo) already contains a
+   `context.config.yaml`.
+   - **It does → resume, don't scaffold** (the script refuses to overwrite
+     anyway). Read `context.config.yaml` (which domains are wired),
+     `company/org-structure.md` (the Domain | Owner | Status roster), and count
+     the remaining `status: draft` stubs. Open with a status summary and a
+     choice instead of restarting Stage 1: *"Captured so far: billing
+     (confirmed), scheduling (4 drafts open). Continue scheduling, or start a
+     new domain?"* Follow "Updating an existing repo" in
+     `references/repo-scaffold.md`. In resume mode, run step 4's dbt extraction
+     only when drafting a **new** domain — and derive the clone command from
+     the `repo:` already recorded in `context.config.yaml` (*"`git clone
+     github.com/acme/acme-dbt`, then `dbt parse`"*) rather than asking where
+     the project lives.
+   - **It doesn't → scaffold fresh:** run `python3 scripts/scaffold.py <target>`
+     from the tool-repo clone. The script copies the template (end-user
+     `README.md`, consumption-first `CLAUDE.md`, the bundled
+     `.claude/skills/data-question/` skill, …) **plus** the CI support set
+     (`.github/workflows/`, `.ci/`, `schemas/`, `scripts/dbt_extract.py`,
+     `eval_harness/`) and self-checks the result. **Confirm the self-check
+     passes before continuing.** Then `git init` + an initial commit — see
+     `references/repo-scaffold.md` for details.
 3. Ask one breadth-first question: *"Which data platforms do your dashboards run on
    — just one warehouse, or a mix (e.g. Snowflake + BigQuery + Postgres)?"* Record
    the answer as the top-level `warehouse:` default. For a multi-platform shop, leave
@@ -190,6 +206,20 @@ When a domain's `reference.md`, `metrics.yaml`, `entities.yaml`, and seeds exist
    the in-session off/on/truth pass. The formal/continuous delta at scale, drift,
    and the hosted "perfect" baseline remain the harness (`eval_harness/INTERFACE.md`).
 4. Open a PR (or stage the diff) so the team reviews before it becomes trusted.
+
+## Pausing a session
+
+When the analyst wants to stop — mid-domain is fine — leave the repo in a state a
+future session (or a teammate) can pick up cold:
+
+1. **Commit everything, drafts included.** Draft stubs are the resume queue, not
+   scratch — a stub lost to an uncommitted working tree is a question that gets
+   re-asked. Use a message that names where work stopped, e.g.
+   `wip: scheduling domain — 4 entity drafts open`.
+2. **Print a two-line status:** confirmed domains, then open drafts by domain.
+   This is the same summary resume mode (Stage 0) opens with.
+3. If a GitHub remote exists, offer to push so a teammate can continue from a
+   clone (see "Updating an existing repo" in `references/repo-scaffold.md`).
 
 ## Wrap-up: hand the repo off to GitHub
 

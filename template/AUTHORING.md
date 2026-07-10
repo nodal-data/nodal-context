@@ -18,3 +18,32 @@ Markdown and YAML.
 - `reference.md` is written for retrieval by an agent (routing triggers, grain,
   gotchas), not as narrative — narrative goes in `context.md`.
 - Add `# REVIEW: [question]` where domain-owner verification is needed.
+
+## Continuing this repo (resume or teammate handoff)
+
+Context is built one domain at a time; picking it back up is the normal case.
+
+- **Same machine, later.** Re-run the `context-interview` skill from your clone of
+  the tool repo ([github.com/nodal-data/nodal-context](https://github.com/nodal-data/nodal-context))
+  and point it at this repo. It reads `context.config.yaml`, sees what's already
+  captured, and resumes from the open `status: draft` items — it never starts over.
+- **A teammate picking it up.** Clone the tool repo and this context repo as
+  sibling directories, then run the `context-interview` skill from the tool clone
+  and point it at this repo. Everything needed to continue is committed here.
+- **Do I need the dbt repo locally?** Not to answer questions, validate, or run
+  evals — CI uses the git URL recorded in `context.config.yaml`. Clone it locally
+  (and run `dbt parse`) only when drafting a **new** domain, so the interview can
+  seed real drafts from your models; the skill will tell you the exact clone URL.
+- **Running the regression evals locally.** No warehouse needed:
+
+  ```bash
+  pip install anthropic pyyaml
+  export ANTHROPIC_API_KEY=...
+  python -m eval_harness.run --adapter acf --domains "<domain>"
+  ```
+
+  `value_at_snapshot` seeds are skipped locally — they're verified against the
+  live warehouse, and their blessed SQL lives in gitignored `evals/verified/`
+  (it does not travel with a clone; re-run the interview's live-verification pass
+  to mint new ones). CI runs the same eval delta on every PR once the
+  `ANTHROPIC_API_KEY` repo secret is set.
