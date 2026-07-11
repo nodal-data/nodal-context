@@ -84,12 +84,33 @@ At every stage from 1 onward, emit eval seeds per
    subagent answers from a brief; you escalate to the human only when it's not
    confident). If the marker is absent, ignore this and run the normal human interview.
 1. Read `SPEC.md` so you know the format you're writing.
-2. **Fresh start or resume?** Check whether the target repo (default:
-   `../analytics-context/` — a sibling of the tool repo, which stays read-only;
-   never author into the tool clone — but the analyst may point you at another
-   path, e.g. a freshly cloned existing context repo) already contains a
-   `context.config.yaml`.
-   - **It does → resume, don't scaffold** (the script refuses to overwrite
+2. **Fresh start or resume? Discover, then ask — never infer intent from disk
+   layout.** A context repo is identified by a `context.config.yaml` at its root
+   (default target: `../analytics-context/`, a sibling of the tool repo, which
+   stays read-only — never author into the tool clone). An empty default path is
+   *not* evidence of a fresh build: the analyst's repo may live elsewhere, or
+   only on GitHub.
+   - **Discover candidates silently (bounded — never a full-disk scan):** search
+     for `context.config.yaml` in the common places — everything within a few
+     levels of the current directory and its 2–3 nearest ancestors. Exact
+     tested recipe in "Locating an existing context repo" in
+     `references/repo-scaffold.md`; don't improvise a wider one. For each hit,
+     read its identity: company, domain roster, open-draft count, last commit
+     author + date.
+   - **Ask one question, candidates baked in.** Found some: *"I found an existing
+     context repo at `~/work/shorelane-analytics-context` — Shorelane, 3 domains,
+     4 drafts open, last commit 2 days ago by Priya. Continue that one, continue
+     a different one (give me a path or a GitHub URL to clone), or start fresh?"*
+     Found none: *"Starting a brand-new context repo, or continuing an existing
+     one — yours or a teammate's? For an existing one, give me a local path or
+     the GitHub URL and I'll clone it."* Cloning from GitHub is a first-class
+     continuation entry point — the remote is a context repo's durable home.
+   - **Confirm identity before writing anything.** Whatever repo was chosen —
+     discovered, pathed, or freshly cloned — check its `context.config.yaml`
+     parses, read back the identity summary, and get an explicit yes.
+     Continuing a teammate's repo is a supported handoff, but it must happen
+     knowingly, never because a glob matched.
+   - **Analyst says continue → resume, don't scaffold** (the script refuses to overwrite
      anyway). Read `context.config.yaml` (which domains are wired),
      `company/org-structure.md` (the Domain | Owner | Status roster), and count
      the remaining `status: draft` stubs. Open with a status summary and a
@@ -101,7 +122,9 @@ At every stage from 1 onward, emit eval seeds per
      the `repo:` already recorded in `context.config.yaml` (*"`git clone
      github.com/acme/acme-dbt`, then `dbt parse`"*) rather than asking where
      the project lives.
-   - **It doesn't → scaffold fresh:** run `python3 scripts/scaffold.py <target>`
+   - **Analyst says fresh → scaffold** — only after they explicitly said so, and
+     never into a directory that already contains a `context.config.yaml`: run
+     `python3 scripts/scaffold.py <target>`
      from the tool-repo clone. The script copies the template (end-user
      `README.md`, consumption-first `CLAUDE.md`, the bundled
      `.claude/skills/data-question/` skill, …) **plus** the CI support set
