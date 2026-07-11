@@ -29,6 +29,27 @@ Agents without a skill system (Codex, Cursor) should follow these steps directly
 6. If the context is silent on something the answer depends on, say so — do not
    invent a definition. Apply and state any caveat the answer relies on.
 
+## Editing this repo
+Adding or correcting context (not answering a question) does **not** require the
+Nodal tool repo — any agent can edit this repo directly. It contains only Markdown
+and YAML. Full rules are in `AUTHORING.md`; the load-bearing ones:
+1. **No statistics, no schema, no executable SQL, no invented definitions.** Numbers
+   and column types live in the warehouse/dbt; leave `_To be confirmed by [owner]._`
+   and `status: draft` rather than guessing.
+2. YAML entities/metrics carry `status: draft|confirmed` and a `lineage:` pointer.
+   Only a human owner flips `draft → confirmed`; add `# REVIEW: [question]` where
+   verification is needed.
+3. If you resolved an ambiguous term or caveat, add an eval seed under
+   `evals/seeds/` (copy `_seed-template.yaml`) — capturing context and its ground
+   truth is one act.
+4. **Validate before you commit:** `python3 .ci/validate.py` from the repo root
+   (needs `pip install jsonschema pyyaml`). CI runs the same check on every PR.
+
+For a **brand-new domain** from scratch, the guided `context-interview` skill (run
+from a clone of [github.com/nodal-data/nodal-context](https://github.com/nodal-data/nodal-context))
+is recommended, not required — it drafts from your dbt models, verifies answers
+live, and harvests seeds automatically. See `AUTHORING.md` for that flow.
+
 ## Do NOT use this repo for
 - Column types / schema (use the warehouse `information_schema`).
 - dbt model definitions / lineage (use the dbt project).

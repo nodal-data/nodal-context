@@ -24,7 +24,11 @@ answer (e.g. "excluding sessions under 45 days, per the collection-rate caveat")
 
 ## Editing this repo
 
-Adding or correcting context (not answering a question)? Follow `AUTHORING.md`. The
-fastest way to add a domain is to re-run the `context-interview` skill.
+Adding or correcting context (not answering a question)? You can edit this repo
+directly — it does **not** require the Nodal tool repo. Follow `AUTHORING.md`: only a
+human owner flips `status: draft → confirmed`, keep statistics/schema/SQL out, and
+run `python3 .ci/validate.py` before committing (CI runs the same check). For a
+**brand-new domain**, re-running the `context-interview` skill is the recommended —
+not required — path; it drafts from your dbt models and harvests eval seeds for you.
 
 To share this context with your team over MCP, see `SHARING.md`.
