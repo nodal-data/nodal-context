@@ -43,9 +43,12 @@ per project.
    `domains/<domain>/` and fill it in.
 4. Replace the `[company]` placeholder in `README.md` and `CLAUDE.md` with the
    company name (from the analyst or their website — never from a schema).
-5. **Initialize the repo.** Run `git init` in the target dir and make an initial
-   commit once the scaffold is in place (`git add -A && git commit -m "Initial
-   analytics context scaffold"`). This is safe, offline, and reversible, and makes
+5. **Initialize the repo.** Run `git init -b main` in the target dir — pin the
+   branch explicitly rather than inheriting the machine's `init.defaultBranch`
+   (often still `master`); the wrap-up push instructions and PR workflow assume
+   `main`. Then make an initial commit once the scaffold is in place
+   (`git add -A && git commit -m "Initial analytics context scaffold"`). If the
+   repo was already initialized on `master`, rename with `git branch -m master main`. This is safe, offline, and reversible, and makes
    the "review by PR" workflow real from the first domain. Do *not* create or push a
    GitHub remote here — that's the wrap-up offer in `SKILL.md`.
 

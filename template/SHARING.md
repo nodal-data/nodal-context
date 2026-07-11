@@ -4,7 +4,9 @@ This repo is Markdown + YAML that **[company] owns**. A single analyst can point
 own agent at these files and get governed answers for **free** — clone it, read it
 locally, done. To put the same context in front of the *whole team* — so a non-technical
 business user asks a question in their own agent and gets the answer the analyst would
-give — serve it over **MCP** (Model Context Protocol).
+give — serve it over **MCP** (Model Context Protocol). Start with the
+**[MCP overview](https://docs.nodaldata.io/mcp/overview)** for how this works
+end to end.
 
 ## What an MCP server exposes
 

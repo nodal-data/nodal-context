@@ -165,7 +165,7 @@ def main(argv=None):
 
     print(f"""
 scaffold: done. Next steps:
-  - fresh repo: `git init` + initial commit (the interview skill does this)
+  - fresh repo: `git init -b main` + initial commit (the interview skill does this)
   - once a dbt manifest is available, create the drift baseline once and commit it:
       python .ci/drift.py --update-baseline --manifest <source_id>=<path/to/manifest.json>
   - CI needs repo secrets to do more than validate: ANTHROPIC_API_KEY (eval delta),

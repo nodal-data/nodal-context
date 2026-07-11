@@ -34,6 +34,9 @@ A handful (≈3–6) per domain is plenty. Lead with the caveat-bearing ones.
 - Confirm which warehouse MCP server / database is live (the same one the domain's
   lineage points at). If none is reachable, say so and skip to harvesting seeds
   without live numbers — don't fake it.
+- Re-run any warehouse checks deferred earlier in the session for connectivity
+  (Stage 0's probe may have failed on auth — dataset listings, empirical grain
+  checks). If the analyst reauthed since, these now resolve open questions cheaply.
 - Ask the analyst to have the relevant dashboard open: *"Have the 'Collection Rate
   by Payer' dashboard up — I'll ask you to read a number off it in a moment."*
 
