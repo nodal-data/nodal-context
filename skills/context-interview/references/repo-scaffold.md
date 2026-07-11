@@ -133,6 +133,39 @@ schema. Run `scripts/dbt_extract.py` and draft from its findings per
   exposures, no `accepted_values`); elicit those by hand in the relevant stage rather
   than leaving silent gaps.
 
+## Locating an existing context repo (Stage 0 discovery)
+
+A context repo is identified by `context.config.yaml` at its root. When Stage 0
+gathers candidates, search only the common places — **never a full-disk scan or an
+unbounded `find` over the whole home directory** (slow, intrusive,
+permission-heavy). This bounded loop covers everything within three levels down of
+the current directory and its 2–3 nearest ancestors, excludes the tool repo's own
+`template/` and `examples/` copies (false positives), and dedupes overlapping
+anchors; it runs in well under a second:
+
+```
+{ for d in . .. ../.. ../../..; do
+    find "$d" -maxdepth 4 -name context.config.yaml \
+      -not -path '*/.git/*' -not -path '*/node_modules/*' \
+      -not -path '*/template/*' -not -path '*/examples/*' 2>/dev/null
+  done; } | xargs -I{} realpath {} | sort -u
+```
+
+(Don't use bare `ls` globs — zsh aborts on an unmatched glob, silently finding
+nothing.) For each hit, read the identity — don't present bare paths:
+
+- company (the `README.md` title / `context.config.yaml`),
+- domains wired in `context.config.yaml` and open `status: draft` count,
+- `git -C <dir> log -1 --format='%an, %ar'` (who touched it last, when).
+
+Offer candidates by identity and let the analyst pick, name a different path, give
+a GitHub URL to clone, or say "fresh". If there are many hits (a machine used for
+demos accumulates them), present the ~5 most recently committed and say how many
+more exist. If they say they're continuing but nothing was found and they don't
+know the path, prefer the GitHub URL — the remote is the durable home, and a fresh
+clone is the same resume (below). Do not widen the search beyond this recipe; ask
+instead.
+
 ## Updating an existing repo
 
 If `context.config.yaml` already exists, do not overwrite. Read it, find which
