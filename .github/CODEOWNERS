@@ -1,0 +1,8 @@
+# Code owners for nodal-context
+#
+# These owners are the default reviewers for every pull request. Enforcement
+# requires a branch protection rule / ruleset on `main` with
+# "Require review from Code Owners" enabled — this file alone only assigns
+# reviewers, it does not gate merges.
+
+* @potokrm
