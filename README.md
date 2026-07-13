@@ -15,28 +15,33 @@ self-service analytics until you notice the answers are confidently wrong. The f
 isn't a better model — it's **context**: what your terms mean, which table is
 canonical, what the standard filters are, and where the landmines are.
 
-`nodal-context` is three things:
+`nodal-context` is three things, in the order teams adopt them:
 
-1. **A context-layer format + an interview skill** that builds that context *with*
-   your analyst, one domain at a time — and writes it to a git repo your team
-   reviews by PR. Two depths, one flow: the full multi-stage interview, or a
-   **~30-minute fast pass** that confirms a domain's five highest-leverage
-   answers live and drafts the rest for later. This part is **free and open
-   source (Apache-2.0)**. Take it, fork it, never talk to us.
+1. **Build it — the context format + the interview skill.**
+   *Free, open source (Apache-2.0).*
+   The skill builds context *with* your analyst, one domain at a time, and writes
+   it to a git repo your team reviews by PR. Two depths, one flow: the full
+   multi-stage interview, or a **~30-minute fast pass** that confirms a domain's
+   five highest-leverage answers live and drafts the rest. Take it, fork it,
+   never talk to us.
 
-2. **An eval seam** that turns the same interview into a measurement: how accurate
-   is your agent *with* the context vs *without* it, and how far is it still from
-   *ground truth*. The format for evals is open; the **hosted measurement,
-   continuous re-evaluation, drift detection, and observability are the
-   commercial product** (Nodal).
+2. **Share it — the hosted MCP endpoint.**
+   *Self-serve, low-cost: subscribe and launch in minutes.*
+   Puts the same context in front of the whole team: any agent gets governed
+   answers from the repo, and a question the context can't answer confidently
+   **escalates to the analyst**. Merge a PR and every consumer is current — no
+   redistributing files. Self-hosting a read-only server on the raw files is
+   always free; the hosted endpoint adds auth, escalation routing, and usage
+   logging. See "Sharing it across your team" below.
 
-3. **An MCP layer for distribution and maintenance** that puts the same context in
-   front of the whole team and keeps it correct as the warehouse changes: a hosted
-   MCP endpoint serving governed answers to any agent — **escalating to the
-   analyst** when it isn't confident — plus dbt-repo sync that re-drafts affected
-   definitions when upstream models change. Self-hosting the raw files is always
-   free; the **hosted endpoint, escalation routing, usage logging, and dbt sync
-   are the commercial product** (Nodal). See "Sharing it across your team" below.
+3. **Keep it correct — the eval + maintenance system.**
+   *Enterprise: [contact us](mailto:info@nodaldata.io).*
+   The same interview mints ground-truth eval seeds, so you can measure your
+   agent *with* context vs *without* vs *ground truth*. The seed format and a
+   one-shot local runner are open; the hosted system adds continuous
+   re-evaluation, drift detection, dbt-repo sync (an upstream model change
+   re-drafts the affected definitions for the analyst to confirm), and
+   observability into who's asking what.
 
 ## Why interview-built, not auto-built
 
@@ -95,9 +100,9 @@ already have.
 
 ## Quickstart
 
-Before the interview, give the context builder the two things it works from. Both are
-optional-to-have-perfect but make the interview **faster and more accurate** — the agent
-verifies definitions against live data and reads your existing transformations instead of
+Before the interview, set up the two things it works from. Neither needs to be
+perfect, but both make the interview **faster and more accurate**: the agent verifies
+definitions against live data and reads your existing transformations instead of
 guessing.
 
 **1. Connect a warehouse over MCP (required).** The interview verifies answers against
@@ -165,35 +170,36 @@ nodal-context/
 
 ## Sharing it across your team (MCP)
 
-This is the third product above: **distribution and maintenance** of the context you
-just built. A context repo is just Markdown + YAML, so a single analyst can point
-their own agent at the files and get governed answers **for free** — clone it, read
-it locally, done. That works great for one person on one machine.
+This is product #2 above — the self-serve one. A context repo is just Markdown +
+YAML, so a single analyst can point their own agent at the files and get governed
+answers **for free**: clone it, read it locally, done. That works great for one
+person on one machine.
 
-To put the same context in front of the *whole team* — so a non-technical business
-user asks a question in their own agent and gets the answer the analyst would give —
-connect over **MCP**. A hosted MCP endpoint serves the context layer (and the query
-hub it grows into) as tools any agent can call: it retrieves the right definitions and
-canonical queries for a question, answers when it's confident, and **escalates to the
-analyst when it isn't** — then learns from the verified answer so the next identical
-question is instant. An optional second connector exposes your **dbt/warehouse
-lineage** the same way, so the agent can check *how* a metric is computed, not just
-what it means.
+To put the same context in front of the *whole team* — a non-technical business
+user asks a question in their own agent and gets the answer the analyst would
+give — connect over **MCP**. A hosted endpoint serves the context layer (and the
+query hub it grows into) as tools any agent can call. It retrieves the right
+definitions and canonical queries, answers when it's confident, and **escalates
+to the analyst when it isn't** — then learns from the verified answer, so the
+next identical question is instant. An optional second connector exposes your
+**dbt/warehouse lineage**, so the agent can check *how* a metric is computed,
+not just what it means.
 
-There are **three ways** to serve it:
+Three ways to serve it:
 
-- **Build your own** — self-host a small read-only MCP server against the raw repo.
-  Always free, no lock-in.
-- **Launch on Nodal (hosted)** — the low-cost, self-serve path: subscribe, add a
-  read-only GitHub token in the admin, share the endpoint. **No database connection
-  needed** — Nodal serves the context repo, not your data.
+- **Launch on Nodal (hosted)** — the self-serve path: subscribe, paste a
+  read-only GitHub token into the admin, share the endpoint. Three steps, minutes,
+  low-cost. **No database connection needed** — Nodal serves the context repo,
+  not your data.
+- **Build your own** — self-host a small read-only MCP server against the raw
+  repo. Always free, no lock-in.
 - **Run it in your own cloud/VPC** — for data-residency or security requirements;
   **contact sales**.
 
-Auth, escalation routing, usage logging, and the learning loop are the managed product —
-a convenience for team-scale distribution, not a lock on the format: the files stay open
-and self-hosting is always free. The generated repo ships a `SHARING.md` with the tool
-surface and the 3-step hosted setup.
+Auth, escalation routing, usage logging, and the learning loop are the managed
+product — a convenience for team-scale distribution, not a lock on the format:
+the files stay open and self-hosting is always free. The generated repo ships a
+`SHARING.md` with the tool surface and the 3-step hosted setup.
 
 **Claude-desktop shop instead?** Compile the repo into a distributable skill snapshot:
 
@@ -220,29 +226,31 @@ human re-confirms the definition.
 Nodal offers the **managed version of that loop**: connect your dbt repo and changes
 there propagate into the business context automatically — the affected definitions are
 re-drafted from the new dbt source and routed to the analyst to confirm (still
-interview-built — a human owns every definition, the sync just keeps the draft current).
-This rides on the same `lineage:` pointer ACF already keeps per domain. It's an
-**optional, paid** add-on, deployable in your cloud/VPC or ours.
+interview-built: a human owns every definition, the sync just keeps the draft current).
+This rides on the same `lineage:` pointer ACF already keeps per domain. It's part of
+the **enterprise tier** (product #3), deployable in your cloud/VPC or ours —
+[contact us](mailto:info@nodaldata.io).
 
 ## The free / paid line, explicitly
 
 | Capability | Where | Cost |
 |---|---|---|
 | Context format (ACF) | `SPEC.md`, `schemas/` | Free, Apache-2.0 |
-| Interview skill | `skills/context-interview/` | Free |
+| Interview skill (full or fast pass) | `skills/context-interview/` | Free |
 | Eval-seed harvesting (interview → labeled pairs) | the skill | Free |
 | One-shot eval delta (on/off, run locally) | the harness, self-run | Free |
+| Compiled skill snapshot for Claude desktop | `scripts/compile_skill.py` | Free |
 | Self-hosted agent against the raw context files | your agent | Free |
-| **Team-shared MCP endpoint (governed answers + escalation for non-technical users, auth, usage logging)** | Nodal (hosted) | **Paid** |
-| **dbt-repo sync (auto-propagate dbt changes into the context, analyst-confirmed)** | Nodal (hosted) | **Paid** |
-| **Trustworthy ground truth, continuous re-eval, drift detection, observability, correction harvesting** | Nodal (hosted) | **Paid** |
+| **Team-shared MCP endpoint (governed answers + analyst escalation, auth, usage logging)** | Nodal (hosted) | **Paid — self-serve** |
+| **dbt-repo sync (dbt changes re-drafted into context, analyst-confirmed)** | Nodal (hosted) | **Paid — enterprise** |
+| **Trustworthy ground truth, continuous re-eval, drift detection, observability, correction harvesting** | Nodal (hosted) | **Paid — enterprise** |
 
-The hosted MCP endpoint is low-cost and self-serve. The dbt-repo sync and the
-observability/eval system are how data teams keep context correct — and see who's asking
-what — as they scale self-service analytics. Learn more at
-[nodaldata.io](https://nodaldata.io), read the docs at
-[docs.nodaldata.io](https://docs.nodaldata.io), or for a demo, requirements, or
-pricing, **contact sales** at info@nodaldata.io.
+The **hosted MCP endpoint is the self-serve entry point**: subscribe, connect the
+repo, share the endpoint — minutes, no sales call. The **eval/observability system
+and dbt-repo sync are enterprise** — they're how data teams keep context correct,
+and see who's asking what, as self-service analytics scales; for a demo,
+requirements, or pricing, **contact us** at info@nodaldata.io. Learn more at
+[nodaldata.io](https://nodaldata.io) or [docs.nodaldata.io](https://docs.nodaldata.io).
 
 ## License
 
