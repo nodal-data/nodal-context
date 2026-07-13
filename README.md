@@ -133,7 +133,7 @@ from scratch, and the generated `lineage:` pointers reference actual dbt models.
 git clone https://github.com/nodal-data/nodal-context.git
 cd nodal-context
 
-# 2. Open your client agent here (Claude Code / Codex / Cursor) and say:
+# 2. Open your client agent in the repo (Claude Code / Codex / Cursor) and say:
 #    "Build my analytics context."  → the context-interview skill takes over.
 #    Short on time? Say "fast pass" — five core questions, a live check,
 #    the rest drafted for a later session.
@@ -141,6 +141,8 @@ cd nodal-context
 #    It writes a reviewable ../analytics-context/ repo as a SIBLING of this clone
 #    (git-initialized; the tool repo stays read-only) and, at the end, offers to
 #    push it to GitHub.
+#    NOTE: I check the database connection to ensure it is logged in by asking it
+#    "select datetime from each warehouse"
 
 # 3. After the first domain, see the delta:
 #    "Run the eval delta on session-financials."
