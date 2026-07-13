@@ -15,18 +15,28 @@ self-service analytics until you notice the answers are confidently wrong. The f
 isn't a better model — it's **context**: what your terms mean, which table is
 canonical, what the standard filters are, and where the landmines are.
 
-`nodal-context` is two things:
+`nodal-context` is three things:
 
 1. **A context-layer format + an interview skill** that builds that context *with*
    your analyst, one domain at a time — and writes it to a git repo your team
-   reviews by PR. This part is **free and open source (Apache-2.0)**. Take it,
-   fork it, never talk to us.
+   reviews by PR. Two depths, one flow: the full multi-stage interview, or a
+   **~30-minute fast pass** that confirms a domain's five highest-leverage
+   answers live and drafts the rest for later. This part is **free and open
+   source (Apache-2.0)**. Take it, fork it, never talk to us.
 
 2. **An eval seam** that turns the same interview into a measurement: how accurate
    is your agent *with* the context vs *without* it, and how far is it still from
    *ground truth*. The format for evals is open; the **hosted measurement,
    continuous re-evaluation, drift detection, and observability are the
    commercial product** (Nodal).
+
+3. **An MCP layer for distribution and maintenance** that puts the same context in
+   front of the whole team and keeps it correct as the warehouse changes: a hosted
+   MCP endpoint serving governed answers to any agent — **escalating to the
+   analyst** when it isn't confident — plus dbt-repo sync that re-drafts affected
+   definitions when upstream models change. Self-hosting the raw files is always
+   free; the **hosted endpoint, escalation routing, usage logging, and dbt sync
+   are the commercial product** (Nodal). See "Sharing it across your team" below.
 
 ## Why interview-built, not auto-built
 
@@ -42,7 +52,7 @@ source of truth:
   moved **less than a point** — the information was present, the agent saw it, and
   it still didn't resolve the question to the right entity.
 - [Reference work from Anthropic](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude)
-- Other data agents find similar conclusions: [Meta](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude) and [Ramp](https://engineering.ramp.com/post/meet-ramp-research)
+- Other data agents find similar conclusions, e.g. [Ramp](https://engineering.ramp.com/post/meet-ramp-research)
 
 Their conclusion: **generate the documentation with the model, but have a human own
 the definition.** That's exactly what the interview does. We *do* auto-extract
@@ -53,7 +63,27 @@ The bonus: every disambiguation the analyst makes in the interview ("active clie
 means X, not Y") is simultaneously a context entry **and** a labeled eval pair. The
 act of building context is the act of harvesting ground truth.
 
-## The format is readible and open-source (markdown + YAML )
+## Two depths: the full interview, or a 30-minute fast pass
+
+Skill-based extractors (e.g. Anthropic's `data-context-extractor` for Claude
+desktop) set a fair market expectation: an analyst should get useful context in
+about half an hour. The interview meets that budget without giving up governance.
+Say **"fast pass"** (or "I only have 30 minutes") and the same interview runs on a
+five-question budget for one domain — the grain of the canonical table, the one
+ambiguous entity, the top 2–3 metrics, the standard hygiene filter, and the one
+silent failure — verifies a few answers live against your warehouse, and leaves
+everything unasked as reviewable `status: draft` stubs.
+
+The difference from a quick skill builder is what you keep: every confirmed answer
+is still **human-owned**, still emits an **eval seed**, and the domain is
+**depth-stamped** ("five questions deep, N drafts open") so speed never
+masquerades as coverage. The full interview is the same flow without the budget —
+and the fast pass's punch list (what the agent still gets wrong with context on)
+tells you exactly which domains deserve it. Already built a data skill with a
+quick extractor? The harness grades it as-is (`--adapter skill`), and the fast
+pass is the cheapest way to mint the seeds that grade it.
+
+## The format is readable and open-source (Markdown + YAML)
 
 This repo defines a context format (ACF — see [`SPEC.md`](./SPEC.md)). But you are
 **not required to use it** to use the measurement seam. The harness
@@ -100,6 +130,8 @@ cd nodal-context
 
 # 2. Open your agent here (Claude Code / Codex / Cursor) and say:
 #    "Build my analytics context."  → the context-interview skill takes over.
+#    Short on time? Say "fast pass" — five core questions, a live check,
+#    the rest drafted for a later session.
 #    (The skill is already discoverable in-repo via .claude/skills/.)
 #    It writes a reviewable ../analytics-context/ repo as a SIBLING of this clone
 #    (git-initialized; the tool repo stays read-only) and, at the end, offers to
@@ -133,9 +165,10 @@ nodal-context/
 
 ## Sharing it across your team (MCP)
 
-A context repo is just Markdown + YAML, so a single analyst can point their own agent
-at the files and get governed answers **for free** — clone it, read it locally, done.
-That works great for one person on one machine.
+This is the third product above: **distribution and maintenance** of the context you
+just built. A context repo is just Markdown + YAML, so a single analyst can point
+their own agent at the files and get governed answers **for free** — clone it, read
+it locally, done. That works great for one person on one machine.
 
 To put the same context in front of the *whole team* — so a non-technical business
 user asks a question in their own agent and gets the answer the analyst would give —
