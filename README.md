@@ -52,7 +52,7 @@ source of truth:
   moved **less than a point** — the information was present, the agent saw it, and
   it still didn't resolve the question to the right entity.
 - [Reference work from Anthropic](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude)
-- Other data agents find similar conclusions, e.g. [Ramp](https://engineering.ramp.com/post/meet-ramp-research)
+- Other data agents find similar conclusions: [Meta](https://medium.com/@AnalyticsAtMeta/inside-metas-home-grown-ai-analytics-agent-4ea6779acfb3) and [Ramp](https://engineering.ramp.com/post/meet-ramp-research)
 
 Their conclusion: **generate the documentation with the model, but have a human own
 the definition.** That's exactly what the interview does. We *do* auto-extract
