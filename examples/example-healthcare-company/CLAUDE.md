@@ -11,7 +11,8 @@ schema alone.
 2. Identify the domain the question belongs to; read
    `domains/<domain>/reference.md` **first** — it routes the query.
 3. Honor every `IF … DO NOT …` routing trigger and `caveats` you find. These encode
-   the silent-failure modes a senior analyst would warn about.
+   the silent-failure modes a senior analyst would warn about. When a "Common query
+   patterns" block matches the question, start your SQL from its form.
 4. Before computing a metric, read `domains/<domain>/metrics.yaml` and honor its
    `parameters` and `caveats`. For ambiguous terms, check `entities/*.yaml`
    (cross-domain) then `domains/<domain>/entities.yaml` (domain-specific).

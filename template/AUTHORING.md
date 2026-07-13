@@ -10,8 +10,13 @@ Markdown and YAML.
 - **No schema duplication.** Column types live in dbt/Snowflake.
 - **No invented definitions.** Leave `_To be confirmed by [owner]._` and
   `status: draft` rather than guessing. Wrong context is worse than missing context.
-- **No executable SQL.** Describe patterns in `reference.md`; don't paste runnable
-  queries.
+- **SQL only as query patterns.** `reference.md` "Common query patterns" may carry
+  a few fenced `sql` blocks, only where the exact query form is the hard-won
+  knowledge — pattern, not paste: real model/column names, `<placeholders>` for
+  parameter values, each led by a `Without this: …` line naming the failure it
+  prevents, analyst-confirmed, never mined from query logs. Complete runnable
+  queries stay out of context; blessed SQL lives in the gitignored
+  `evals/verified/` sidecar.
 
 ## Conventions
 - YAML entities/metrics carry `status: draft|confirmed` and a `lineage:` pointer.

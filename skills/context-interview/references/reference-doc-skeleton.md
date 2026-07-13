@@ -11,7 +11,7 @@ grain* in the next three seconds. Keep them separate.
 
 ## Template — fill the brackets, delete what doesn't apply
 
-```markdown
+````markdown
 # [Domain] Reference
 
 ## Quick Reference
@@ -42,12 +42,19 @@ grain* in the next three seconds. Keep them separate.
   one-liner the agent can scan]
 
 ## Common query patterns
-- [Default cuts and worked patterns where the exact query form is the hard part —
-  described, not pasted as runnable SQL]
+- [Default cuts described as prose one-liners]
+
+### [pattern name]   <!-- a fenced sql block ONLY where the exact form is the hard part -->
+Without this: [the plausible-but-wrong result the obvious query produces]
+```sql
+-- pattern, not paste: real model/column names, <placeholders> for parameter
+-- values — never a complete runnable report
+SELECT ...
+```
 
 ## Cross-references
 - [Neighboring domain reference docs that own adjacent questions]
-```
+````
 
 ## Rules
 
@@ -55,8 +62,15 @@ grain* in the next three seconds. Keep them separate.
   agent searched a thousand fields" into "the agent went straight to the right
   table." Write them as `IF … THEN/DO NOT …`.
 - **Grain at the top, always.** State what one row is before anything else.
-- **No statistics, no runnable SQL.** Describe patterns; the executable form lives
-  in the warehouse / semantic layer, not here.
+- **No statistics; SQL only as patterns.** Numbers go stale. A fenced `sql` block
+  is allowed ONLY under "Common query patterns", and only where the exact query
+  form is the hard-won knowledge — pattern, not paste: real model/column names,
+  `<placeholders>` for parameter values, each led by a `Without this:` line naming
+  the failure it prevents, a handful per domain, analyst-confirmed (drafts marked
+  `<!-- status: draft -->`), and **never mined from query logs** — a pattern comes
+  from the interview or a Stage-5 verified match. Full rule: `SPEC.md` "Query
+  patterns". Runnable, blessed SQL stays in the gitignored `evals/verified/`
+  sidecar.
 - **Name the aliases.** If a concept is `client_status` in one table and
   `weekly_status` in another, say so — alias confusion is a silent failure.
 - **Every gotcha should also be an eval seed.** If you wrote "exclude BHPN" here,

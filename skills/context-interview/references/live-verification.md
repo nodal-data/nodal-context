@@ -90,6 +90,14 @@ date?"* Record the value and the `as_of` date. (Let the analyst set the toleranc
      the answer key (value + date); the SQL (local) stays out of git because it goes
      stale fast and must not be cloneable from a published context repo.
    This is the strongest seed you can produce: number + date + reusable (local) SQL.
+3. **Offer to promote the form into context.** If the blessed query's exact form is
+   itself the hard-won knowledge (the dedup, join path, or mandatory clause the
+   off-agent missed), offer: *"Want me to save this shape as a query pattern in the
+   domain's reference.md?"* On yes, distill it — keep model/column names, replace
+   literal values with `<placeholders>`, lead with a one-line `Without this: …`
+   naming the failure it prevents — and add it under "Common query patterns"
+   (rules in `reference-doc-skeleton.md`). The runnable original stays only in the
+   sidecar; what's committed is the form, not the report.
 
 ## 6. On a mismatch (on-answer != dashboard)
 

@@ -27,7 +27,15 @@
 - [plausible-but-wrong modes a senior analyst would warn about]
 
 ## Common query patterns
-- [default cuts; worked patterns described, not pasted as SQL]
+- [default cuts described in prose]
+
+### [pattern name]
+Without this: [the plausible-but-wrong result this pattern prevents]
+```sql
+-- pattern, not paste: real model/column names, <placeholders> for parameter
+-- values — never a complete runnable report. Rules: AUTHORING.md.
+SELECT ...
+```
 
 ## Cross-references
 - [neighboring domain reference docs]

@@ -178,6 +178,10 @@ Follow-ups:
 3. "Are there two similarly-named tables that report the same metric at different
    grains? Which is canonical?" → `reference.md` routing trigger.
 4. "What's a question stakeholders ask that the data *cannot* actually answer?"
+5. "Is there a query whose exact *form* is the hard part — a dedup, join path, or
+   clause that even careful analysts get wrong?" → a confirmed **Common query
+   pattern** in `reference.md` (pattern-not-paste; rules in
+   `reference-doc-skeleton.md`), plus a `sql_shape` seed encoding the same form.
 
 For each, write the caveat as a routing trigger the agent will read, and an eval
 seed whose `expected` encodes the *correct* handling (right filter, right table, or
