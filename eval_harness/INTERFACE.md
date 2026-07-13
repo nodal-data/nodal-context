@@ -12,12 +12,14 @@ measurement — not the context format — as the thing that matters.
 
 ## Inputs (any one or more)
 
+All four adapters are implemented in `adapters/` (`--adapter acf|ktx|dbt|raw`).
+
 | Adapter | Reads | Notes |
 |---|---|---|
 | `acf` | this repo's ACF (`SPEC.md`) | richest: carries seeds + lineage + status |
-| `ktx` | Kaelio `semantic-layer/*.yaml` + `wiki/*.md` | bring an existing ktx project |
-| `dbt` | `manifest.json` + `schema.yml` docs | docs/descriptions as context |
-| `raw` | a directory of markdown | last resort; no structure assumed |
+| `ktx` | Kaelio `semantic-layer/<connection>/*.yaml` + `wiki/**/*.md` | bring an existing ktx project; one domain per connection |
+| `dbt` | `manifest.json` (or bare `models/**/*.yml` docs) | model/column docs, unique-test grain evidence, semantic models + metrics (manifest v12); one domain per top-level `models/` folder |
+| `raw` | a directory of markdown | last resort; one domain per subdirectory |
 
 Each adapter maps its source into the **Normalized Context Representation (NCR)** —
 a single intermediate the rest of the harness operates on. That's why the format
@@ -34,9 +36,12 @@ seeds:       [ {question, intent, expected, provenance, status} ]   # ACF only; 
 ```
 
 Non-ACF inputs produce an NCR with **no seeds** — which is the point: without the
-interview you have context but no ground truth, so the harness can still measure
-on/off but needs a seed source for on-vs-perfect. (This is a concrete reason the
-interview is worth running even if you already have a ktx or dbt context.)
+interview you have context but no ground truth. The runner's `--seeds <dir>` flag
+attaches an external directory of `*.seed.yaml` files (the shape in
+`schemas/evalseed.schema.json`; each seed's `domain` must name one of the adapter's
+context domains) so any adapter can be graded. (This is a concrete reason the
+interview is worth running even if you already have a ktx or dbt context — it's what
+mints the seeds.)
 
 ## The three measurements
 
@@ -50,6 +55,22 @@ Grade by `expected.kind`:
 - `semantic_entity` → did it resolve to the right governed entity?
 - `sql_shape` → does the query satisfy `must_include` / `must_exclude`?
 - `value_at_snapshot` → does the number match at the pinned date?
+
+## Modes: how context reaches the subject
+
+The *subject* — the thing that turns a seed question into an answer — is pluggable;
+seeds, grading, and the report are mode-independent.
+
+- **`inject` (implemented, the default):** one API call per condition; context-on
+  pastes the NCR context text into the prompt, context-off omits it. No MCP, no
+  warehouse. This isolates **context quality**: the payload is a fixed string, so the
+  delta has no retrieval variance. Blind spot: an agent failing to *find* good context
+  in production is invisible here.
+- **`mcp` (planned):** run each seed through a headless agent session under **named
+  MCP configurations** (e.g. `off` = warehouse only, `on` = warehouse + context MCP,
+  plus arbitrary combinations), measuring **context + retrieval + tool use** — the
+  production state. Because the agent executes against a live warehouse, this mode
+  also unlocks grading `value_at_snapshot` seeds, which `inject` must skip.
 
 ## The delta report (the aha)
 
@@ -86,6 +107,16 @@ changes.
   drift detection wired to `context.config.yaml`, correction harvesting back into
   seeds, and the accuracy time-series / observability that catches silent
   regressions. In short: keeping the delta green as the warehouse changes daily.
+
+## Versioning & stability
+
+This contract is **v0 and pre-1.0 unstable**: the NCR shape, the seed format, and the
+delta-report shape may change between minor releases without a deprecation cycle. The
+version is stamped in code as `NCR_VERSION` (`eval_harness/ncr.py`); seed files are the
+shape validated by `schemas/evalseed.schema.json`. When the contract reaches 1.0, NCR
+and seed changes will be versioned and backward-compatible within a major version. If
+you build a third-party adapter or tooling against the NCR today, pin the repo revision
+you built against.
 
 ## Why a human-anchored "perfect" is non-negotiable
 

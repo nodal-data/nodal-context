@@ -11,13 +11,18 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import adapters, client, report
+from . import adapters, client, report, seeds as seeds_mod
 from .grader import SKIPPED, grade
 
 
 def _eval_domain(ncr, domain, status, model):
-    """-> {domain, drafts, seeds:[{question, kind, off, on, on_reason}]}"""
+    """-> {domain, drafts, context_truncated, seeds:[{question, kind, off, on, on_reason}]}"""
     context = ncr.context_for(domain)
+    truncated = len(context) > client.MAX_CONTEXT_CHARS
+    if truncated:
+        print(f"eval_harness: WARNING: domain '{domain}' context is {len(context)} chars; "
+              f"only the first {client.MAX_CONTEXT_CHARS} are injected — the delta may "
+              "understate this context.", file=sys.stderr)
     judge_fn = lambda sql, expected: client.judge(sql, expected, model)
     rows = []
     for seed in ncr.seeds_for(domain, status):
@@ -32,16 +37,24 @@ def _eval_domain(ncr, domain, status, model):
         on = grade(seed.expected, on_sql, judge_fn)
         rows.append({"question": seed.question, "kind": seed.kind,
                      "off": off.status, "on": on.status, "on_reason": on.reason})
-    return {"domain": domain, "drafts": ncr.draft_count(domain), "seeds": rows}
+    return {"domain": domain, "drafts": ncr.draft_count(domain),
+            "context_truncated": truncated, "seeds": rows}
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--adapter", default="acf", help="context adapter (default: acf)")
+    ap.add_argument("--mode", default="inject", choices=["inject"],
+                    help="how context reaches the subject: 'inject' pastes the NCR "
+                    "context into a single-call prompt (an 'mcp' mode — agent + MCP "
+                    "configurations, measuring context+retrieval — is planned; see "
+                    "INTERFACE.md 'Modes')")
     ap.add_argument("--domains", default="", help="comma-separated domains (empty = all)")
     ap.add_argument("--report", default="pr-comment", choices=["pr-comment"])
     ap.add_argument("--root", default=".", help="context repo root (default: .)")
+    ap.add_argument("--seeds", help="directory of *.seed.yaml ground truth to attach — "
+                    "required for adapters whose source carries no seeds (dbt/ktx/raw)")
     ap.add_argument("--status", default="confirmed",
                     help="seed status to score (default: confirmed; draft excluded)")
     ap.add_argument("--model", default=client.MODEL, help="Anthropic model id")
@@ -52,10 +65,24 @@ def main(argv=None):
 
     builder = adapters.get_builder(args.adapter)
     ncr = builder(args.root, requested or None)
+    if args.seeds:
+        ncr.seeds.extend(seeds_mod.load_seeds(args.seeds))
     domains = requested or ncr.domains()
     if not domains:
         print("eval_harness: no domains to evaluate")
         return 0
+
+    if not any(ncr.seeds_for(d, args.status) for d in domains):
+        print("eval_harness: no seeds to grade — this context source carries no ground "
+              "truth; point --seeds at a directory of *.seed.yaml files "
+              f"(context domains found: {', '.join(ncr.domains()) or 'none'}).")
+        return 0
+    for d in domains:
+        if ncr.seeds_for(d, args.status) and not ncr.context_for(d):
+            print(f"eval_harness: WARNING: domain '{d}' has seeds but no context from "
+                  f"adapter '{args.adapter}' (context domains: "
+                  f"{', '.join(ncr.context_by_domain) or 'none'}); context-on will "
+                  "equal context-off.", file=sys.stderr)
 
     if not client.available():
         print("eval_harness: ANTHROPIC_API_KEY not set; skipping eval (no delta computed).",

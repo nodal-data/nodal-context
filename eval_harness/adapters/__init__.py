@@ -1,22 +1,21 @@
 """Adapter registry: source format -> NCR builder.
 
-ACF is the first adapter; the contract (eval_harness/INTERFACE.md) names more
-(`raw`, `dbt`, `ktx`, …). They're future drop-ins on the same NCR — the runner,
-grader, and reporter never touch a source format directly.
+All four contract adapters (eval_harness/INTERFACE.md) are built. The runner, grader,
+and reporter never touch a source format directly — only the NCR. Note the seed
+asymmetry: only `acf` yields seeds; the others produce context-only NCRs and rely on
+the runner's `--seeds` flag for ground truth.
 """
-from . import acf
+from . import acf, dbt, ktx, raw
 
 _BUILDERS = {
     "acf": acf.build_ncr,
+    "dbt": dbt.build_ncr,
+    "ktx": ktx.build_ncr,
+    "raw": raw.build_ncr,
 }
-_PLANNED = ["raw", "dbt", "ktx"]   # named in INTERFACE.md, not yet built
 
 
 def get_builder(name):
     if name in _BUILDERS:
         return _BUILDERS[name]
-    if name in _PLANNED:
-        raise NotImplementedError(
-            f"adapter '{name}' is defined in the contract but not yet implemented; "
-            f"available now: {', '.join(sorted(_BUILDERS))}")
     raise ValueError(f"unknown adapter '{name}'; available: {', '.join(sorted(_BUILDERS))}")
