@@ -13,9 +13,12 @@ description: >
   skill over free-form documentation: it produces a validated repo AND harvests
   ground-truth eval seeds as a byproduct. It also runs a live in-session
   verification pass (Stage 5) to confirm answers against the analyst's dashboards
-  and show the context working immediately. Do NOT use it to run the
-  formal/continuous eval harness (delta at scale, drift detection, hosted "perfect"
-  baseline) or to write transformation/dbt code.
+  and show the context working immediately. Supports two depths: the full
+  multi-stage interview, or a ~30-minute FAST PASS ("I only have 30 minutes",
+  "quick version", "just the essentials") that confirms one domain's five
+  highest-leverage answers live and drafts the rest for later. Do NOT use it to
+  run the formal/continuous eval harness (delta at scale, drift detection, hosted
+  "perfect" baseline) or to write transformation/dbt code.
 ---
 
 # Context Interview
@@ -75,6 +78,22 @@ reference file — read it when you enter the stage. Don't load all of them up f
 At every stage from 1 onward, emit eval seeds per
 `references/eval-seed-harvesting.md`. Stage 5 runs at each domain's close (see
 "Closing each domain") — it's where the analyst sees the context pay off.
+
+## Two depths: full interview or fast pass
+
+The stages above are the full interview. There is one other traversal — the
+**fast pass** (`references/fast-pass.md`): the same state machine at a hard
+~30-minute, five-question budget for ONE domain, ending with a small live check
+and everything unasked left as `status: draft` stubs. Offer the choice right
+after Stage 0 setup: *"Full interview for this domain, or a 30-minute fast pass —
+five core questions, a live check, and the rest drafted for later?"* Enter it
+whenever the analyst signals time pressure ("I've got half an hour", "quick
+version") — including mid-session: a full interview running out of time converts
+by jumping to the fast-pass close-out ritual. A fast pass is a stopping point,
+not a different product: its close-out depth-stamps the domain ("five questions
+deep, N drafts open") so speed never masquerades as coverage, and resuming later
+is the normal Stage-0 resume from the stubs. Read `references/fast-pass.md` when
+you enter it.
 
 ### Stage 0 — Setup (do this first, silently where possible)
 
