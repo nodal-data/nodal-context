@@ -7,6 +7,10 @@ for the context-on condition.
 """
 from dataclasses import dataclass, field
 
+# Contract version for the NCR shape + seed format (see INTERFACE.md "Versioning").
+# Pre-1.0: the shape may change between minor releases without a deprecation cycle.
+NCR_VERSION = 0
+
 
 @dataclass
 class Seed:

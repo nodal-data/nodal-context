@@ -8,7 +8,8 @@ the example repos don't all carry metrics/entities.
 """
 from pathlib import Path
 
-from ..ncr import NCR, Seed
+from ..ncr import NCR
+from ..seeds import load_seeds
 
 
 def _read(p: Path) -> str:
@@ -16,28 +17,6 @@ def _read(p: Path) -> str:
         return p.read_text().strip()
     except OSError:
         return ""
-
-
-def _load_seeds(root: Path):
-    import yaml
-    seeds = []
-    for f in sorted(root.rglob("*.seed.yaml")):
-        try:
-            doc = yaml.safe_load(f.read_text()) or {}
-        except yaml.YAMLError:
-            continue
-        if not isinstance(doc, dict) or not doc.get("question"):
-            continue
-        seeds.append(Seed(
-            question=doc.get("question", ""),
-            domain=doc.get("domain", ""),
-            intent=doc.get("intent", ""),
-            expected=doc.get("expected", {}) or {},
-            provenance=doc.get("provenance", ""),
-            status=doc.get("status", ""),
-            path=str(f.relative_to(root)) if f.is_relative_to(root) else str(f),
-        ))
-    return seeds
 
 
 def _company_text(root: Path) -> str:
@@ -81,4 +60,4 @@ def build_ncr(root, domains=None) -> NCR:
         ]
         context_by_domain[name] = "\n\n".join(b for b in blocks if b).strip()
 
-    return NCR(seeds=_load_seeds(root), context_by_domain=context_by_domain)
+    return NCR(seeds=load_seeds(root), context_by_domain=context_by_domain)

@@ -17,7 +17,8 @@ def available() -> bool:
     return bool(os.environ.get("ANTHROPIC_API_KEY"))
 
 
-def _structured_call(system, user, schema, model):
+def _structured_call(system, content, schema, model):
+    """content: a plain string, or a list of content blocks (for cache_control)."""
     import anthropic
     client = anthropic.Anthropic()
     resp = client.messages.create(
@@ -26,7 +27,7 @@ def _structured_call(system, user, schema, model):
         system=system,
         thinking={"type": "adaptive"},
         output_config={"format": {"type": "json_schema", "schema": schema}},
-        messages=[{"role": "user", "content": user}],
+        messages=[{"role": "user", "content": content}],
     )
     text = next(b.text for b in resp.content if b.type == "text")
     return json.loads(text)
@@ -53,15 +54,24 @@ _GEN_SYSTEM = (
 
 
 def generate(question, context_text=None, model=MODEL) -> dict:
+    ask = f"Question: {question}\n\nReturn the SQL you would run and your assumptions."
     if context_text:
+        # The context block comes FIRST and carries cache_control: prompt caching is a
+        # prefix match, so keeping (system + context) byte-identical across every seed
+        # in a domain lets seeds 2..N read the cache the first seed wrote. Contexts
+        # below the model's minimum cacheable prefix silently don't cache — harmless.
         ctx = context_text[:MAX_CONTEXT_CHARS]
-        user = (f"Question: {question}\n\nGoverned analytics context for this domain — "
-                f"follow it exactly:\n\n{ctx}\n\nReturn the SQL you would run and your "
-                f"assumptions.")
+        content = [
+            {"type": "text",
+             "text": ("Governed analytics context for this domain — follow its "
+                      "definitions, routing (IF/DO NOT) triggers, caveats, and entity "
+                      f"disambiguations exactly:\n\n{ctx}"),
+             "cache_control": {"type": "ephemeral"}},
+            {"type": "text", "text": ask},
+        ]
     else:
-        user = (f"Question: {question}\n\nReturn the SQL you would run and your "
-                f"assumptions.")
-    return _structured_call(_GEN_SYSTEM, user, _GEN_SCHEMA, model)
+        content = ask
+    return _structured_call(_GEN_SYSTEM, content, _GEN_SCHEMA, model)
 
 
 # ----- judge ------------------------------------------------------------------

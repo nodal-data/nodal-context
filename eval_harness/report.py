@@ -29,6 +29,9 @@ def render(domain_results) -> str:
             f"### Domain: {dr['domain']}   "
             f"(seeds: {len(seeds)} confirmed, {dr.get('drafts', 0)} draft excluded, "
             f"{skipped} value_at_snapshot skipped)")
+        if dr.get("context_truncated"):
+            out.append("- ⚠️ context exceeded the injection cap and was **truncated** — "
+                       "the delta may understate this context")
         if not gradable:
             out.append("- no gradable seeds (all skipped — value_at_snapshot needs a "
                        "warehouse, the paid live-execution path)")
