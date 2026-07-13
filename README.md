@@ -10,7 +10,7 @@
 
 ## What this is
 
-Pointing Claude, Codex (or any agent) at a warehouse and letting it write SQL feels like
+Pointing an AI Agent (Claude, Codex, Gemini, or any other) at a warehouse and letting it write SQL feels like
 self-service analytics until you notice the answers are confidently wrong. The fix
 isn't a better model — it's **context**: what your terms mean, which table is
 canonical, what the standard filters are, and where the landmines are.
@@ -28,17 +28,17 @@ canonical, what the standard filters are, and where the landmines are.
 2. **Share it — the hosted MCP endpoint.**
    *Self-serve, low-cost: subscribe and launch in minutes.*
    Puts the same context in front of the whole team: any agent gets governed
-   answers from the repo, and a question the context can't answer confidently
-   **escalates to the analyst**. Merge a PR and every consumer is current — no
+   answers from the repo. Merge a PR and every consumer is current — no
    redistributing files. Self-hosting a read-only server on the raw files is
    always free; the hosted endpoint adds auth, escalation routing, and usage
-   logging. See "Sharing it across your team" below.
+   logging. See "Sharing it across your team" below. We can also build an MCP
+   server in your cloud environment if your prefer.
 
-3. **Keep it correct — the eval + maintenance system.**
+4. **Keep it correct — the eval + maintenance system.**
    *Enterprise: [contact us](mailto:info@nodaldata.io).*
    The same interview mints ground-truth eval seeds, so you can measure your
    agent *with* context vs *without* vs *ground truth*. The seed format and a
-   one-shot local runner are open; the hosted system adds continuous
+   one-shot local runner are open; the hosted system adds dynamic evals, continuous
    re-evaluation, drift detection, dbt-repo sync (an upstream model change
    re-drafts the affected definitions for the analyst to confirm), and
    observability into who's asking what.
@@ -133,9 +133,9 @@ from scratch, and the generated `lineage:` pointers reference actual dbt models.
 git clone https://github.com/nodal-data/nodal-context.git
 cd nodal-context
 
-# 2. Open your agent here (Claude Code / Codex / Cursor) and say:
-#    "Build my analytics context."  → the context-interview skill takes over.
-#    Short on time? Say "fast pass" — five core questions, a live check,
+# 2. Open your client agent here (Claude Code / Codex / Cursor) and say:
+#    **"Build my analytics context."**  → the context-interview skill takes over.
+#    Short on time? Say **"fast pass"** — five core questions, a live check,
 #    the rest drafted for a later session.
 #    (The skill is already discoverable in-repo via .claude/skills/.)
 #    It writes a reviewable ../analytics-context/ repo as a SIBLING of this clone
@@ -201,7 +201,7 @@ product — a convenience for team-scale distribution, not a lock on the format:
 the files stay open and self-hosting is always free. The generated repo ships a
 `SHARING.md` with the tool surface and the 3-step hosted setup.
 
-**Claude-desktop shop instead?** Compile the repo into a distributable skill snapshot:
+**Claude-desktop and skill.md shop instead?** Compile the repo into a distributable skill snapshot:
 
 ```bash
 python3 scripts/compile_skill.py path/to/analytics-context --zip
@@ -241,7 +241,7 @@ the **enterprise tier** (product #3), deployable in your cloud/VPC or ours —
 | One-shot eval delta (on/off, run locally) | the harness, self-run | Free |
 | Compiled skill snapshot for Claude desktop | `scripts/compile_skill.py` | Free |
 | Self-hosted agent against the raw context files | your agent | Free |
-| **Team-shared MCP endpoint (governed answers + analyst escalation, auth, usage logging)** | Nodal (hosted) | **Paid — self-serve** |
+| **Team-shared MCP endpoint (governed answers, auth, usage logging)** | Nodal (hosted) | **Paid — self-serve** |
 | **dbt-repo sync (dbt changes re-drafted into context, analyst-confirmed)** | Nodal (hosted) | **Paid — enterprise** |
 | **Trustworthy ground truth, continuous re-eval, drift detection, observability, correction harvesting** | Nodal (hosted) | **Paid — enterprise** |
 
