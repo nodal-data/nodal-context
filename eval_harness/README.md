@@ -9,10 +9,14 @@ actually makes an agent more accurate. For each eval seed it answers the questio
 # ACF context repo (seeds come with it):
 python -m eval_harness.run --adapter acf --domains "<domain>" --report pr-comment
 
-# Any other context source (ktx / dbt / raw) + your own seeds:
+# Any other context source (ktx / dbt / raw / skill) + your own seeds:
 python -m eval_harness.run --adapter dbt --root path/to/dbt_project --seeds path/to/seeds
 python -m eval_harness.run --adapter ktx --root path/to/ktx_project --seeds path/to/seeds
 python -m eval_harness.run --adapter raw --root path/to/markdown_dir --seeds path/to/seeds
+
+# Already built a data skill with Claude (e.g. data-context-extractor)? Measure it —
+# folder or the packaged zip both work:
+python -m eval_harness.run --adapter skill --root path/to/acme-data-analyst.zip --seeds path/to/seeds
 ```
 
 Only ACF carries ground truth; the other adapters produce context-only NCRs, so point
@@ -36,7 +40,7 @@ continuous re-evaluation, drift detection, and observability are the commercial 
   implements (adapters → Normalized Context Representation → on/off/perfect delta).
   Read it first; it's the source of truth, not this README.
 - `run.py` — CLI entry / orchestration.
-- `adapters/` — source format → NCR (all four contract adapters: `acf`, `ktx`, `dbt`, `raw`).
+- `adapters/` — source format → NCR (all five contract adapters: `acf`, `ktx`, `dbt`, `raw`, `skill`).
 - `client.py` — Anthropic generate (answer) + judge (grade).
 - `grader.py` — grade by `expected.kind`; `report.py` — the delta report; `ncr.py` — the
   Normalized Context Representation (versioned: `NCR_VERSION`, pre-1.0 — see
