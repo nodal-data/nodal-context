@@ -9,7 +9,7 @@ ACF deliberately separates **three audiences**:
 | File kind | Written for | Optimized for |
 |---|---|---|
 | `context.md`, `overview.md`, `terminology.md` | humans | onboarding, narrative, "why" |
-| `reference.md` | the agent at query time | retrieval: routing triggers, gotchas, grain |
+| `reference.md` | the agent at query time | retrieval: routing triggers, gotchas, grain, query patterns |
 | `*.yaml` (entities, metrics, domain) | both + CI | machine-validatable structured facts |
 
 This split is the main upgrade over a single narrative doc. The `reference.md` is
@@ -34,6 +34,36 @@ wrong-answer modes, with no prose it has to wade through.
    measured against.
 5. **Everything is CI-checkable.** Each YAML kind has a JSON Schema in `schemas/`.
    A PR that breaks the schema fails review.
+
+## Query patterns — the one narrow allowance for SQL in context
+
+Context files carry business logic, not a query library — but a domain's
+`reference.md` MAY include a small `## Common query patterns` section with fenced
+`sql` blocks, **only where the exact query form is the hard-won knowledge**: the
+join path, dedup, or mandatory clause that makes the obvious query silently wrong.
+(Distilled, curated patterns are the useful residue of query history; raw query
+retrieval, measured head-to-head, moves accuracy by less than a point. The pattern
+is curation, not history.)
+
+The line, precisely:
+
+- **Pattern, not paste.** Real model/column names are welcome — they are already
+  context. Literal parameter values are not: use `<placeholders>`. A pattern
+  encodes a *form*; it is never a complete runnable report.
+- **Each pattern names the failure it prevents** in one leading `Without this:`
+  line. If no wrong-answer mode can be named, it is an example, not a pattern —
+  leave it out.
+- **Human-confirmed, like everything else** (design rule 1). Unconfirmed patterns
+  carry `<!-- status: draft -->` and are excluded like any other draft.
+- **Bounded.** A handful per domain — this is not a query library. Runnable,
+  blessed SQL lives only in the gitignored `evals/verified/` sidecar (below),
+  never committed.
+- **Distilled, never mined.** Never copied from query logs or history; a pattern
+  earns its place through the interview or a Stage-5 verified match.
+- **Drift-covered.** A pattern references only models listed in the domain's
+  `lineage:`, so upstream drift re-flags it for re-confirmation with the rest of
+  the domain. A one-line dialect note (e.g. divide-by-zero handling) may
+  accompany a pattern when the trap is dialect-specific.
 
 ## Directory contract
 
@@ -142,9 +172,9 @@ the optional `verified_query_file` (below). See
 [harvesting reference](./skills/context-interview/references/eval-seed-harvesting.md).
 
 **Seeds are the one place a number is allowed — but the SQL is never committed.**
-Design rule 2 ("no statistics in context") and the template's "no executable SQL"
-govern *context files* — the things the agent reads at query time (`reference.md`,
-`metrics.yaml`). A seed is the *ground-truth* layer, not context, so a
+Design rule 2 ("no statistics in context") and the pattern-not-paste rule ("Query
+patterns", above) govern *context files* — the things the agent reads at query time
+(`reference.md`, `metrics.yaml`). A seed is the *ground-truth* layer, not context, so a
 `value_at_snapshot` number is allowed in the seed YAML, pinned to an `as_of` date so
 it can't masquerade as live truth. The blessed SQL, however, is **deliberately kept
 out of git**: SQL goes stale fast and must not be cloneable from a published context

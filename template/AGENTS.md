@@ -22,7 +22,8 @@ To serve this context to a whole team over MCP, see `SHARING.md`.
 Agents without a skill system (Codex, Cursor) should follow these steps directly:
 1. Read `company/terminology.md`.
 2. Identify the domain; read `domains/<domain>/reference.md` **first**.
-3. Honor every `IF … DO NOT …` routing trigger and `caveats`.
+3. Honor every `IF … DO NOT …` routing trigger and `caveats`; when a "Common
+   query patterns" block matches the question, start your SQL from its form.
 4. Read `domains/<domain>/metrics.yaml` parameters before computing a metric;
    resolve ambiguous terms via the entity files in step 3 of Navigation.
 5. Issue **read-only** SQL (SELECT only — never DDL/DML) via the warehouse MCP only.
@@ -33,9 +34,11 @@ Agents without a skill system (Codex, Cursor) should follow these steps directly
 Adding or correcting context (not answering a question) does **not** require the
 Nodal tool repo — any agent can edit this repo directly. It contains only Markdown
 and YAML. Full rules are in `AUTHORING.md`; the load-bearing ones:
-1. **No statistics, no schema, no executable SQL, no invented definitions.** Numbers
-   and column types live in the warehouse/dbt; leave `_To be confirmed by [owner]._`
-   and `status: draft` rather than guessing.
+1. **No statistics, no schema, no invented definitions.** Numbers and column types
+   live in the warehouse/dbt; leave `_To be confirmed by [owner]._` and
+   `status: draft` rather than guessing. SQL appears only as confirmed
+   pattern-not-paste blocks under `reference.md` "Common query patterns" (rules
+   in `AUTHORING.md`).
 2. YAML entities/metrics carry `status: draft|confirmed` and a `lineage:` pointer.
    Only a human owner flips `draft → confirmed`; add `# REVIEW: [question]` where
    verification is needed.
@@ -54,4 +57,5 @@ live, and harvests seeds automatically. See `AUTHORING.md` for that flow.
 - Column types / schema (use the warehouse `information_schema`).
 - dbt model definitions / lineage (use the dbt project).
 - Statistics, row counts, frequencies (use the warehouse).
-- Executable SQL.
+- Runnable SQL to copy-paste. (`reference.md` query patterns encode *form*, with
+  `<placeholders>`; the blessed runnable SQL lives in gitignored `evals/verified/`.)

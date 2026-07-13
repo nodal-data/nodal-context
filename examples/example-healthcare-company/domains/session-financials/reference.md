@@ -29,5 +29,25 @@
 - Blank `payer_name` is meaningful, not missing-at-random.
 - Collection rates on recent sessions look artificially low.
 
+## Common query patterns
+
+### Session counts at the right grain
+Without this: `COUNT(*)` overcounts sessions — the grain is note × authorized_service.
+```sql
+SELECT COUNT(DISTINCT note_id) AS sessions
+FROM FCT_SESSION_FINANCIALS
+WHERE <standard hygiene filters>
+```
+
+### Collection rate, adjudication-safe
+Without this: sessions under 45 days old haven't adjudicated, so the rate reads
+artificially low — and Payer X's different reimbursement cycle skews it further.
+```sql
+SELECT SUM(collected_amount) / SUM(allowed_amount) AS collection_rate
+FROM FCT_SESSION_FINANCIALS
+WHERE session_date < DATEADD('day', -45, <as_of_date>)
+  AND payer_name NOT ILIKE 'Payer X%'
+```
+
 ## Cross-references
 - collections (claims subset of this table); client-lifecycle (dim_client).

@@ -24,7 +24,9 @@ not what you'd infer from raw schema. Read context files directly from this repo
    `domains/<domain>/reference.md` **first** — it routes the query (canonical table,
    grain, routing triggers).
 3. Honor every `IF … DO NOT …` routing trigger and `caveats` you find. These are the
-   silent-failure modes a senior analyst would warn about.
+   silent-failure modes a senior analyst would warn about. When a "Common query
+   patterns" block matches the question, start your SQL from its form (fill the
+   `<placeholders>`; keep its filters and grain handling).
 4. Before computing a metric, read `domains/<domain>/metrics.yaml` and honor its
    `parameters` and `caveats`. Resolve ambiguous terms via `entities/*.yaml`
    (cross-domain) then `domains/<domain>/entities.yaml` (domain-specific).

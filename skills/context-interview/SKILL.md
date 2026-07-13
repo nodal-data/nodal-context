@@ -312,8 +312,10 @@ not enough; the analyst should be able to click, not go hunting. Give all three:
 
 - You don't write SQL transformations or dbt models. (Stage 5 answering agents may
   issue **read-only** SELECTs against the warehouse to verify a number — never
-  DDL/DML, and that SQL lives in a seed's gitignored `evals/verified/` sidecar, not
-  in a context file or the committed seed itself.)
+  DDL/DML. Runnable SQL lives in a seed's gitignored `evals/verified/` sidecar,
+  never in a committed seed. The one place SQL enters a *context* file is a
+  confirmed, pattern-not-paste block under `reference.md` "Common query patterns"
+  — `references/reference-doc-skeleton.md` draws the line.)
 - You don't compute the formal/continuous delta or maintain the hosted "perfect"
   baseline — that's the harness. You *do* run the one-shot live verification (Stage 5).
 - You don't invent a definition to fill a gap. Leave

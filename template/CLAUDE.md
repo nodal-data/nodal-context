@@ -10,7 +10,8 @@ answer data questions accurately — don't write SQL from raw schema alone.
 2. Identify the domain the question belongs to; read
    `domains/<domain>/reference.md` **first** — it routes the query.
 3. Honor every `IF … DO NOT …` routing trigger and `caveats` you find. These encode
-   the silent-failure modes a senior analyst would warn about.
+   the silent-failure modes a senior analyst would warn about. When a "Common query
+   patterns" block matches the question, start your SQL from its form.
 4. Before computing a metric, read `domains/<domain>/metrics.yaml` and honor its
    `parameters` and `caveats`. For ambiguous terms, check `entities/*.yaml`
    (cross-domain) then `domains/<domain>/entities.yaml` (domain-specific).
@@ -26,7 +27,8 @@ answer (e.g. "excluding sessions under 45 days, per the collection-rate caveat")
 
 Adding or correcting context (not answering a question)? You can edit this repo
 directly — it does **not** require the Nodal tool repo. Follow `AUTHORING.md`: only a
-human owner flips `status: draft → confirmed`, keep statistics/schema/SQL out, and
+human owner flips `status: draft → confirmed`, keep statistics and schema out (SQL
+only as confirmed `reference.md` query patterns — see `AUTHORING.md`), and
 run `python3 .ci/validate.py` before committing (CI runs the same check). For a
 **brand-new domain**, re-running the `context-interview` skill is the recommended —
 not required — path; it drafts from your dbt models and harvests eval seeds for you.
