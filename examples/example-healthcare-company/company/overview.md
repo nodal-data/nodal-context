@@ -1,4 +1,4 @@
-# Example Healthcare Comany — Overview
+# Example Healthcare Company — Overview
 
 ## What This Covers
 What Example Healthcare Company does and the unit of value it counts. 

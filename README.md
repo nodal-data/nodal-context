@@ -162,6 +162,20 @@ a convenience for team-scale distribution, not a lock on the format: the files s
 and self-hosting is always free. The generated repo ships a `SHARING.md` with the tool
 surface and the 3-step hosted setup.
 
+**Claude-desktop shop instead?** Compile the repo into a distributable skill snapshot:
+
+```bash
+python3 scripts/compile_skill.py path/to/analytics-context --zip
+```
+
+That emits a `<company>-data-analyst/` skill (SKILL.md + references/) an admin can
+upload to claude.ai / Claude desktop — org-provisioned skills update centrally. The
+output is a **stamped snapshot** (`compiled from repo@sha`), not a second source of
+truth: regenerate it after every merge. It round-trips through the eval harness's
+`skill` adapter with the same domain names, so the same seeds grade both the repo and
+the compiled skill. MCP remains the live, always-current path; the skill is a cache
+for reach.
+
 ## Keep context in sync with your dbt repo
 
 Context goes stale the moment a dbt model changes underneath it — a renamed column, a
