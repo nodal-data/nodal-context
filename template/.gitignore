@@ -11,6 +11,10 @@ evals/verified/*
 # Transient dbt bootstrap summary (Stage 0) — not ACF, discard after drafting.
 .dbt-findings.json
 
+# Compiled skill snapshots (scripts/compile_skill.py in the tool repo) — build
+# artifacts, regenerated from the repo; the repo itself is the source of truth.
+dist/
+
 # Python bytecode from the vendored CI tooling (.ci/, eval_harness/, scripts/)
 __pycache__/
 *.pyc
