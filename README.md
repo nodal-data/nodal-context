@@ -134,8 +134,8 @@ git clone https://github.com/nodal-data/nodal-context.git
 cd nodal-context
 
 # 2. Open your client agent here (Claude Code / Codex / Cursor) and say:
-#    **"Build my analytics context."**  → the context-interview skill takes over.
-#    Short on time? Say **"fast pass"** — five core questions, a live check,
+#    "Build my analytics context."  → the context-interview skill takes over.
+#    Short on time? Say "fast pass" — five core questions, a live check,
 #    the rest drafted for a later session.
 #    (The skill is already discoverable in-repo via .claude/skills/.)
 #    It writes a reviewable ../analytics-context/ repo as a SIBLING of this clone
