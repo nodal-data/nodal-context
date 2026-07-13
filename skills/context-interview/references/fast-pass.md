@@ -40,6 +40,8 @@ and move on.
 ## The five questions (the analyst picks the domain)
 
 Ask which domain (or dashboard) matters most right now; that's the one you do.
+No dashboard in mind? Anchor on tables instead: *"Which 3–5 tables do analysts
+query most often?"* — the most-queried table usually names the domain.
 Each confirmed answer is written to its ACF home **and emits its seed at the
 moment of confirmation** — same rule as the full interview, no batching.
 
@@ -47,18 +49,32 @@ moment of confirmation** — same rule as the full interview, no batching.
    represent?"* Probe hard — wrong grain is the #1 wrong-answer mode ("one row
    per session, or per session × service?"). → `domain.yaml` (canonical table,
    grain), `reference.md` Quick Reference.
-2. **The one ambiguous entity.** *"When someone asks about this domain, which
-   word could mean two different things in the data?"* Disambiguate just that
-   one. → entity file + seed.
+
+   **Then ground the rest in the schema:** if the Stage-0 warehouse probe
+   succeeded, pull this ONE table's column list now and run Q2–Q4 against it as
+   a draft to react to (*"I see `client_id` and `client_uuid` — which one do
+   joins use?"*). Reacting to real columns is faster and more accurate than free
+   recall. One table only — the budget doesn't cover a schema tour.
+2. **The one ambiguous entity — and its ID.** *"When someone asks about this
+   domain, which word could mean two different things in the data?"* Disambiguate
+   just that one, then: *"Which ID field identifies it — and is there more than
+   one ID for the same thing?"* Listen for: which entities it's confused with,
+   the cardinality between them, join keys, business key vs surrogate key,
+   legacy ID systems. → entity file + seed.
 3. **Top metrics (2–3, cap it).** *"What are the two or three numbers people ask
    for most — and for each, what's the definition and the single biggest way to
-   get it wrong?"* One caveat per metric is the budget; further caveats become
-   draft stubs. → `metrics.yaml` + a seed per metric.
+   get it wrong?"* Listen for: exact formulas, time-grain conventions (trailing
+   7 days vs calendar month), which table/column feeds each. One caveat per
+   metric is the budget; further caveats become draft stubs. → `metrics.yaml` +
+   a seed per metric.
 4. **The standard hygiene filter.** *"Which filter does every correct query here
-   apply that a newcomer would forget?"* → `reference.md` Quick Reference +
-   seed.
+   apply that a newcomer would forget?"* Listen for: flag columns (`is_test`,
+   `is_internal`), status values to exclude, and the cases where the filter
+   should NOT apply. → `reference.md` Quick Reference + seed.
 5. **The one silent failure.** *"If a new analyst wrote the obvious query, where
-   would the answer look plausible and be wrong?"* → `known-issues.md`, an
+   would the answer look plausible and be wrong?"* Listen for: timezone traps,
+   NULL semantics (blank-but-meaningful values), historical vs current-state
+   tables, similarly-named tables at different grains. → `known-issues.md`, an
    `IF … DO NOT …` routing trigger in `reference.md`, and a seed — the
    highest-value one of the session.
 
