@@ -12,7 +12,7 @@ measurement — not the context format — as the thing that matters.
 
 ## Inputs (any one or more)
 
-All four adapters are implemented in `adapters/` (`--adapter acf|ktx|dbt|raw`).
+All five adapters are implemented in `adapters/` (`--adapter acf|ktx|dbt|raw|skill`).
 
 | Adapter | Reads | Notes |
 |---|---|---|
@@ -20,6 +20,7 @@ All four adapters are implemented in `adapters/` (`--adapter acf|ktx|dbt|raw`).
 | `ktx` | Kaelio `semantic-layer/<connection>/*.yaml` + `wiki/**/*.md` | bring an existing ktx project; one domain per connection |
 | `dbt` | `manifest.json` (or bare `models/**/*.yml` docs) | model/column docs, unique-test grain evidence, semantic models + metrics (manifest v12); one domain per top-level `models/` folder |
 | `raw` | a directory of markdown | last resort; one domain per subdirectory |
+| `skill` | an agent data-analysis skill (`SKILL.md` + `references/**/*.md`), folder or packaged `.zip`/`.skill` | e.g. the output of Anthropic's `data-context-extractor`; one domain per reference file, `SKILL.md` + entities/metrics references shared across domains |
 
 Each adapter maps its source into the **Normalized Context Representation (NCR)** —
 a single intermediate the rest of the harness operates on. That's why the format

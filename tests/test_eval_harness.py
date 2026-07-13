@@ -118,6 +118,46 @@ def run_tests():
         assert ncr.domains() == ["marts"]
         assert "One row per customer." in ncr.context_for("marts")
 
+        # skill: a Claude data-analysis skill — SKILL.md shared, one domain per
+        # references file, entities/metrics references cross-domain
+        sk = td / "acme-data-analyst"
+        (sk / "references" / "tables").mkdir(parents=True)
+        (sk / "SKILL.md").write_text(
+            "---\nname: acme-data-analyst\ndescription: Acme data skill.\n---\n"
+            "# Acme Data Analysis\nDialect: Snowflake. Always exclude test orders.")
+        (sk / "references" / "entities.md").write_text(
+            "Customer means a user with >=1 purchase.")
+        (sk / "references" / "metrics.md").write_text("GMV = SUM(order_total_gross).")
+        (sk / "references" / "orders.md").write_text("FCT_ORDERS: one row per order.")
+        (sk / "references" / "tables" / "customers.md").write_text(
+            "DIM_CUSTOMERS joins on customer_id.")
+        (sk / "references" / "dashboards.json").write_text("{}")   # non-md: ignored
+        ncr = adapters.get_builder("skill")(sk)
+        assert ncr.domains() == ["customers", "orders"] and not ncr.seeds
+        ctx = ncr.context_for("orders")
+        assert "one row per order" in ctx
+        assert "exclude test orders" in ctx                    # SKILL.md body shared
+        assert ">=1 purchase" in ctx and "SUM(order_total_gross)" in ctx  # shared refs
+        assert "name: acme-data-analyst" not in ctx            # frontmatter stripped
+        assert "one row per order" not in ncr.context_for("customers")   # per-domain
+        # packaged zip (the package_data_skill.py deliverable) reads the same
+        import zipfile as zf_mod
+        zpath = td / "acme-data-analyst.zip"
+        with zf_mod.ZipFile(zpath, "w") as zf:
+            for f in sk.rglob("*"):
+                if f.is_file():
+                    zf.write(f, f.relative_to(sk.parent))
+        ncr = adapters.get_builder("skill")(zpath)
+        assert ncr.domains() == ["customers", "orders"]
+        assert "exclude test orders" in ncr.context_for("orders")
+        # no per-domain references -> one domain named from frontmatter
+        solo = td / "solo-skill"
+        solo.mkdir()
+        (solo / "SKILL.md").write_text("---\nname: shop-data\n---\nAll context here.")
+        ncr = adapters.get_builder("skill")(solo)
+        assert ncr.domains() == ["shop-data"]
+        assert "All context here." in ncr.context_for("shop-data")
+
         # --seeds attaches external ground truth to a context-only adapter
         (td / "seeds").mkdir()
         (td / "seeds" / "q1.seed.yaml").write_text(

@@ -54,7 +54,8 @@ def main(argv=None):
     ap.add_argument("--report", default="pr-comment", choices=["pr-comment"])
     ap.add_argument("--root", default=".", help="context repo root (default: .)")
     ap.add_argument("--seeds", help="directory of *.seed.yaml ground truth to attach — "
-                    "required for adapters whose source carries no seeds (dbt/ktx/raw)")
+                    "required for adapters whose source carries no seeds "
+                    "(dbt/ktx/raw/skill)")
     ap.add_argument("--status", default="confirmed",
                     help="seed status to score (default: confirmed; draft excluded)")
     ap.add_argument("--model", default=client.MODEL, help="Anthropic model id")
