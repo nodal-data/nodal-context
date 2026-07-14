@@ -31,8 +31,8 @@ files stay yours; there's no lock-in.
 
 ### 2. Launch on Nodal (hosted) — low-cost, ~2 minutes, no database connection
 The fastest way to share with the whole team. **No warehouse/database connection
-required** — Nodal serves this context repo, not your data. In short: subscribe, add a
-**read-only GitHub token** scoped to this repo in the Nodal admin, and share the
+required** — Nodal serves this context repo, not your data. In short: subscribe, 
+add this repo and your dbt repo in the Nodal admin, and share the
 endpoint — your team adds it in their own agent and asks questions in plain language.
 You get multi-user auth, simple evaluations, and usage logging out
 of the box.
