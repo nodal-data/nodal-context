@@ -177,11 +177,9 @@ person on one machine.
 
 To put the same context in front of the *whole team* — a non-technical business
 user asks a question in their own agent and gets the answer the analyst would
-give — connect over **MCP**. A hosted endpoint serves the context layer (and the
-query hub it grows into) as tools any agent can call. It retrieves the right
-definitions and canonical queries, answers when it's confident, and **escalates
-to the analyst when it isn't** — then learns from the verified answer, so the
-next identical question is instant. An optional second connector exposes your
+give — connect over **MCP**. A hosted endpoint serves the context layer, 
+retrieves the right defintions and answers questions when it is confident. 
+An optional second connector exposes your
 **dbt/warehouse lineage**, so the agent can check *how* a metric is computed,
 not just what it means.
 
