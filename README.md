@@ -27,21 +27,28 @@ canonical, what the standard filters are, and where the landmines are.
 
 2. **Share it — the hosted MCP endpoint.**
    *Self-serve, low-cost: subscribe and launch in minutes.*
-   Puts the same context in front of the whole team: any agent gets governed
-   answers from the repo. Merge a PR and every consumer is current — no
-   redistributing files. Self-hosting a read-only server on the raw files is
-   always free; the hosted endpoint adds auth, escalation routing, and usage
-   logging. See "Sharing it across your team" below. We can also build an MCP
-   server in your cloud environment if your prefer.
+   Connect your analytics context — and optionally your dbt repo — to an MCP
+   endpoint the whole team shares: any agent gets governed answers from the repo.
+   Merge a PR and every consumer is current — no redistributing files. The Nodal
+   admin also lets **non-technical users edit the context** and open pull
+   requests into the repo, so your team can evaluate proposed changes both
+   quantitatively and qualitatively. Self-hosting a read-only server on the raw
+   files is always free; the hosted endpoint adds auth, usage logging, and the
+   admin editing flow. See "Sharing it across your team" below. We can also
+   build an MCP server in your cloud environment if you prefer.
 
-4. **Keep it correct — the eval + maintenance system.**
+3. **Keep it correct — the learning loop.**
    *Enterprise: [contact us](mailto:info@nodaldata.io).*
-   The same interview mints ground-truth eval seeds, so you can measure your
-   agent *with* context vs *without* vs *ground truth*. The seed format and a
-   one-shot local runner are open; the hosted system adds dynamic evals, continuous
-   re-evaluation, drift detection, dbt-repo sync (an upstream model change
-   re-drafts the affected definitions for the analyst to confirm), and
-   observability into who's asking what.
+   This is where the learning loop gets built. **Observability:** what data
+   questions are your business team, marketing team, and analysts actually
+   asking? **Coverage evaluations:** sophisticated evals with coverage metrics
+   that highlight when questions are being asked with minimal context coverage,
+   so you evolve the context over time in a safe manner. **Regression tests:**
+   confidence that questions answered correctly yesterday are still answered
+   correctly today, as you add and change context while the business evolves.
+   Plus **dbt-repo sync** (an upstream model change re-drafts the affected
+   definitions for the analyst to confirm). The seed format and a one-shot
+   local runner stay open and free.
 
 ## Why interview-built, not auto-built
 
@@ -179,11 +186,9 @@ person on one machine.
 
 To put the same context in front of the *whole team* — a non-technical business
 user asks a question in their own agent and gets the answer the analyst would
-give — connect over **MCP**. A hosted endpoint serves the context layer (and the
-query hub it grows into) as tools any agent can call. It retrieves the right
-definitions and canonical queries, answers when it's confident, and **escalates
-to the analyst when it isn't** — then learns from the verified answer, so the
-next identical question is instant. An optional second connector exposes your
+give — connect over **MCP**. A hosted endpoint serves the context layer,
+retrieving the right definitions and canonical queries to ground every answer.
+An optional second connector exposes your
 **dbt/warehouse lineage**, so the agent can check *how* a metric is computed,
 not just what it means.
 
@@ -198,7 +203,8 @@ Three ways to serve it:
 - **Run it in your own cloud/VPC** — for data-residency or security requirements;
   **contact sales**.
 
-Auth, escalation routing, usage logging, and the learning loop are the managed
+Auth, usage logging, and the admin editing flow (non-technical users propose
+context changes as pull requests your team evaluates) are the managed
 product — a convenience for team-scale distribution, not a lock on the format:
 the files stay open and self-hosting is always free. The generated repo ships a
 `SHARING.md` with the tool surface and the 3-step hosted setup.
@@ -243,14 +249,15 @@ the **enterprise tier** (product #3), deployable in your cloud/VPC or ours —
 | One-shot eval delta (on/off, run locally) | the harness, self-run | Free |
 | Compiled skill snapshot for Claude desktop | `scripts/compile_skill.py` | Free |
 | Self-hosted agent against the raw context files | your agent | Free |
-| **Team-shared MCP endpoint (governed answers, auth, usage logging)** | Nodal (hosted) | **Paid — self-serve** |
+| **Team-shared MCP endpoint (governed answers, auth, usage logging, non-technical editing via PRs)** | Nodal (hosted) | **Paid — self-serve** |
 | **dbt-repo sync (dbt changes re-drafted into context, analyst-confirmed)** | Nodal (hosted) | **Paid — enterprise** |
-| **Trustworthy ground truth, continuous re-eval, drift detection, observability, correction harvesting** | Nodal (hosted) | **Paid — enterprise** |
+| **The learning loop: observability into who's asking what, coverage evaluations, regression tests, drift detection** | Nodal (hosted) | **Paid — enterprise** |
 
 The **hosted MCP endpoint is the self-serve entry point**: subscribe, connect the
-repo, share the endpoint — minutes, no sales call. The **eval/observability system
-and dbt-repo sync are enterprise** — they're how data teams keep context correct,
-and see who's asking what, as self-service analytics scales; for a demo,
+repo, share the endpoint — minutes, no sales call. The **learning loop
+(observability, coverage evaluations, regression tests) and dbt-repo sync are
+enterprise** — they're how data teams keep context correct, and see who's asking
+what, as self-service analytics scales; for a demo,
 requirements, or pricing, **contact us** at info@nodaldata.io. Learn more at
 [nodaldata.io](https://nodaldata.io) or [docs.nodaldata.io](https://docs.nodaldata.io).
 

@@ -13,8 +13,8 @@ end to end.
 An MCP server turns this repo into agent tools over two connectors:
 
 - **Context connector** — reads this repo (index, regex search, file fetch, browse)
-  plus governed answering: retrieve the right definitions and canonical queries,
-  answer when confident. 
+  plus governed answering: retrieves the right definitions and canonical queries
+  to ground every answer.
 - **Lineage connector (optional, no extra cost)** — your dbt/warehouse lineage the same way. The
   context connector says *what a term means*; the lineage connector says *how it's
   computed*.
@@ -31,11 +31,13 @@ files stay yours; there's no lock-in.
 
 ### 2. Launch on Nodal (hosted) — low-cost, ~2 minutes, no database connection
 The fastest way to share with the whole team. **No warehouse/database connection
-required** — Nodal serves this context repo, not your data. In short: subscribe, add a
-**read-only GitHub token** scoped to this repo in the Nodal admin, and share the
+required** — Nodal serves this context repo, not your data. In short: subscribe, 
+add this repo and your dbt repo in the Nodal admin, and share the
 endpoint — your team adds it in their own agent and asks questions in plain language.
 You get multi-user auth, simple evaluations, and usage logging out
-of the box.
+of the box. The Nodal admin also lets **non-technical users edit this context repo**
+and open pull requests into it, so your team can evaluate proposed changes both
+quantitatively and qualitatively before they merge.
 
 Follow the current subscribe link, pricing, and endpoint in the
 **[hosted setup guide](https://docs.nodaldata.io/mcp/share-with-your-team)**.
@@ -44,17 +46,21 @@ Follow the current subscribe link, pricing, and endpoint in the
 For data-residency or security requirements, Nodal can build and maintain the MCP server
 **inside your environment**. Contact sales: info@nodaldata.io.
 
-## Keep it fresh + observability (enterprise)
+## The learning loop (enterprise)
 
 As you roll out self-service analytics, keeping context correct — and knowing how it's
-used — becomes the job. Nodal's enterprise system adds:
+used — becomes the job. Nodal's enterprise system is where the learning loop gets built:
 
+- **Observability** — what data questions are your business team, marketing team, and
+  analysts actually asking, and where is the context thin?
+- **Coverage evaluations** — sophisticated evals with coverage metrics that highlight
+  when questions are being asked with minimal context coverage, so you evolve the
+  context over time in a safe manner.
+- **Regression tests** — confidence that questions answered correctly yesterday are
+  still answered correctly today, as you add and change context while the business
+  evolves.
 - **dbt-repo sync** — changes in your dbt models propagate into the affected definitions
   as drafts for your analyst to confirm, so context tracks the warehouse automatically.
-- **Continuous evaluation + drift detection** — trustworthy ground truth and accuracy
-  tracking on every change, so silent regressions get caught.
-- **Observability** — who's asking what, where the agent escalates, and where context is
-  thin.
 
 This is the gold standard for data teams maintaining context at scale. Contact sales for
 a demo, requirements, and pricing: info@nodaldata.io.

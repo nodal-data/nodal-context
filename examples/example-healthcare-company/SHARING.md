@@ -41,17 +41,21 @@ Follow the current subscribe link, pricing, and endpoint in the
 For data-residency or security requirements, Nodal can build and maintain the MCP server
 **inside your environment**. Contact sales: info@nodaldata.io.
 
-## Keep it fresh + observability (enterprise)
+## The learning loop (enterprise)
 
 As you roll out self-service analytics, keeping context correct — and knowing how it's
-used — becomes the job. Nodal's enterprise system adds:
+used — becomes the job. Nodal's enterprise system is where the learning loop gets built:
 
+- **Observability** — what data questions are your business team, marketing team, and
+  analysts actually asking, and where is the context thin?
+- **Coverage evaluations** — sophisticated evals with coverage metrics that highlight
+  when questions are being asked with minimal context coverage, so you evolve the
+  context over time in a safe manner.
+- **Regression tests** — confidence that questions answered correctly yesterday are
+  still answered correctly today, as you add and change context while the business
+  evolves.
 - **dbt-repo sync** — changes in your dbt models propagate into the affected definitions
   as drafts for your analyst to confirm, so context tracks the warehouse automatically.
-- **Continuous evaluation + drift detection** — trustworthy ground truth and accuracy
-  tracking on every change, so silent regressions get caught.
-- **Observability** — who's asking what, where the agent escalates, and where context is
-  thin.
 
 This is the gold standard for data teams maintaining context at scale. Contact sales for
 a demo, requirements, and pricing: info@nodaldata.io.

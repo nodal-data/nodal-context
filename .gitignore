@@ -24,3 +24,5 @@ analytics-context/
 .env
 .envrc
 toolbox 
+
+.vscode/

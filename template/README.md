@@ -85,4 +85,5 @@ gets the analyst's answer), serve it over **MCP** — three ways: **build your o
 connection), or **run it in your own cloud/VPC** (regulated/enterprise).
 
 See **[`SHARING.md`](./SHARING.md)** for the tool surface, the 3-step hosted setup, and
-the enterprise dbt-sync + observability options.
+the enterprise learning loop (observability, coverage evaluations, regression tests,
+dbt-sync).
