@@ -61,17 +61,19 @@ discard after Stage 0.
 ## Step 2 — read the findings, then draft (one domain at a time, as always)
 
 `.query-findings.json` shape: `clusters[]` (`fingerprint`, `sample_text`,
-`n_executions`, `n_executions_excluded`, `n_users`, `users[]`, `roles[]`,
+`n_executions`, `n_executions_bi`, `n_executions_human`,
+`n_executions_excluded`, `n_users`, `n_users_human`, `users[]`, `roles[]`,
 `warehouses[]`, `query_tags[]`, `pool`, `pool_evidence[]`, `tables[]`,
 `agg_signatures[]`, `admitted`, `conflict_group`), `conflict_groups[]`,
 `pools{}`, `unavailable[]`, `coverage{}`, `window_days` (the *effective* window —
 `window_days_requested` appears when a scope capped it). Only `admitted`
 clusters are draft candidates; the `bi_service` pool is high-trust
 (institutionalized logic), the `ad_hoc` pool is a demand signal, not a
-definition source. Traffic is classified per executing identity, so a shape
-shared by a dashboard and an ETL job stays a candidate: the ETL/dbt executions
-are subtracted into `n_executions_excluded` and disclosed in `pool_evidence`
-rather than suppressing the cluster.
+definition source. Traffic is counted per executing identity and per class:
+BI and human executions each qualify a cluster on their own numbers (one BI
+run padded by a few human runs is NOT a dashboard pattern), and ETL/dbt
+executions are subtracted into `n_executions_excluded` and disclosed in
+`pool_evidence` rather than suppressing the cluster.
 
 Map each artifact to its ACF target — all `status: draft`, all tagged:
 
@@ -98,9 +100,11 @@ decomposition.
   service user per BI tool, not the humans behind it. Dashboard names, element
   structure, and viewer stats are optional BI-API enrichment — offer to draft an
   "email your BI admin" note rather than blocking on it.
-- `"query_parameterized_hash"` / `"window_beyond_7_days"` in `unavailable` → you
-  mined the 7-day fallback with client-side canonicalization; say so, and expect
-  weekly-refresh tiles to be under-counted.
+- `"window_beyond_7_days"` / `"result_limit_pre_filter"` in `unavailable` → you
+  mined the 7-day INFORMATION_SCHEMA fallback (it still uses Snowflake's native
+  fingerprint); say so, and expect weekly-refresh tiles to be under-counted.
+- `"query_parameterized_hash"` in `unavailable` → a platform without a native
+  hash, clustered by the client-side canonicalizer; fingerprints are less exact.
 - `pools.excluded` high → ETL traffic (service-user patterns) plus dbt-stamped
   queries (dbt's query comment / test scaffolding in the text — dbt logic
   reaches the interview via `dbt-extraction.md`, so keeping it here would

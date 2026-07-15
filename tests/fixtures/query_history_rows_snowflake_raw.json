@@ -19,5 +19,12 @@
     "role_name": "ANALYST",
     "warehouse_name": "ADHOC_WH",
     "start_time": "2026-07-11T08:00:00Z"
+  },
+  {
+    "query_text": "SELECT * FROM ANALYTICS.MART.FCT_ORDERS WHERE order_date > '2026-03-01' AND amount IN (9) /* {\"app\": \"dbt\", \"invocation_id\": \"abc\"} */",
+    "user_name": "JANE",
+    "role_name": "ANALYST",
+    "warehouse_name": "ADHOC_WH",
+    "start_time": "2026-07-13T06:00:00Z"
   }
 ]

@@ -2,10 +2,12 @@
   "rows": [
     {
       "FINGERPRINT": "fp_tableau_net",
+      "FINGERPRINT_VERSION": 1,
       "USER_NAME": "TABLEAU_SVC",
       "ROLE_NAME": "BI_ROLE",
       "WAREHOUSE_NAME": "BI_WH",
       "QUERY_TAG": "",
+      "IS_DBT": false,
       "N_EXECUTIONS": 365,
       "SAMPLE_TEXT": "SELECT region, SUM(net_revenue) AS revenue FROM ANALYTICS.MART.FCT_ORDERS GROUP BY region",
       "FIRST_SEEN": "2026-04-16T07:00:00Z",
@@ -90,6 +92,7 @@
     },
     {
       "FINGERPRINT": "fp_dbt_test",
+      "IS_DBT": true,
       "USER_NAME": "TRANSFORMER_PROD",
       "ROLE_NAME": "TRANSFORM_ROLE",
       "WAREHOUSE_NAME": "TRANSFORM_WH",
@@ -123,6 +126,7 @@
     },
     {
       "FINGERPRINT": "fp_mixed_daily",
+      "IS_DBT": true,
       "USER_NAME": "DBT_CLOUD",
       "ROLE_NAME": "TRANSFORM_ROLE",
       "WAREHOUSE_NAME": "TRANSFORM_WH",

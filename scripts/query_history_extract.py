@@ -18,18 +18,20 @@ separates institutionalized logic (BI-service pool) from ad-hoc exploration; whe
 several clusters compute different aggregations over the same tables, that conflict
 IS the interview question (`conflict_groups`), not an answer.
 
-The extraction SQL returns one row per (query shape x executing identity), so a
-shape shared by a dashboard and an ETL job is classified per identity: BI and
-human executions make the cluster a candidate; ETL/dbt executions are subtracted
-and disclosed (`n_executions_excluded`, `pool_evidence`) instead of suppressing
-the whole shape.
+The extraction SQL returns one row per (query shape x executing identity x dbt
+flag), so a shape shared by a dashboard, a human, and an ETL job is accounted
+per traffic class: BI and human executions are counted separately (each must
+qualify on its own for admission), and ETL/dbt executions are subtracted and
+disclosed (`n_executions_excluded`, `pool_evidence`) instead of suppressing the
+whole shape.
 
 Platforms are a registry: snowflake is implemented; databricks / bigquery /
 redshift / fabric are registered stubs that fail loudly (their history sources are
 named so a contributor knows where to start). Each platform declares, per scope,
-whether canonicalization happens in-warehouse (e.g. Snowflake
-QUERY_PARAMETERIZED_HASH) or client-side (the lexer + regex canonicalizer here) —
-new platforms reuse one of the two paths.
+whether canonicalization happens in-warehouse (Snowflake's
+QUERY_PARAMETERIZED_HASH — both scopes) or client-side (the lexer + regex
+canonicalizer here, for platforms without a native hash) — new platforms reuse
+one of the two paths.
 
 Stdlib-only. Both input and output files are transient bootstrap artifacts,
 gitignored at the context repo root — raw SQL never reaches a committed file.
@@ -51,19 +53,22 @@ BI_PATTERNS = (
 )
 ETL_PATTERNS = ("fivetran", "dbt", "airflow", "dagster", "airbyte", "stitch")
 
-# Content-level dbt evidence, checked on the RAW sample_text (the markers live in
-# comments and scaffolding the canonicalizer strips): dbt stamps every query it
-# executes with a JSON query comment ({"app": "dbt", ...}) and wraps tests in
-# recognizable internal names. This catches dbt traffic even when the executing
-# user doesn't look like an ETL account — dbt logic belongs to the dbt repo
-# (dbt-findings.json), not to history mining. Caveat: the query comment sits at
-# the tail, so the warehouse-side 8000-char truncation can drop it on very long
-# queries; the identity patterns above remain the first line of defense.
+# Content-level dbt evidence: dbt stamps every query it executes with a JSON query
+# comment ({"app": "dbt", ...}) and wraps tests in recognizable internal names.
+# The parameterized hash IGNORES comments, so stamped and unstamped executions of
+# the same shape share a fingerprint — which is why the emitted SQL computes a
+# per-execution `is_dbt` flag and groups on it (a sampled query text would make
+# the subtraction nondeterministic). These regexes are the client-side fallback
+# for raw rows and a belt-and-braces check on samples; they run on RAW text (the
+# markers live in comments the canonicalizer strips).
 DBT_MARKER_RES = (
     re.compile(r'"app"\s*:\s*"dbt"', re.IGNORECASE),
     re.compile(r"\bdbt_internal_test\b", re.IGNORECASE),
     re.compile(r"__dbt__cte__", re.IGNORECASE),
 )
+# Keep in sync with DBT_MARKER_RES — the same three markers, as ILIKE patterns
+# for the emitted SQL's is_dbt column.
+DBT_MARKER_ILIKE = "('%\"app\": \"dbt\"%', '%dbt_internal_test%', '%__dbt__cte__%')"
 
 
 def dbt_markers(text):
@@ -106,6 +111,28 @@ def _die(msg, code=2):
 
 # ----- Snowflake ---------------------------------------------------------------
 
+_SF_SELECT_BODY = f"""\
+SELECT
+  query_parameterized_hash              AS fingerprint,
+  query_parameterized_hash_version      AS fingerprint_version,
+  user_name,
+  role_name,
+  warehouse_name,
+  query_tag,
+  (query_text ILIKE ANY {DBT_MARKER_ILIKE}) AS is_dbt,
+  COUNT(*)                              AS n_executions,
+  LEFT(ANY_VALUE(query_text), 8000)     AS sample_text,
+  MIN(start_time)                       AS first_seen,
+  MAX(start_time)                       AS last_seen"""
+
+_SF_GROUP_TAIL = """\
+GROUP BY 1, 2, 3, 4, 5, 6, 7
+QUALIFY SUM(COUNT(*)) OVER (PARTITION BY query_parameterized_hash) >= 2
+ORDER BY SUM(COUNT(*)) OVER (PARTITION BY query_parameterized_hash) DESC,
+         n_executions DESC
+LIMIT {limit}"""
+
+
 def _sf_emit_account_usage(days, limit):
     return f"""\
 -- Query-history extraction (Snowflake, ACCOUNT_USAGE scope; {days}-day window).
@@ -114,55 +141,38 @@ def _sf_emit_account_usage(days, limit):
 -- ACCOUNT_USAGE lags ~45min-3h — fine for mining. 365-day retention.
 -- On "Object does not exist or not authorized": re-run --emit-sql with
 --   --scope information_schema (7-day window, no privileges needed).
--- One row per (query shape x executing identity), so mixed BI/ETL traffic on the
--- same shape is classified per identity; LIMIT caps identity-rows, not shapes.
+-- One row per (query shape x identity x dbt flag), so mixed traffic on the same
+-- shape is counted per class; LIMIT caps identity-rows, not shapes.
 -- Run read-only via the warehouse MCP; save the result rows VERBATIM as JSON to
 -- .query-history-rows.json at the context repo root (gitignored).
-SELECT
-  query_parameterized_hash              AS fingerprint,
-  user_name,
-  role_name,
-  warehouse_name,
-  query_tag,
-  COUNT(*)                              AS n_executions,
-  LEFT(ANY_VALUE(query_text), 8000)     AS sample_text,
-  MIN(start_time)                       AS first_seen,
-  MAX(start_time)                       AS last_seen
+{_SF_SELECT_BODY}
 FROM snowflake.account_usage.query_history
 WHERE start_time >= DATEADD(day, -{days}, CURRENT_TIMESTAMP())
   AND execution_status = 'SUCCESS'
   AND query_type = 'SELECT'
   AND query_parameterized_hash IS NOT NULL
-GROUP BY 1, 2, 3, 4, 5
-QUALIFY SUM(COUNT(*)) OVER (PARTITION BY query_parameterized_hash) >= 2
-ORDER BY SUM(COUNT(*)) OVER (PARTITION BY query_parameterized_hash) DESC,
-         n_executions DESC
-LIMIT {limit}"""
+{_SF_GROUP_TAIL.format(limit=limit)}"""
 
 
 def _sf_emit_information_schema(days, limit):
     limit = min(limit, 10000)
     return f"""\
 -- Query-history extraction (Snowflake, INFORMATION_SCHEMA fallback; {days}-day window).
--- No special privileges, but: 7-day window max, visibility limited to queries
--- your role can see, and NO query_parameterized_hash (the script canonicalizes
--- client-side instead). NOTE: RESULT_LIMIT is applied by the table function
--- BEFORE the outer SUCCESS/SELECT filters, so {limit} history entries may yield
--- fewer relevant rows. Prefer --scope account_usage when privileges allow.
+-- No special privileges, but: 7-day window max, and visibility limited to queries
+-- your role can see. The native query_parameterized_hash IS available here too.
+-- NOTE: RESULT_LIMIT is applied by the table function BEFORE the outer
+-- SUCCESS/SELECT filters, so {limit} history entries may yield fewer relevant
+-- rows. Prefer --scope account_usage when privileges allow.
 -- Run read-only via the warehouse MCP; save the result rows VERBATIM as JSON to
 -- .query-history-rows.json at the context repo root (gitignored).
-SELECT
-  query_text,
-  user_name,
-  role_name,
-  warehouse_name,
-  query_tag,
-  start_time
+{_SF_SELECT_BODY}
 FROM TABLE(INFORMATION_SCHEMA.QUERY_HISTORY(
     END_TIME_RANGE_START => DATEADD(day, -{days}, CURRENT_TIMESTAMP()),
     RESULT_LIMIT => {limit}))
 WHERE execution_status = 'SUCCESS'
-  AND query_type = 'SELECT'"""
+  AND query_type = 'SELECT'
+  AND query_parameterized_hash IS NOT NULL
+{_SF_GROUP_TAIL.format(limit=limit)}"""
 
 
 def _stub(history_source):
@@ -172,19 +182,24 @@ def _stub(history_source):
 PLATFORMS = {
     "snowflake": {
         "scopes": {
-            # canonicalizer "warehouse": rows arrive pre-aggregated per
-            # (fingerprint x identity). canonicalizer "client": rows arrive raw;
-            # we canonicalize + group here. max_days caps the effective window.
+            # Both scopes aggregate in-warehouse on the native parameterized hash
+            # (canonicalizer "warehouse"). canonicalizer "client" is the library
+            # path for platforms without a native hash: raw rows, canonicalized
+            # and grouped here. max_days caps the effective window; "unavailable"
+            # is what the scope can never provide (disclosed in findings).
             "account_usage": {"emit_sql": _sf_emit_account_usage,
-                              "canonicalizer": "warehouse", "max_days": None},
+                              "canonicalizer": "warehouse", "max_days": None,
+                              "unavailable": []},
             "information_schema": {"emit_sql": _sf_emit_information_schema,
-                                   "canonicalizer": "client", "max_days": 7},
+                                   "canonicalizer": "warehouse", "max_days": 7,
+                                   "unavailable": ["window_beyond_7_days",
+                                                   "result_limit_pre_filter"]},
         },
         "default_scope": "account_usage",
     },
     "databricks": _stub("system.query.history"),
     "bigquery": _stub("region-qualified INFORMATION_SCHEMA.JOBS "
-                      "(no param hash — reuse the client-side canonicalizer)"),
+                      "(no native hash — reuse the client-side canonicalizer)"),
     "redshift": _stub("SYS_QUERY_HISTORY / STL_QUERY"),
     "fabric": _stub("queryinsights views"),
 }
@@ -250,9 +265,9 @@ def scrub_sql(text, replace_strings=True):
 
 
 def canonicalize(text):
-    """Literal-stripping canonical form: the client-side stand-in for Snowflake's
-    QUERY_PARAMETERIZED_HASH. Two queries differing only in literal values (or
-    IN-list length) collapse to the same form."""
+    """Literal-stripping canonical form: the client-side stand-in for a native
+    parameterized hash. Two queries differing only in literal values (or IN-list
+    length) collapse to the same form."""
     t = scrub_sql(text, replace_strings=True)
     t = NUMBER_LIT_RE.sub("?", t)
     t = t.lower()
@@ -303,12 +318,13 @@ def _token_match(name, pattern):
 
 def classify_identity(ident, opts):
     """-> (traffic class, evidence). Classes: 'dbt' | 'etl' (both dropped),
-    'bi' | 'human' (both kept). Precedence: content markers beat identity (a
-    dbt-stamped query is dbt-generated no matter who ran it), explicit exclusion
-    beats explicit BI, explicit lists beat pattern heuristics."""
+    'bi' | 'human' (both kept, counted separately). Precedence: the warehouse-
+    computed is_dbt flag / content markers beat identity (a dbt-stamped query is
+    dbt-generated no matter who ran it), explicit exclusion beats explicit BI,
+    explicit lists beat pattern heuristics."""
     who = f"user '{ident['user']}'" if ident["user"] else "unknown user"
-    if dbt_markers(ident["sample_text"]):
-        return "dbt", f"{who}: sample carries a dbt marker"
+    if ident.get("is_dbt") or dbt_markers(ident["sample_text"]):
+        return "dbt", f"{who}: dbt-stamped query text"
     if ident["user"].lower() in opts["exclude_users"]:
         return "etl", f"{who} listed in --exclude-users"
     dims = (("user", ident["user"]), ("role", ident["role"]),
@@ -339,13 +355,16 @@ def _load_rows(path):
     return [{str(k).lower(): v for k, v in r.items()} for r in rows if isinstance(r, dict)]
 
 
-def _ident(fingerprint, r, n_executions, sample, first_seen, last_seen):
+def _ident(fingerprint, r, n_executions, sample, first_seen, last_seen,
+           is_dbt=False, fingerprint_version=None):
     return {
         "fingerprint": fingerprint,
+        "fingerprint_version": fingerprint_version,
         "user": str(r.get("user_name") or ""),
         "role": str(r.get("role_name") or ""),
         "warehouse": str(r.get("warehouse_name") or ""),
         "query_tag": str(r.get("query_tag") or ""),
+        "is_dbt": is_dbt,
         "n_executions": n_executions,
         "sample_text": (sample or "")[:MAX_SAMPLE_CHARS],
         "first_seen": first_seen,
@@ -354,45 +373,51 @@ def _ident(fingerprint, r, n_executions, sample, first_seen, last_seen):
 
 
 def identities_from_aggregated(rows):
-    """Warehouse-canonicalized rows: one row per (fingerprint x identity)."""
+    """Warehouse-canonicalized rows: one row per (fingerprint x identity x is_dbt)."""
     out = []
     for r in rows:
         if not r.get("fingerprint"):
             continue
         out.append(_ident(str(r["fingerprint"]), r, int(r.get("n_executions") or 0),
                           r.get("sample_text"), str(r.get("first_seen") or ""),
-                          str(r.get("last_seen") or "")))
+                          str(r.get("last_seen") or ""),
+                          is_dbt=bool(r.get("is_dbt")),
+                          fingerprint_version=r.get("fingerprint_version")))
     return out
 
 
 def identities_from_raw(rows):
-    """Raw per-query rows: client canonicalizer assigns the fingerprint, then
-    group by (fingerprint x identity)."""
+    """Raw per-query rows (platforms without a native hash): the client
+    canonicalizer assigns the fingerprint, the dbt flag is computed per ROW (not
+    per sample — determinism), then group by (fingerprint x identity x is_dbt)."""
     by_key = {}
     for r in rows:
         text = r.get("query_text")
         if not text:
             continue
         fp = _client_fingerprint(text)
+        is_dbt = bool(dbt_markers(text))
         key = (fp, str(r.get("user_name") or ""), str(r.get("role_name") or ""),
-               str(r.get("warehouse_name") or ""), str(r.get("query_tag") or ""))
+               str(r.get("warehouse_name") or ""), str(r.get("query_tag") or ""),
+               is_dbt)
         ts = str(r.get("start_time") or "")
         c = by_key.get(key)
         if c is None:
-            by_key[key] = c = _ident(fp, r, 0, text, ts, ts)
+            by_key[key] = c = _ident(fp, r, 0, text, ts, ts, is_dbt=is_dbt)
         c["n_executions"] += 1
         if ts:
             c["first_seen"] = min(filter(None, [c["first_seen"], ts]))
             c["last_seen"] = max(c["last_seen"], ts)
-    return [by_key[k] for k in sorted(by_key)]
+    return [by_key[k] for k in sorted(by_key, key=str)]
 
 
 # ----- clustering ------------------------------------------------------------------
 
 def merge_and_classify(ident_rows, fingerprint_source, opts):
     """Merge identity rows into clusters, classifying each identity separately so
-    mixed traffic doesn't suppress a shape: BI/human executions make the cluster;
-    ETL/dbt executions are dropped from its counts and disclosed in evidence.
+    mixed traffic doesn't suppress or inflate a shape: BI and human executions are
+    counted apart (admission tests each on its own — see build_findings), ETL/dbt
+    executions are dropped from the counts and disclosed in evidence.
     Classification sees the COMPLETE identity sets; output lists are truncated
     only at serialization time."""
     by_fp = {}
@@ -403,7 +428,8 @@ def merge_and_classify(ident_rows, fingerprint_source, opts):
     clusters = []
     for fp in sorted(by_fp):
         idents = sorted(by_fp[fp], key=lambda i: (-i["n_executions"], i["user"]))
-        included, evidence, has_bi, dropped_execs = [], [], False, 0
+        included, evidence, dropped_execs = [], [], 0
+        bi_execs, human_execs, human_users = 0, 0, set()
         for ident in idents:
             klass, why = classify_identity(ident, opts)
             if klass in ("dbt", "etl"):
@@ -412,22 +438,32 @@ def merge_and_classify(ident_rows, fingerprint_source, opts):
             else:
                 included.append(ident)
                 if klass == "bi":
-                    has_bi = True
+                    bi_execs += ident["n_executions"]
                     evidence.append(why)
+                else:
+                    human_execs += ident["n_executions"]
+                    if ident["user"]:
+                        human_users.add(ident["user"])
         if not included:
             pools["excluded"] += 1
             continue
-        pool = "bi_service" if has_bi else "ad_hoc"
+        pool = "bi_service" if bi_execs else "ad_hoc"
         pools[pool] += 1
         firsts = [i["first_seen"] for i in included if i["first_seen"]]
         lasts = [i["last_seen"] for i in included if i["last_seen"]]
         clusters.append({
             "fingerprint": fp,
             "fingerprint_source": fingerprint_source,
+            "fingerprint_versions": sorted({i["fingerprint_version"] for i in idents
+                                            if i["fingerprint_version"] is not None},
+                                           key=str),
             "sample_text": included[0]["sample_text"],  # busiest kept identity
-            "n_executions": sum(i["n_executions"] for i in included),
+            "n_executions": bi_execs + human_execs,
+            "n_executions_bi": bi_execs,
+            "n_executions_human": human_execs,
             "n_executions_excluded": dropped_execs,
             "n_users": len({i["user"] for i in included if i["user"]}),
+            "n_users_human": len(human_users),
             "users": sorted({i["user"] for i in included if i["user"]}),
             "roles": sorted({i["role"] for i in included if i["role"]}),
             "warehouses": sorted({i["warehouse"] for i in included if i["warehouse"]}),
@@ -477,38 +513,53 @@ def find_conflict_groups(clusters):
 
 # ----- assembly ------------------------------------------------------------------
 
-def build_findings(rows, platform, scope, canonicalizer, opts):
+def build_findings(rows, platform, scope, canonicalizer, opts,
+                   scope_unavailable=()):
     ident_rows = (identities_from_aggregated(rows) if canonicalizer == "warehouse"
                   else identities_from_raw(rows))
     clusters, pools = merge_and_classify(ident_rows, canonicalizer, opts)
 
     for c in clusters:
-        if c["pool"] == "bi_service":
-            # One service user fronts all dashboard viewers, so the distinct-
-            # consumer test can't apply here (see unavailable: viewer_counts).
-            c["admitted"] = c["n_executions"] >= opts["min_count"]
-        else:
-            c["admitted"] = (c["n_executions"] >= opts["min_count"]
-                             and c["n_users"] >= opts["min_users"])
+        # Each traffic class qualifies on its own numbers: BI recurrence can't be
+        # padded with human executions, and human traffic must still clear the
+        # distinct-consumer bar. (bi_service skips the distinct-consumer test for
+        # its BI count — one service user fronts all dashboard viewers; see
+        # unavailable: viewer_counts.)
+        bi_ok = c["n_executions_bi"] >= opts["min_count"]
+        human_ok = (c["n_executions_human"] >= opts["min_count"]
+                    and c["n_users_human"] >= opts["min_users"])
+        c["admitted"] = bi_ok or human_ok
         c["tables"] = extract_tables(c["sample_text"])
         c["agg_signatures"] = agg_signatures(c["sample_text"])
         c["conflict_group"] = None
 
-    # Conflicts over the FULL set; rank admitted first so --top never drops a
-    # conflict member (they're admitted by definition) in favor of noise.
+    # Conflicts over the FULL admitted set (so grouping quality doesn't depend on
+    # --top), then rank admitted-first and truncate — force-keeping every member
+    # of any group that made the cut, and dropping (with a count) groups whose
+    # members all fell beyond it.
     conflict_groups = find_conflict_groups(clusters)
     admitted_total = sum(1 for c in clusters if c["admitted"])
     clusters.sort(key=lambda c: (not c["admitted"], -c["n_executions"],
                                  c["fingerprint"]))
     emitted = clusters[:opts["top"]]
+    emitted_fps = {c["fingerprint"] for c in emitted}
+    by_fp = {c["fingerprint"]: c for c in clusters}
+    kept_groups, beyond_top = [], 0
+    for g in conflict_groups:
+        if any(m in emitted_fps for m in g["members"]):
+            kept_groups.append(g)
+            missing = [m for m in g["members"] if m not in emitted_fps]
+            emitted.extend(by_fp[m] for m in missing)
+            emitted_fps.update(missing)
+        else:
+            beyond_top += 1
     for c in emitted:  # truncate long identity lists only at serialization
         for key in ("users", "roles", "warehouses", "query_tags"):
             c[key] = c[key][:MAX_LIST_ENTRIES]
 
-    unavailable = ["viewer_counts"]  # pushdown reality; BI-API enrichment slot
+    unavailable = ["viewer_counts", *scope_unavailable]
     if canonicalizer == "client":
-        unavailable += ["query_parameterized_hash", "result_limit_pre_filter",
-                        "window_beyond_7_days"]
+        unavailable.append("query_parameterized_hash")
 
     findings = {
         "source": "query_history",
@@ -517,14 +568,15 @@ def build_findings(rows, platform, scope, canonicalizer, opts):
         "window_days": opts["days"],
         "thresholds": {"min_count": opts["min_count"], "min_users": opts["min_users"]},
         "clusters": emitted,
-        "conflict_groups": conflict_groups,
+        "conflict_groups": kept_groups,
         "pools": pools,
         "unavailable": unavailable,
         "coverage": {
             "rows_in": len(rows),
             "clusters_total": len(clusters) + pools["excluded"],
             "clusters_admitted": admitted_total,
-            "conflict_groups": len(conflict_groups),
+            "conflict_groups": len(kept_groups),
+            "conflict_groups_beyond_top": beyond_top,
         },
     }
     if opts["days_requested"] != opts["days"]:
@@ -561,13 +613,15 @@ def main(argv=None):
     ap.add_argument("--exclude-users", default="",
                     help="CSV of users to exclude (ETL/orchestration)")
     ap.add_argument("--min-count", type=_positive_int, default=5,
-                    help="min executions for a cluster to be admitted (default 5)")
+                    help="min executions for a traffic class to admit a cluster "
+                         "(default 5)")
     ap.add_argument("--min-users", type=_positive_int, default=2,
-                    help="min distinct users for an AD-HOC cluster (default 2; "
-                         "not applied to bi_service — one service user fronts "
-                         "all viewers)")
+                    help="min distinct HUMAN users for the human traffic class "
+                         "(default 2; not applied to BI executions — one service "
+                         "user fronts all viewers)")
     ap.add_argument("--top", type=_positive_int, default=500,
-                    help="max clusters emitted (default 500)")
+                    help="max clusters emitted (default 500; conflict-group "
+                         "members of emitted groups are always kept)")
     ap.add_argument("-o", "--out", help="write JSON here instead of stdout")
     args = ap.parse_args(argv)
 
@@ -590,7 +644,8 @@ def main(argv=None):
         "exclude_users": _csv(args.exclude_users),
     }
     findings = build_findings(_load_rows(args.rows), args.platform, scope,
-                              scope_entry["canonicalizer"], opts)
+                              scope_entry["canonicalizer"], opts,
+                              scope_entry.get("unavailable", ()))
 
     text = json.dumps(findings, indent=2, sort_keys=True)
     if args.out:
