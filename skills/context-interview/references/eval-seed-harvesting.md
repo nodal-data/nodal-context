@@ -23,6 +23,14 @@ intent: >
   Collection rate = collected / billed on adjudicated claims. "Cigna" is
   state-specific — must resolve to Cigna-TX vs Cigna-FL, not aggregate across
   them. Exclude sessions <45 days old (claims not yet adjudicated). Exclude BHPN.
+ir:                          # optional structured decomposition (schemas/ir.schema.json)
+  metric: collection_rate    # name in domains/<domain>/metrics.yaml
+  dimensions: [payer_name]
+  filters:
+    - field: payer_name
+      op: ilike
+      value: "Cigna%"
+  time_window: last_quarter  # relative — evergreen seeds never pin a date here
 expected:
   kind: sql_shape          # semantic_entity | sql_shape | value_at_snapshot
   must_include:
@@ -54,6 +62,19 @@ descending order of robustness:
 
 **Avoid grading a live number with no snapshot** — it'll fail the moment the data
 moves and tell you nothing.
+
+## The `ir:` block — structure, not just phrasing
+
+Populate `ir:` whenever the question decomposes to a metric defined in the
+domain's `metrics.yaml` — which is most `sql_shape` and `value_at_snapshot`
+seeds. Record the decomposition the confirmed handling implies: `metric`,
+`dimensions`, `filters` (same `{field, op, value}` shape as a metric expression's
+`mandatory_filters`), and `time_window` (relative tokens like `last_quarter` for
+evergreen seeds; absolute `{start, end}` only on `value_at_snapshot`, where
+`expected.as_of` already pins the date). Entity-only seeds (`semantic_entity`
+with no metric in play) may omit it. The IR is what makes coverage computable
+and lets the seed double as the routing contract — it complements `intent` and
+`expected`, never replaces them.
 
 ## Where "perfect" comes from (this is the design crux)
 

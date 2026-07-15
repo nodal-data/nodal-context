@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nodaldata.io/acf/ir.schema.json",
+  "title": "ACF Question IR",
+  "description": "The structured decomposition of a data question: which metric, sliced how, filtered how, over what window. Shared contract — the eval seed's `ir:` block and the disambiguator/router's production output are the same object. The filter item shape is intentionally identical to metric.schema.json's expression.mandatory_filters.",
+  "type": "object",
+  "required": ["metric"],
+  "properties": {
+    "metric": {
+      "type": "string",
+      "description": "Name reference into domains/<domain>/metrics.yaml (the seed's `domain` scopes the lookup)."
+    },
+    "dimensions": { "type": "array", "items": { "type": "string" } },
+    "filters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["field", "op"],
+        "properties": {
+          "field": { "type": "string" },
+          "op": { "type": "string" },
+          "value": {},
+          "reason": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "grain": {
+      "type": "string",
+      "description": "Omitted = the metric's grain."
+    },
+    "time_window": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "required": ["start", "end"],
+          "properties": {
+            "start": { "type": "string" },
+            "end": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Relative token (last_quarter, last_30_days, ytd, all_time, ...) for evergreen seeds; absolute {start, end} only where expected.as_of pins the snapshot."
+    }
+  },
+  "additionalProperties": false
+}

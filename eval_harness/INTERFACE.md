@@ -33,7 +33,7 @@ are constantly looking to increase our adapters, like Cortex, Genie, Hex, Looker
 entities:    [ {name, meaning, disambiguation, aliases, lineage?} ]
 metrics:     [ {name, definition, grain, params, caveats, lineage?} ]
 routing:     [ {trigger, table, do_not} ]          # from reference.md IF/DO-NOT
-seeds:       [ {question, intent, expected, provenance, status} ]   # ACF only; others: empty
+seeds:       [ {question, intent, ir?, expected, provenance, status} ]   # ACF only; others: empty
 ```
 
 Non-ACF inputs produce an NCR with **no seeds** — which is the point: without the
@@ -114,7 +114,12 @@ changes.
 This contract is **v0 and pre-1.0 unstable**: the NCR shape, the seed format, and the
 delta-report shape may change between minor releases without a deprecation cycle. The
 version is stamped in code as `NCR_VERSION` (`eval_harness/ncr.py`); seed files are the
-shape validated by `schemas/evalseed.schema.json`. When the contract reaches 1.0, NCR
+shape validated by `schemas/evalseed.schema.json`.
+
+Version history: **v1** — `Seed` gains an optional `ir` field (the structured
+question decomposition, `schemas/ir.schema.json`: metric, dimensions, filters,
+grain, time_window). Additive: absent for non-ACF sources and pre-v1 seeds;
+grading is unchanged (still keyed on `expected.kind`). When the contract reaches 1.0, NCR
 and seed changes will be versioned and backward-compatible within a major version. If
 you build a third-party adapter or tooling against the NCR today, pin the repo revision
 you built against.

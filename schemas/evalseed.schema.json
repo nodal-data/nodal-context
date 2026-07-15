@@ -20,6 +20,7 @@
         "as_of": { "type": "string", "format": "date" }
       }
     },
+    "ir": { "$ref": "ir.schema.json" },
     "provenance": { "enum": ["interview", "dashboard", "correction", "generated"] },
     "status": { "enum": ["draft", "confirmed"] },
     "verified_query_file": {

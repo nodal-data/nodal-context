@@ -70,7 +70,10 @@ SELECT ...
   `<!-- status: draft -->`), and **never mined from query logs** — a pattern comes
   from the interview or a Stage-5 verified match. Full rule: `SPEC.md` "Query
   patterns". Runnable, blessed SQL stays in the gitignored `evals/verified/`
-  sidecar.
+  sidecar. When a pattern encodes a *metric's measure*, also land it as that
+  metric's `expression:` block in `metrics.yaml` (the structured, schema-checked
+  home — see SPEC.md "Deterministic anchor"); `reference.md` keeps the routing
+  prose and the `Without this:` line.
 - **Name the aliases.** If a concept is `client_status` in one table and
   `weekly_status` in another, say so — alias confusion is a silent failure.
 - **Every gotcha should also be an eval seed.** If you wrote "exclude BHPN" here,

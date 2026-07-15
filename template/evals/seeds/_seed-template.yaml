@@ -5,6 +5,17 @@ domain: <domain>
 intent: >
   <the confirmed correct meaning — including the disambiguation the naive reading
   would miss>
+# ir: — OPTIONAL structured decomposition (schemas/ir.schema.json). Populate it
+#   whenever the question decomposes to a metric defined in this domain's
+#   metrics.yaml; it complements `intent`/`expected`, never replaces them.
+# ir:
+#   metric: <name in domains/<domain>/metrics.yaml>
+#   dimensions: [<column>]
+#   filters:
+#     - field: <column>
+#       op: <e.g. ilike | in | "<">
+#       value: <literal or <placeholder>>
+#   time_window: <relative token, e.g. last_quarter — keep evergreen seeds relative>
 expected:
   kind: sql_shape              # semantic_entity | sql_shape | value_at_snapshot
   must_include: []             # for sql_shape
@@ -30,6 +41,11 @@ lineage:
 # intent: >
 #   Collection rate on adjudicated claims, state-specific payer resolution,
 #   sessions >= 45 days old. (The confirmed assumptions the verified query used.)
+# ir:                          # the decomposition the verified query actually used
+#   metric: collection_rate
+#   dimensions: [payer_name]
+#   time_window: { start: "2026-01-01", end: "2026-03-31" }   # absolute is OK here —
+#                              # expected.as_of pins this seed to a snapshot anyway
 # expected:
 #   kind: value_at_snapshot
 #   value: 0.92                # the number the analyst read off the dashboard

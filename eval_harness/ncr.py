@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 
 # Contract version for the NCR shape + seed format (see INTERFACE.md "Versioning").
 # Pre-1.0: the shape may change between minor releases without a deprecation cycle.
-NCR_VERSION = 0
+NCR_VERSION = 1
 
 
 @dataclass
@@ -21,6 +21,9 @@ class Seed:
     provenance: str
     status: str             # draft | confirmed
     path: str = ""          # source file, for diagnostics
+    ir: dict = field(default_factory=dict)  # optional structured decomposition
+                            # {metric, dimensions?, filters?, grain?, time_window?}
+                            # (schemas/ir.schema.json); empty for non-ACF sources
 
     @property
     def kind(self) -> str:

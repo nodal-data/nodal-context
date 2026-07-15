@@ -51,7 +51,7 @@ Map each artifact to its ACF field — all `status: draft`, all tagged:
 | `exposures[]` | `domain.yaml.dashboards[]` + domain clustering | the Stage-2/Stage-5 dashboard backlog |
 | `depends_on[]` graph | `context.config.yaml` lineage models + domain boundaries | which models feed an exposure = domain shape |
 | compiled SQL (when `compiled_sql: true`) | `metrics.common_filters` / hygiene-filter candidates in `reference.md` | best-effort; only when `dbt compile` ran |
-| dbt semantic models / metrics | `metrics.yaml` stubs only | draft only, never auto-confirm |
+| dbt semantic models / metrics | `metrics.yaml` stubs, including a draft `expression:` (measure / filters / dimensions when the semantic model carries them) | draft only, never auto-confirm |
 
 `grain_hint` is the headline win: phrase it as a question, e.g. *"dbt has a
 uniqueness test on `soap_note_id` for `fct_session_financials` — is one row really

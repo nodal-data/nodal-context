@@ -5,6 +5,11 @@ intent: >
   cross-state aggregation), counting only sessions >= 45 days old. These are the
   assumptions the verified query encodes — confirmed against the "Collection Rate
   by Payer" dashboard.
+ir:
+  metric: collection_rate
+  dimensions: [payer_name]
+  time_window: { start: "2026-01-01", end: "2026-03-31" }  # absolute is OK here —
+    # expected.as_of pins this seed to a snapshot anyway
 expected:
   kind: value_at_snapshot
   value: 0.92
