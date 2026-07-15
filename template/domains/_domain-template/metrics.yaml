@@ -11,6 +11,16 @@ metrics:
       - <e.g. exclude sessions <45 days old; claims not yet adjudicated>
     common_filters:
       - <standard WHERE clauses>
+    # expression: — OPTIONAL deterministic anchor (see SPEC.md). Generic form, not
+    # runnable SQL. If present, `grain` and `lineage` above become REQUIRED.
+    # expression:
+    #   measure: <e.g. SUM(collected_amount) / SUM(allowed_amount)>
+    #   mandatory_filters:          # without these the metric is WRONG
+    #     - field: <column>
+    #       op: <e.g. "<" | not_ilike | in>
+    #       value: <literal or <placeholder> expression>
+    #       reason: <the failure this filter prevents>
+    #   allowed_dimensions: [<column>, <model.column when ambiguous>]
     lineage:
       - source: dbt_core
         models: []

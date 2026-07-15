@@ -29,5 +29,6 @@ def load_seeds(root):
             provenance=doc.get("provenance", ""),
             status=doc.get("status", ""),
             path=str(f.relative_to(root)) if f.is_relative_to(root) else str(f),
+            ir=doc.get("ir") or {},
         ))
     return seeds

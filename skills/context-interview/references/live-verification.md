@@ -84,6 +84,11 @@ date?"* Record the value and the `as_of` date. (Let the analyst set the toleranc
    - `provenance: dashboard`, `status: confirmed`
    - `expected.kind: value_at_snapshot`, `value: <dashboard number>`, `as_of: <date>`
    - `intent:` ← the confirmed assumptions (the disambiguation it got right)
+   - `ir:` ← the decomposition the verified query actually used — `metric` (the
+     `metrics.yaml` name), `dimensions`, `filters`, `time_window` (absolute
+     `{start, end}` is fine here; `as_of` pins the seed). You have the query in
+     front of you at this moment, so record its structure, not just its prose —
+     this is what makes the seed and the production decomposition the same object.
    - write the blessed context-on SQL to `evals/verified/<seed-name>.sql` (a LOCAL,
      gitignored sidecar — **do not commit the SQL**) and point the seed at it with
      `verified_query_file: evals/verified/<seed-name>.sql`. The seed (committed) holds
@@ -108,7 +113,9 @@ the Stage-4 way:
 - add the caveat to the domain's `known-issues.md` and an `IF … DO NOT …` routing
   trigger to its `reference.md`, and
 - write a `provenance: correction`, `status: confirmed` seed whose `expected.kind:
-  sql_shape` encodes the *correct* handling (`must_include` / `must_exclude`).
+  sql_shape` encodes the *correct* handling (`must_include` / `must_exclude`),
+  with an `ir:` block recording the correct decomposition (relative
+  `time_window` — the value isn't pinned, so the window must stay evergreen).
 - Do **not** write the wrong SQL to `evals/verified/` or set `verified_query_file`.
   Leave the value unpinned until a re-run verifies it.
 

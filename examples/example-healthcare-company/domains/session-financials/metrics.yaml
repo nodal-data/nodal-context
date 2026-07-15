@@ -1,0 +1,36 @@
+# metrics.yaml — metric definitions. Human-owned `definition`. No statistics.
+metrics:
+  - name: collection_rate
+    definition: >
+      Share of allowed amount actually collected on adjudicated claims. Sessions
+      under 45 days old haven't adjudicated and read artificially low; Payer Y is
+      excluded (different reimbursement cycle).
+    grain: note_id x authorized_service_id
+    status: confirmed
+    parameters:
+      - name: as_of_date
+        note: the adjudication cutoff is relative to this date
+      - name: time_window
+        note: which sessions to include
+    caveats:
+      - Blank payer_name is meaningful, not missing-at-random — say so when
+        filtering by payer.
+      - Payers are state-specific (Payer X-TX vs Payer X-FL are different
+        contracts/rates); never aggregate across states.
+    common_filters:
+      - standard hygiene filters (see reference.md)
+    expression:
+      measure: SUM(collected_amount) / SUM(allowed_amount)
+      mandatory_filters:
+        - field: session_date
+          op: "<"
+          value: "<as_of_date> - 45 days"
+          reason: claims take ~45 days to adjudicate; recent sessions read artificially low
+        - field: payer_name
+          op: not_ilike
+          value: "Payer Y%"
+          reason: different reimbursement cycle skews the rate
+      allowed_dimensions: [payer_name, session_date]
+    lineage:
+      - source: dbt_core
+        models: [fct_session_financials]

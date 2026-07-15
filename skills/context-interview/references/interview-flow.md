@@ -187,6 +187,16 @@ For each, write the caveat as a routing trigger the agent will read, and an eval
 seed whose `expected` encodes the *correct* handling (right filter, right table, or
 "clarify before answering").
 
+**When a metric is confirmed, draft its `expression:` too.** Once the analyst has
+confirmed a metric's measure, its must-have filters (follow-ups 1–2), and what it
+may be sliced by, assemble them into the metric's structured `expression:` block in
+`metrics.yaml` — `measure` + `mandatory_filters` (each with a `reason` naming the
+failure it prevents) + `allowed_dimensions` — and read it back for confirmation
+like any other draft (see SPEC.md "Deterministic anchor"). The schema requires
+`grain` and `lineage` on any metric carrying an expression, so confirm those at the
+same moment (§2 steps 3–4 usually already captured them). Later edits to a
+confirmed metric's expression reset it to `status: draft` until re-confirmed.
+
 ---
 
 ## §5 — Live Verification

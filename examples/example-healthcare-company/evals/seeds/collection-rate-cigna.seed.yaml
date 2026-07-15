@@ -5,6 +5,14 @@ intent: >
   (Payer X-TX vs Payer X-FL), not aggregate across states. Exclude sessions <45 days
   old (claims not yet adjudicated). Exclude Payer Y/Payer Y-CA. Acknowledge blank-payer
   handling if filtering by payer.
+ir:
+  metric: collection_rate
+  dimensions: [payer_name]     # state-specific payers stay separate rows
+  filters:
+    - field: payer_name
+      op: ilike
+      value: "Payer X%"
+  time_window: last_quarter    # evergreen seed — keep the window relative
 expected:
   kind: sql_shape
   must_include:

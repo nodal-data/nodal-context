@@ -13,7 +13,10 @@ answer data questions accurately — don't write SQL from raw schema alone.
    the silent-failure modes a senior analyst would warn about. When a "Common query
    patterns" block matches the question, start your SQL from its form.
 4. Before computing a metric, read `domains/<domain>/metrics.yaml` and honor its
-   `parameters` and `caveats`. For ambiguous terms, check `entities/*.yaml`
+   `parameters` and `caveats`. When a **confirmed** metric carries an
+   `expression:` block, build the query from it — its `measure`, every
+   `mandatory_filters` entry, and only `allowed_dimensions` slices — don't
+   re-derive the metric from schema. For ambiguous terms, check `entities/*.yaml`
    (cross-domain) then `domains/<domain>/entities.yaml` (domain-specific).
 5. Issue **read-only** SQL (SELECT only — never DDL/DML) via the warehouse MCP
    server only. (No warehouse MCP configured? See `README.md`.)

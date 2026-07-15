@@ -10,6 +10,7 @@
       "items": {
         "type": "object",
         "required": ["name", "definition", "status"],
+        "dependentRequired": { "expression": ["grain", "lineage"] },
         "properties": {
           "name": { "type": "string" },
           "definition": { "type": "string" },
@@ -28,6 +29,32 @@
           },
           "caveats": { "type": "array", "items": { "type": "string" } },
           "common_filters": { "type": "array", "items": { "type": "string" } },
+          "expression": {
+            "type": "object",
+            "required": ["measure"],
+            "properties": {
+              "measure": {
+                "type": "string",
+                "description": "Generic-form aggregation over columns of this metric's lineage models. <placeholders> for parameter values; never a runnable query — FROM lives in lineage, WHERE in mandatory_filters, GROUP BY in allowed_dimensions."
+              },
+              "mandatory_filters": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["field", "op"],
+                  "properties": {
+                    "field": { "type": "string" },
+                    "op": { "type": "string" },
+                    "value": {},
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "allowed_dimensions": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": false
+          },
           "lineage": { "$ref": "lineage.schema.json" }
         },
         "additionalProperties": false

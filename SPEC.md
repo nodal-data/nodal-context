@@ -65,6 +65,12 @@ The line, precisely:
   the domain. A one-line dialect note (e.g. divide-by-zero handling) may
   accompany a pattern when the trap is dialect-specific.
 
+When a pattern encodes a *metric's measure*, the structured sibling is the
+metric's `expression:` block in `metrics.yaml` (see "metric", below) — the
+preferred, schema-checked home for the measure, its mandatory filters, and its
+allowed dimensions. The `reference.md` pattern keeps the routing prose and the
+`Without this:` failure line; the expression carries the deterministic form.
+
 ## Directory contract
 
 ```
@@ -158,18 +164,66 @@ domains:
 
 ### metric (`domains/*/metrics.yaml`)
 `name`, `definition` (prose, human-owned), `grain`, `parameters` (what the user
-must specify), `caveats`, `common_filters`, `lineage`, `status`.
+must specify), `caveats`, `common_filters`, `expression` (optional deterministic
+anchor, below), `lineage`, `status`.
+
+**Deterministic anchor: `expression:`.** An optional per-metric block that makes
+the "generic form" rule precise and schema-checkable — the compile target for
+eval templates, reconciliation, and verification. It is *not* SQL and *not* a
+dialect; it is the structured envelope around a generic-form measure:
+
+- `measure` (required) — the aggregation expression over columns of the metric's
+  `lineage:` models, e.g. `SUM(collected_amount) / SUM(allowed_amount)`. The
+  pattern-not-paste rules ("Query patterns", above) apply verbatim:
+  `<placeholders>` for parameter values, business-constant literals welcome, no
+  statistics, never a runnable query. The FROM is the metric's `lineage:`, the
+  WHERE is `mandatory_filters`, the GROUP BY is a subset of `allowed_dimensions`.
+- `mandatory_filters` — filters without which the metric is *wrong* (vs.
+  `common_filters`, which stays advisory prose). Structured objects
+  `{field, op, value?, reason?}`; `reason` names the failure the filter prevents.
+  `op` is an open string, not an enum — the working vocabulary is `=`, `!=`, `<`,
+  `<=`, `>`, `>=`, `in`, `not_in`, `like`/`not_like`, `ilike`/`not_ilike`,
+  `is_null`, `is_not_null`, `between`; `value` may carry generic-form expressions
+  (e.g. `<as_of_date> - 45 days`).
+- `allowed_dimensions` — column names (dotted `model.column` when ambiguous) the
+  metric may be sliced by. Omitted = not yet enumerated; present = exhaustive for
+  verified slicing.
+
+A metric carrying an `expression:` MUST also state its `grain` and pin its
+`lineage` (schema-enforced) — that is what keeps the anchor drift-covered. By
+convention its lineage models are a subset of the domain's lineage in
+`context.config.yaml`, so an upstream model change re-flags `metrics.yaml` for
+re-confirmation. Like everything else, the expression is analyst-confirmed
+(design rule 1): adding or editing one on a confirmed metric flips the metric
+back to `status: draft` until re-confirmed.
 
 ### domain (`domains/*/domain.yaml`)
 `name`, `summary`, `tables`, `grain`, `dashboards`, `owner`, `lineage`.
 
 ### eval seed (`evals/seeds/*.seed.yaml`)
-`question`, `intent` (the disambiguated meaning), `expected` (one of:
+`question`, `intent` (the disambiguated meaning), `ir` (optional structured
+decomposition, below), `expected` (one of:
 `semantic_entity` | `sql_shape` | `value_at_snapshot`), `provenance`
 (`interview` | `dashboard` | `correction` | `generated`), `domain`, `status`, and
 the optional `verified_query_file` (below). See
 [`SPEC` of seeds](./schemas/evalseed.schema.json) and
 [harvesting reference](./skills/context-interview/references/eval-seed-harvesting.md).
+
+**The IR: seeds store structure, not just phrasing.** The optional `ir:` block
+([`schemas/ir.schema.json`](./schemas/ir.schema.json)) records the question's
+decomposition — `metric` (a name reference into that domain's `metrics.yaml`),
+`dimensions`, `filters` (same `{field, op, value?, reason?}` shape as a metric
+expression's `mandatory_filters`), `grain` (omitted = the metric's), and
+`time_window`. It *complements* the other fields, never replaces them: `intent`
+stays the human-readable disambiguation, `expected` stays the grading contract.
+What the IR buys: coverage becomes exactly computable (a question is covered iff
+its `ir.metric` resolves to an expression-bearing definition), eval templates
+derive mechanically from definitions, and the disambiguator's production output
+and the eval seed become the same object — one contract between routing and
+evaluation. Staleness rule: evergreen seeds (`sql_shape`, `semantic_entity`) use
+*relative* `time_window` tokens (`last_quarter`, `last_30_days`, `ytd`, …);
+absolute `{start, end}` windows belong only on `value_at_snapshot` seeds, whose
+`expected.as_of` already pins them to a date.
 
 **Seeds are the one place a number is allowed — but the SQL is never committed.**
 Design rule 2 ("no statistics in context") and the pattern-not-paste rule ("Query

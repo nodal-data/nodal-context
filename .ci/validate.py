@@ -134,6 +134,50 @@ def lineage_repo_warnings(docs, yaml):
     return warns
 
 
+# ----- IR coverage (warn, never fail) -----------------------------------------
+
+def ir_coverage_report(docs, yaml):
+    """Cross-check each seed's `ir.metric` against the root's metrics.yaml docs.
+    Dangling references warn (never fail). The summary line is the computable form
+    of "a question is covered iff an IR-complete definition exists": confirmed
+    seeds whose ir.metric resolves to an expression-bearing metric, over all
+    confirmed seeds. Returns (warnings, summary_or_None)."""
+    metrics_by_domain = {}  # domain -> {metric name: has expression}
+    for path, kind in docs:
+        if kind != "metric":
+            continue
+        doc = _load_yaml(path, yaml)
+        if not isinstance(doc, dict):
+            continue
+        domain = path.parent.name
+        for m in doc.get("metrics") or []:
+            if isinstance(m, dict) and m.get("name"):
+                metrics_by_domain.setdefault(domain, {})[m["name"]] = \
+                    bool(m.get("expression"))
+    warns, covered, confirmed = [], 0, 0
+    for path, kind in docs:
+        if kind != "evalseed":
+            continue
+        doc = _load_yaml(path, yaml)
+        if not isinstance(doc, dict):
+            continue
+        if doc.get("status") == "confirmed":
+            confirmed += 1
+        ir = doc.get("ir")
+        if not isinstance(ir, dict):
+            continue
+        domain, metric = doc.get("domain", ""), ir.get("metric")
+        known = metrics_by_domain.get(domain, {})
+        if metric not in known:
+            warns.append(f"{path}: ir.metric '{metric}' is not defined in "
+                         f"domains/{domain}/metrics.yaml — dangling IR reference")
+        elif doc.get("status") == "confirmed" and known[metric]:
+            covered += 1
+    summary = (f"IR coverage: {covered}/{confirmed} confirmed seed(s) resolve to "
+               "an expression-bearing metric") if confirmed else None
+    return warns, summary
+
+
 # ----- lenient (structural) check for template/ ------------------------------
 
 def check_structure(docs, raw_schemas, yaml):
@@ -220,8 +264,11 @@ def main(argv=None):
         total_drafts += drafts
         all_errors += errs
         all_warnings += lineage_repo_warnings(docs, yaml)
+        ir_warns, ir_summary = ir_coverage_report(docs, yaml)
+        all_warnings += ir_warns
         print(f"validate: {root}/ — {len(docs)} doc(s), "
-              f"{len(errs)} error(s), {drafts} draft(s)")
+              f"{len(errs)} error(s), {drafts} draft(s)"
+              + (f" — {ir_summary}" if ir_summary else ""))
 
     if structural_root:
         docs = discover_docs(structural_root)
@@ -233,7 +280,7 @@ def main(argv=None):
               f"{len(errs)} error(s)")
 
     if all_warnings:
-        print(f"\nvalidate: WARNING — {len(all_warnings)} lineage problem(s) "
+        print(f"\nvalidate: WARNING — {len(all_warnings)} problem(s) "
               "(not a failure):")
         for w in all_warnings:
             print(f"  - {w}")

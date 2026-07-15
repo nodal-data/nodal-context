@@ -12,7 +12,7 @@
 
 ## Routing triggers
 - IF question is about **collection rate / payment realization** → apply the
-  45-day session-age cutoff unless told otherwise, and EXCLUDE PAYER X
+  45-day session-age cutoff unless told otherwise, and EXCLUDE PAYER Y
   (different reimbursement cycle).
 - IF question filters by **payer** → roughly half of sessions have a blank
   `payer_name`; excluding blanks materially changes aggregates — say so.
@@ -41,12 +41,12 @@ WHERE <standard hygiene filters>
 
 ### Collection rate, adjudication-safe
 Without this: sessions under 45 days old haven't adjudicated, so the rate reads
-artificially low — and Payer X's different reimbursement cycle skews it further.
+artificially low — and Payer Y's different reimbursement cycle skews it further.
 ```sql
 SELECT SUM(collected_amount) / SUM(allowed_amount) AS collection_rate
 FROM FCT_SESSION_FINANCIALS
 WHERE session_date < DATEADD('day', -45, <as_of_date>)
-  AND payer_name NOT ILIKE 'Payer X%'
+  AND payer_name NOT ILIKE 'Payer Y%'
 ```
 
 ## Cross-references
