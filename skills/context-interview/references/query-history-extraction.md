@@ -61,12 +61,17 @@ discard after Stage 0.
 ## Step 2 — read the findings, then draft (one domain at a time, as always)
 
 `.query-findings.json` shape: `clusters[]` (`fingerprint`, `sample_text`,
-`n_executions`, `n_users`, `users[]`, `roles[]`, `warehouses[]`, `pool`,
-`pool_evidence[]`, `tables[]`, `agg_signatures[]`, `admitted`, `conflict_group`),
-`conflict_groups[]`, `pools{}`, `unavailable[]`, `coverage{}`. Only `admitted`
+`n_executions`, `n_executions_excluded`, `n_users`, `users[]`, `roles[]`,
+`warehouses[]`, `query_tags[]`, `pool`, `pool_evidence[]`, `tables[]`,
+`agg_signatures[]`, `admitted`, `conflict_group`), `conflict_groups[]`,
+`pools{}`, `unavailable[]`, `coverage{}`, `window_days` (the *effective* window —
+`window_days_requested` appears when a scope capped it). Only `admitted`
 clusters are draft candidates; the `bi_service` pool is high-trust
 (institutionalized logic), the `ad_hoc` pool is a demand signal, not a
-definition source.
+definition source. Traffic is classified per executing identity, so a shape
+shared by a dashboard and an ETL job stays a candidate: the ETL/dbt executions
+are subtracted into `n_executions_excluded` and disclosed in `pool_evidence`
+rather than suppressing the cluster.
 
 Map each artifact to its ACF target — all `status: draft`, all tagged:
 
