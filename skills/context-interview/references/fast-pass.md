@@ -26,7 +26,9 @@ Stage 0 is **not skippable**: repo scaffold / resume discovery, the warehouse
 probe, and the platform question run as usual (silently where possible). One
 budget adjustment: run the dbt extraction only if a manifest is already reachable
 on disk — don't spend fast-pass minutes waiting for a clone; note it as deferred
-and move on.
+and move on. Same rule for query-history mining: run it only if the warehouse
+probe already succeeded and the emitted SQL runs first try — never spend
+fast-pass minutes on privilege errors; defer instead.
 
 ## Company minimum (~2 minutes)
 
@@ -41,7 +43,10 @@ and move on.
 
 Ask which domain (or dashboard) matters most right now; that's the one you do.
 No dashboard in mind? Anchor on tables instead: *"Which 3–5 tables do analysts
-query most often?"* — the most-queried table usually names the domain.
+query most often?"* — the most-queried table usually names the domain. (If
+Stage 0's query-history findings exist, answer this yourself from the top
+clusters' `tables[]` and just confirm: *"History says FCT_ORDERS is your
+most-queried table — is that the domain to do?"*)
 Each confirmed answer is written to its ACF home **and emits its seed at the
 moment of confirmation** — same rule as the full interview, no batching.
 

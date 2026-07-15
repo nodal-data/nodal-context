@@ -26,9 +26,12 @@ per project.
      `validate.py`, `drift.py`, `collect_manifests.py`, `suggest.py`,
      `changed_domains.py`), `schemas/` (the ACF JSON Schemas — `.ci/validate.py`
      validates the repo's YAML against them locally, with no network),
-     `scripts/dbt_extract.py` (which `drift.py` imports), and **`eval_harness/`**
-     — vendored because `eval-delta.yml` runs `python -m eval_harness.run` from
-     the context repo root and there is no pip package to install it from.
+     `scripts/dbt_extract.py` (which `drift.py` imports),
+     `scripts/query_history_extract.py` (the Stage-0 query-history miner —
+     re-mining and the upcoming reconciliation mode run from the context repo
+     root), and **`eval_harness/`** — vendored because `eval-delta.yml` runs
+     `python -m eval_harness.run` from the context repo root and there is no pip
+     package to install it from.
 
    **Hard gate: do not proceed to Stage 1 until the script's self-check passes**
    (`python3 scripts/scaffold.py --check <target-dir>` exits 0). A repo that skips

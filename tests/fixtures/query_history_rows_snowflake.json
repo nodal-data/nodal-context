@@ -1,0 +1,81 @@
+{
+  "rows": [
+    {
+      "FINGERPRINT": "fp_tableau_net",
+      "N_EXECUTIONS": 365,
+      "N_USERS": 1,
+      "USERS": ["TABLEAU_SVC"],
+      "ROLES": ["BI_ROLE"],
+      "WAREHOUSES": ["BI_WH"],
+      "SAMPLE_TEXT": "SELECT region, SUM(net_revenue) AS revenue FROM ANALYTICS.MART.FCT_ORDERS GROUP BY region",
+      "FIRST_SEEN": "2026-04-16T07:00:00Z",
+      "LAST_SEEN": "2026-07-14T07:00:00Z"
+    },
+    {
+      "FINGERPRINT": "fp_looker_gross",
+      "N_EXECUTIONS": 45,
+      "N_USERS": 1,
+      "USERS": "[\"LOOKER_SVC\"]",
+      "ROLES": ["REPORTING"],
+      "WAREHOUSES": ["BI_WH"],
+      "SAMPLE_TEXT": "SELECT region, SUM(gross_revenue) AS revenue FROM ANALYTICS.MART.FCT_ORDERS GROUP BY region",
+      "FIRST_SEEN": "2026-05-01T07:00:00Z",
+      "LAST_SEEN": "2026-07-13T07:00:00Z"
+    },
+    {
+      "FINGERPRINT": "fp_adhoc_netref",
+      "N_EXECUTIONS": 8,
+      "N_USERS": 2,
+      "USERS": ["JANE", "BOB"],
+      "ROLES": ["ANALYST"],
+      "WAREHOUSES": ["ADHOC_WH"],
+      "SAMPLE_TEXT": "SELECT region, SUM(net_revenue - refunds) AS revenue FROM ANALYTICS.MART.FCT_ORDERS GROUP BY region",
+      "FIRST_SEEN": "2026-06-01T07:00:00Z",
+      "LAST_SEEN": "2026-07-10T07:00:00Z"
+    },
+    {
+      "FINGERPRINT": "fp_human_sessions",
+      "N_EXECUTIONS": 12,
+      "N_USERS": 3,
+      "USERS": ["JANE", "BOB", "PRIYA"],
+      "ROLES": ["ANALYST"],
+      "WAREHOUSES": ["ADHOC_WH"],
+      "SAMPLE_TEXT": "WITH recent AS (SELECT client_id FROM analytics.mart.dim_clients WHERE created_at > '2026-01-01') SELECT COUNT(*) FROM recent JOIN analytics.mart.fct_sessions s ON s.client_id = recent.client_id",
+      "FIRST_SEEN": "2026-05-20T07:00:00Z",
+      "LAST_SEEN": "2026-07-12T07:00:00Z"
+    },
+    {
+      "FINGERPRINT": "fp_below_threshold",
+      "N_EXECUTIONS": 3,
+      "N_USERS": 1,
+      "USERS": ["JANE"],
+      "ROLES": ["ANALYST"],
+      "WAREHOUSES": ["ADHOC_WH"],
+      "SAMPLE_TEXT": "SELECT AVG(latency_ms) FROM ANALYTICS.MART.FCT_API_CALLS",
+      "FIRST_SEEN": "2026-07-01T07:00:00Z",
+      "LAST_SEEN": "2026-07-03T07:00:00Z"
+    },
+    {
+      "FINGERPRINT": "fp_dbt_test",
+      "N_EXECUTIONS": 90,
+      "N_USERS": 1,
+      "USERS": ["TRANSFORMER_PROD"],
+      "ROLES": ["TRANSFORM_ROLE"],
+      "WAREHOUSES": ["TRANSFORM_WH"],
+      "SAMPLE_TEXT": "select count(*) as failures from (select order_id from analytics.mart.fct_orders where order_id is null) dbt_internal_test /* {\"app\": \"dbt\", \"target_name\": \"prod\"} */",
+      "FIRST_SEEN": "2026-04-16T07:00:00Z",
+      "LAST_SEEN": "2026-07-14T07:00:00Z"
+    },
+    {
+      "FINGERPRINT": "fp_etl_fivetran",
+      "N_EXECUTIONS": 900,
+      "N_USERS": 1,
+      "USERS": ["FIVETRAN_SVC"],
+      "ROLES": ["ETL_ROLE"],
+      "WAREHOUSES": ["LOAD_WH"],
+      "SAMPLE_TEXT": "SELECT MAX(updated_at) FROM ANALYTICS.RAW.ORDERS_STG",
+      "FIRST_SEEN": "2026-04-16T07:00:00Z",
+      "LAST_SEEN": "2026-07-14T07:00:00Z"
+    }
+  ]
+}

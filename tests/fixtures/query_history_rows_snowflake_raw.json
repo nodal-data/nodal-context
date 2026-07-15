@@ -1,0 +1,23 @@
+[
+  {
+    "query_text": "SELECT * FROM ANALYTICS.MART.FCT_ORDERS WHERE order_date > '2026-01-01' AND amount IN (1, 2, 3)",
+    "user_name": "JANE",
+    "role_name": "ANALYST",
+    "warehouse_name": "ADHOC_WH",
+    "start_time": "2026-07-10T09:00:00Z"
+  },
+  {
+    "query_text": "select *  from analytics.mart.fct_orders where order_date > '2026-06-01' and amount IN (5,6)",
+    "user_name": "BOB",
+    "role_name": "ANALYST",
+    "warehouse_name": "ADHOC_WH",
+    "start_time": "2026-07-12T10:30:00Z"
+  },
+  {
+    "query_text": "SELECT COUNT(*) FROM ANALYTICS.MART.DIM_CLIENTS -- daily sanity check",
+    "user_name": "JANE",
+    "role_name": "ANALYST",
+    "warehouse_name": "ADHOC_WH",
+    "start_time": "2026-07-11T08:00:00Z"
+  }
+]

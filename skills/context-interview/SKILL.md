@@ -68,7 +68,7 @@ reference file — read it when you enter the stage. Don't load all of them up f
 
 | Stage | Goal | Reference |
 |---|---|---|
-| 0. Setup | Lay down the repo, auto-extract a draft (dbt if present) | `references/repo-scaffold.md`, `references/dbt-extraction.md` |
+| 0. Setup | Lay down the repo, auto-extract a draft (dbt + query history if present) | `references/repo-scaffold.md`, `references/dbt-extraction.md`, `references/query-history-extraction.md` |
 | 1. Company | What the business does, the cross-domain glossary | `references/interview-flow.md` |
 | 2. Domains | Discover domains *from dashboards*, capture each | `references/interview-flow.md` |
 | 3. Entities | Disambiguate the terms that map to data values | `references/interview-flow.md` |
@@ -187,6 +187,16 @@ you enter it.
      the background, and nothing before Stage 5 requires a live connection. Note
      any warehouse checks you skip for connectivity (schema pulls, empirical grain
      checks) and re-run them at Stage 5 pre-flight;
+   - **warehouse query history — the third extraction source.** If the probe
+     above succeeded, mine what the company actually runs: follow
+     `references/query-history-extraction.md` — the script emits the extraction
+     SQL, you execute it read-only via the warehouse MCP, and the script clusters
+     the rows into `.query-findings.json`. Recurring BI-service clusters become
+     Stage-2 dashboard-catalog candidates; conflicting calculations over the same
+     tables are interview *questions*, never answers. Everything drafted from it
+     is `status: draft`, tagged `# query-history-derived`. If the platform isn't
+     implemented yet or privileges are missing, the script and doc say so loudly —
+     note it as deferred (with the other skipped warehouse checks) and continue.
    - existing BI/dashboard titles if reachable.
    Write these into `context.config.yaml` (lineage sources) and as `status: draft`
    stubs. Tell the analyst: "I pulled a rough draft from your dbt project and schema.

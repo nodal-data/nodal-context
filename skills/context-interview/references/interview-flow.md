@@ -94,6 +94,16 @@ rather than asking them to list from scratch. If `unavailable` includes `exposur
 (many dbt projects, including ones with no `exposures:` blocks), ask the question
 above instead.
 
+If Stage 0 also produced `.query-findings.json` (query-history mining), its
+admitted `bi_service` clusters are a **parallel draft catalog** — each recurring
+cluster is a dashboard-shaped unit: a recurring question plus the tables it
+reads. Merge them with the exposures (or use them alone when `unavailable`
+includes `exposures`) and confirm the clustering with the analyst. When a
+`conflict_groups[]` entry touches the domain you're capturing, ask it as the
+disambiguation question — the analyst's resolution becomes the metric's
+`expression:` and a seed with `ir:` (see
+`query-history-extraction.md` for the phrasing).
+
 Cluster the dashboards. For each cluster (domain):
 
 1. "What business question is this cluster of dashboards really answering?"
@@ -182,6 +192,8 @@ Follow-ups:
    clause that even careful analysts get wrong?" → a confirmed **Common query
    pattern** in `reference.md` (pattern-not-paste; rules in
    `reference-doc-skeleton.md`), plus a `sql_shape` seed encoding the same form.
+   (A high-count query-history cluster the analyst recognizes as "the query
+   everyone gets wrong" is a ready-made candidate.)
 
 For each, write the caveat as a routing trigger the agent will read, and an eval
 seed whose `expected` encodes the *correct* handling (right filter, right table, or

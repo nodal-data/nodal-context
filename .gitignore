@@ -21,6 +21,10 @@ __pycache__/
 analytics-context/
 .dbt-findings.json
 
+# Transient query-history mining artifacts (Stage 0) — raw warehouse SQL, never committed
+.query-history-rows.json
+.query-findings.json
+
 .env
 .envrc
 toolbox 

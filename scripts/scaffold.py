@@ -20,6 +20,9 @@ repo root and have no other way to find their code:
   .ci/*.py             the scripts those workflows run
   schemas/*.json       ACF JSON Schemas (validate.py resolves ./schemas)
   scripts/dbt_extract.py  imported by .ci/drift.py
+  scripts/query_history_extract.py  Stage-0 query-history miner; re-mining (and
+                       the upcoming reconciliation mode) runs from the context
+                       repo root. No shipped workflow imports it yet.
   eval_harness/        vendored — eval-delta runs `python -m eval_harness.run`
                        from the repo root; there is no pip package.
 
@@ -43,6 +46,7 @@ SUPPORT_SET = [
     ".ci",
     "schemas",
     "scripts/dbt_extract.py",
+    "scripts/query_history_extract.py",
     "eval_harness",
 ]
 
@@ -95,7 +99,8 @@ def self_check(target: Path) -> int:
     """Verify the scaffold is complete and functional. Returns count of problems."""
     problems = []
 
-    required = ["context.config.yaml", "scripts/dbt_extract.py", "eval_harness/run.py"]
+    required = ["context.config.yaml", "scripts/dbt_extract.py",
+                "scripts/query_history_extract.py", "eval_harness/run.py"]
     required += [f".github/workflows/{w}" for w in WORKFLOWS]
     required += [f".ci/{p.name}" for p in sorted((TOOL_ROOT / ".ci").glob("*.py"))]
     required += [f"schemas/{p.name}" for p in sorted((TOOL_ROOT / "schemas").glob("*.json"))]
