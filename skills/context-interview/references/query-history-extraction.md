@@ -68,6 +68,18 @@ are transient bootstrap files, gitignored — discard after Stage 0.
   role can see. Tell the analyst you're mining a one-week, privilege-limited
   sample, and note the grant as deferred so a later session can re-mine the full
   window.
+- **When you defer, sell the grant — one sentence of value, then a handoff the
+  analyst can forward.** An admin asked to run mystery SQL says no; an admin
+  told what it buys says yes. Quantify the gap from what you actually saw, e.g.:
+  *"the 7-day fallback could only see my own 5 queries; this one-time read-only
+  grant unlocks a 365-day census of what your dashboards actually compute —
+  recurring query patterns and conflicting metric definitions are typically the
+  richest input to this whole process."* Then hand the analyst a copy-pasteable
+  note for their Snowflake admin with three parts: what it grants (read-only
+  access to query *metadata* for the MCP user — never table data), the exact
+  grant SQL above with `<USER>`/`<WAREHOUSE>` already filled in from the live
+  connection, and what happens next (a later session re-mines the full window —
+  it's on the deferred-checks list).
 - Not on Snowflake yet? The script names the platform's history source and exits
   loudly (databricks / bigquery / redshift / fabric are registered but not
   implemented). Tell the analyst mining is unavailable on their platform for
