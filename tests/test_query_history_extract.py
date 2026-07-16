@@ -6,9 +6,11 @@ warehouse-native fingerprints) and the raw shape for platforms without a native
 hash (bare array, per-query rows the client canonicalizer must collapse).
 Assertions cover per-class execution counting, mixed traffic, evidence, admission
 per traffic class, ETL/dbt exclusion (including the deterministic is_dbt flag),
-the lexer, table/agg extraction, conflict grouping and member retention under
---top, effective-window reporting, degradation, determinism, argument validation,
-and the loud stubs.
+content-level demotion (system chrome / catalog polling / BI UI chrome) with
+admitted-only emission and --emit-rejected, the identity census and
+service-account flagging, the lexer, table/agg extraction, conflict grouping and
+member retention under --top, effective-window reporting, degradation,
+determinism, argument validation, and the loud stubs.
 
 Run: python3 tests/test_query_history_extract.py   (exit 0 = pass)
 """
@@ -29,7 +31,7 @@ RAW_FIXTURE = ROOT / "tests" / "fixtures" / "query_history_rows_snowflake_raw.js
 NO_OVERRIDES = {"bi_users": [], "bi_roles": [], "bi_warehouses": [],
                 "exclude_users": []}
 BASE_OPTS = dict(NO_OVERRIDES, days=90, days_requested=90, min_count=5,
-                 min_users=2, top=500)
+                 min_users=2, top=500, emit_rejected=False)
 
 
 def _findings(rows_path, *extra_args):
@@ -71,10 +73,16 @@ def run():
     assert f["window_days"] == 90 and "window_days_requested" not in f
 
     # all-ETL / all-dbt clusters excluded: counted, absent from clusters[]
-    assert f["pools"] == {"bi_service": 4, "ad_hoc": 3, "excluded": 2}
+    assert f["pools"] == {"bi_service": 4, "ad_hoc": 3, "excluded": 2,
+                          "system": 0, "catalog": 0, "bi_chrome": 0}
     dropped = {"fp_etl_fivetran", "fp_dbt_test"}
     assert not dropped & {c["fingerprint"] for c in f["clusters"]}
-    assert len(f["clusters"]) == 7
+    # admitted-only emission by default: fp_below_threshold is counted in
+    # pools/coverage but not written; --emit-rejected restores it
+    assert len(f["clusters"]) == 6
+    fr_all = _findings(AGG_FIXTURE, "--emit-rejected")
+    assert len(fr_all["clusters"]) == 7
+    assert fr_all["clusters"][-1]["fingerprint"] == "fp_below_threshold"
 
     # pooling with evidence; native hash version carried through
     tab = _cluster(f, "fp_tableau_net")
@@ -101,8 +109,8 @@ def run():
     adhoc = _cluster(f, "fp_adhoc_netref")
     assert adhoc["pool"] == "ad_hoc" and adhoc["admitted"]
     assert adhoc["n_executions_human"] == 8 and adhoc["n_users_human"] == 2
-    below = _cluster(f, "fp_below_threshold")
-    assert not below["admitted"]  # n=3 < 5, still listed
+    below = _cluster(fr_all, "fp_below_threshold")
+    assert not below["admitted"]  # n=3 < 5; listed only under --emit-rejected
 
     # BI recurrence can't be padded with human executions: 1 BI + 4 human
     # executions is NOT a dashboard pattern (and human traffic must clear both
@@ -111,7 +119,7 @@ def run():
         _row("fp_pad", "TABLEAU_SVC", 1, "SELECT SUM(x) FROM T"),
         _row("fp_pad", "JANE", 2, "SELECT SUM(x) FROM T"),
         _row("fp_pad", "BOB", 2, "SELECT SUM(x) FROM T"),
-    ])
+    ], "--emit-rejected")
     padded = _cluster(pad, "fp_pad")
     assert padded["pool"] == "bi_service"  # provenance label
     assert padded["n_executions"] == 5     # combined, kept as context
@@ -136,12 +144,13 @@ def run():
     # emitted order: admitted first, then by executions
     assert [c["fingerprint"] for c in f["clusters"][:2]] == ["fp_tableau_net",
                                                              "fp_looker_gross"]
-    assert f["clusters"][-1]["fingerprint"] == "fp_below_threshold"
+    assert all(c["admitted"] for c in f["clusters"])
 
     # degradation + coverage (counts only)
     assert f["unavailable"] == ["viewer_counts"]
     assert f["coverage"] == {"rows_in": 13, "clusters_total": 9,
-                             "clusters_admitted": 6, "conflict_groups": 1,
+                             "clusters_admitted": 6, "clusters_emitted": 6,
+                             "conflict_groups": 1,
                              "conflict_groups_beyond_top": 0}
 
     # determinism: identical output on a second run
@@ -200,6 +209,84 @@ def run():
     assert wide["pool"] == "bi_service"       # classified before truncation
     assert wide["admitted"]                   # human class: 24 execs, 24 users
     assert len(wide["users"]) == 20            # truncated only in the output
+
+    # ---- content-level demotion: system chrome, catalog polling, BI UI chrome
+    # (chrome is chrome no matter which identity/warehouse ran it — Snowsight
+    # traffic on a BI-named warehouse must not reach the admitted set) ----
+    demo_rows = [
+        _row("fp_chrome_call", "CHRIS", 900,
+             "CALL SYSTEM$GET_RECENT_IN_APP_NOTIFICATIONS()",
+             WAREHOUSE_NAME="LOOKER_WH"),
+        _row("fp_chrome_ctx", "CHRIS", 40,
+             "SELECT SYS_CONTEXT('SNOWFLAKE$SESSION', 'USABLE_ROLES_FAST')",
+             WAREHOUSE_NAME="LOOKER_WH"),
+        _row("fp_no_tables", "CHRIS", 30, "SELECT CURRENT_USER()",
+             WAREHOUSE_NAME="LOOKER_WH"),
+        _row("fp_catalog", "APP_SVC", 80,
+             'select table_name from "PROD"."INFORMATION_SCHEMA"."TABLES"'),
+        _row("fp_rowcount", "APP_SVC", 200,
+             "SELECT COUNT(*) FROM (SELECT 1 FROM PROD.MART.FCT_X GROUP BY d)"),
+        _row("fp_filterpop", "APP_SVC", 150,
+             'SELECT "PAYER", COUNT("PAYER") AS "_count" '
+             'FROM PROD.MART.FCT_X GROUP BY "PAYER"'),
+        _row("fp_real", "APP_SVC", 500,
+             "SELECT d, SUM(amount) FROM PROD.MART.FCT_X GROUP BY d"),
+    ]
+    fd = _findings_from_rows(demo_rows, "--emit-rejected",
+                             "--bi-users", "app_svc")
+    assert fd["pools"] == {"bi_service": 1, "ad_hoc": 0, "excluded": 0,
+                           "system": 3, "catalog": 1, "bi_chrome": 2}
+    sysc = _cluster(fd, "fp_chrome_call")
+    assert sysc["pool"] == "system" and not sysc["admitted"]
+    assert any("demoted to system pool" in e for e in sysc["pool_evidence"])
+    assert any("looker" in e for e in sysc["pool_evidence"])  # provenance kept
+    # the SNOWFLAKE$SESSION marker lives inside a string literal — demotion must
+    # scan comment-stripped text with literals KEPT
+    assert _cluster(fd, "fp_chrome_ctx")["pool"] == "system"
+    nt = _cluster(fd, "fp_no_tables")
+    assert nt["pool"] == "system"
+    assert any("no table references" in e for e in nt["pool_evidence"])
+    cat = _cluster(fd, "fp_catalog")
+    assert cat["pool"] == "catalog" and not cat["admitted"]
+    for fp in ("fp_rowcount", "fp_filterpop"):
+        chrome = _cluster(fd, fp)
+        assert chrome["pool"] == "bi_chrome" and not chrome["admitted"]
+    real = _cluster(fd, "fp_real")
+    assert real["pool"] == "bi_service" and real["admitted"]
+    # default emission drops demoted clusters; pool accounting is unchanged
+    fd_min = _findings_from_rows(demo_rows, "--bi-users", "app_svc")
+    assert [c["fingerprint"] for c in fd_min["clusters"]] == ["fp_real"]
+    assert fd_min["coverage"]["clusters_emitted"] == 1
+    assert fd_min["pools"] == fd["pools"]
+
+    # ---- identity census + unclassified-service-account flagging ----
+    census_rows = [
+        _row("fp_app_a", "ANALYTICS_APP", 800,
+             "SELECT a, SUM(x) FROM P.M.F GROUP BY a",
+             WAREHOUSE_NAME="ELT_WH", ROLE_NAME="APP_ROLE"),
+        _row("fp_app_b", "ANALYTICS_APP", 700,
+             "SELECT b, SUM(y) FROM P.M.F GROUP BY b",
+             WAREHOUSE_NAME="ELT_WH", ROLE_NAME="APP_ROLE"),
+        _row("fp_jane", "jane@acme.com", 600, "SELECT c FROM P.M.D"),
+        _row("fp_tab", "TABLEAU_SVC", 50,
+             "SELECT d, SUM(z) FROM P.M.F2 GROUP BY d"),
+    ]
+    fs = _findings_from_rows(census_rows)
+    assert [e["user"] for e in fs["identity_census"]] == [
+        "ANALYTICS_APP", "jane@acme.com", "TABLEAU_SVC"]
+    app = fs["identity_census"][0]
+    assert app["classes"] == ["human"] and app["n_executions"] == 1500
+    assert app["n_shapes"] == 2 and app["warehouses"] == ["ELT_WH"]
+    assert fs["identity_census"][2]["classes"] == ["bi"]
+    # flagged: high-volume, human-classified, non-email username. jane (email ->
+    # a person) and TABLEAU_SVC (already bi) are not. The agent asks the analyst
+    # what ANALYTICS_APP is, then re-runs with --bi-users:
+    assert fs["service_account_candidates"] == ["ANALYTICS_APP"]
+    assert [c["fingerprint"] for c in fs["clusters"]] == ["fp_tab"]
+    fs2 = _findings_from_rows(census_rows, "--bi-users", "analytics_app")
+    assert {c["fingerprint"] for c in fs2["clusters"]} == {"fp_app_a",
+                                                           "fp_app_b", "fp_tab"}
+    assert fs2["service_account_candidates"] == []
 
     # ---- --top: admitted first; conflict members of emitted groups retained ----
     ft = _findings_from_rows([

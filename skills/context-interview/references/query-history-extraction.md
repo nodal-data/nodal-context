@@ -42,8 +42,10 @@ python3 scripts/query_history_extract.py --rows .query-history-rows.json \
 Useful knobs: `--bi-users/--bi-roles/--bi-warehouses` (the analyst knows their BI
 service accounts — ask: *"Which service users do your dashboards run as?"*),
 `--exclude-users` (ETL accounts), `--min-count/--min-users` (admission
-thresholds), `--top`. Both artifacts are transient bootstrap files, gitignored —
-discard after Stage 0.
+thresholds), `--top`, `--emit-rejected` (debug only: also write non-admitted
+clusters; by default the file carries admitted clusters and their conflict-group
+members, everything else stays counted in `pools{}`/`coverage{}`). Both artifacts
+are transient bootstrap files, gitignored — discard after Stage 0.
 
 **Privilege playbook (Snowflake):**
 - Default scope reads `SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY` (365-day window,
@@ -72,18 +74,36 @@ discard after Stage 0.
   now and continue — dbt extraction and the interview cover the same ground by
   hand.
 
-## Step 2 — read the findings, then draft (one domain at a time, as always)
+## Step 2 — census first, then read the findings, then draft (one domain at a time, as always)
+
+**Census first.** The findings carry an `identity_census` (per user: traffic
+classes, executions, shape count, warehouses, roles) and
+`service_account_candidates` — high-volume identities that defaulted to "human"
+because no pattern matched (an embedded-analytics app, a scheduler, a reverse-ETL
+tool). A misclassified service account is the single biggest signal killer: one
+service user can never clear `--min-users`, so its whole pool dies silently.
+Before drafting anything, ask the analyst about each candidate — *"what runs as
+`ANALYTICS_APP`?"* — then re-run Phase B with `--bi-users` (dashboards/apps) or
+`--exclude-users` (automation) and read the new findings instead. Dogfooding
+found the account's biggest identity (12.5k executions) hidden this way.
 
 `.query-findings.json` shape: `clusters[]` (`fingerprint`, `sample_text`,
 `n_executions`, `n_executions_bi`, `n_executions_human`,
 `n_executions_excluded`, `n_users`, `n_users_human`, `users[]`, `roles[]`,
 `warehouses[]`, `query_tags[]`, `pool`, `pool_evidence[]`, `tables[]`,
 `agg_signatures[]`, `admitted`, `conflict_group`), `conflict_groups[]`,
-`pools{}`, `unavailable[]`, `coverage{}`, `window_days` (the *effective* window —
+`pools{}`, `identity_census[]`, `service_account_candidates[]`,
+`unavailable[]`, `coverage{}`, `window_days` (the *effective* window —
 `window_days_requested` appears when a scope capped it). Only `admitted`
-clusters are draft candidates; the `bi_service` pool is high-trust
-(institutionalized logic), the `ad_hoc` pool is a demand signal, not a
-definition source. Traffic is counted per executing identity and per class:
+clusters are draft candidates — and only they are written (plus force-kept
+conflict-group members) unless `--emit-rejected`. The `bi_service` pool is
+high-trust (institutionalized logic), the `ad_hoc` pool is a demand signal, not
+a definition source. Three pools are content-demoted noise, counted but never
+admitted and never draft material: `system` (console/session chrome — Snowsight
+runs on whatever warehouse the session holds, so this traffic otherwise
+masquerades as BI), `catalog` (INFORMATION_SCHEMA polling by tools), and
+`bi_chrome` (row-count wrappers and filter-population scaffolding from BI/app
+UIs). Traffic is counted per executing identity and per class:
 BI and human executions each qualify a cluster on their own numbers (one BI
 run padded by a few human runs is NOT a dashboard pattern), and ETL/dbt
 executions are subtracted into `n_executions_excluded` and disclosed in
@@ -126,6 +146,12 @@ decomposition.
 - `pools.bi_service == 0` → no BI service users matched. Ask the analyst what
   their dashboards run as and re-run Phase B with `--bi-users` — do not treat an
   empty BI pool as "no dashboards exist".
+- `pools.ad_hoc` large but nothing human admitted, and
+  `service_account_candidates` non-empty → that's a misclassified service
+  account swallowing the human pool, not "no humans query anything". Ask, then
+  re-run Phase B (census-first step above). A short window compounds this:
+  `--min-users 2` is hard to clear in 7 days — prefer the 90-day default when
+  `account_usage` is available.
 - **Tell the analyst what you're doing:** "History gave me 14 recurring BI
   clusters and 3 conflicting revenue calculations, but no viewer counts — I'll
   ask you which dashboards matter most."

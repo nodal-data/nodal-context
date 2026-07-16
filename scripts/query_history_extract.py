@@ -18,6 +18,16 @@ separates institutionalized logic (BI-service pool) from ad-hoc exploration; whe
 several clusters compute different aggregations over the same tables, that conflict
 IS the interview question (`conflict_groups`), not an answer.
 
+Operational chrome is demoted by CONTENT, not identity: console/system calls and
+no-table queries (`system` pool), catalog polling (`catalog`), and BI UI
+scaffolding like row-count wrappers (`bi_chrome`) are counted and disclosed but
+never admitted — dogfooding showed Snowsight traffic riding a BI-named warehouse
+otherwise dominates the admitted set. The findings also carry an
+`identity_census` plus `service_account_candidates` (high-volume identities that
+defaulted to "human"): the agent asks the analyst what they are and re-runs with
+--bi-users / --exclude-users — the miner never guesses. Only admitted clusters
+(plus force-kept conflict-group members) are emitted unless --emit-rejected.
+
 The extraction SQL returns one row per (query shape x executing identity x dbt
 flag), so a shape shared by a dashboard, a human, and an ETL job is accounted
 per traffic class: BI and human executions are counted separately (each must
@@ -95,6 +105,31 @@ TABLE_RE = re.compile(
 CTE_RE = re.compile(r"\b([A-Za-z_][\w$]*)\s+AS\s*\(", re.IGNORECASE)
 NUMBER_LIT_RE = re.compile(r"\b\d+(?:\.\d+)?\b")
 IN_LIST_RE = re.compile(r"\bin\s*\(\s*\?(?:\s*,\s*\?)*\s*\)")
+
+# Console/session chrome, matched on comment-stripped raw text with string
+# literals KEPT (SYS_CONTEXT('SNOWFLAKE$SESSION', ...) hides its marker inside a
+# literal, which canonicalize() would erase). Content-level on purpose: Snowsight
+# runs on whatever warehouse the session holds, so this traffic otherwise
+# inherits a bi_service classification from a BI-named warehouse.
+SYSTEM_TEXT_RES = tuple(re.compile(p, re.IGNORECASE) for p in (
+    r"^\s*call\b",
+    r"\bsystem\$",
+    r"\bsnowflake\$session\b",
+    r"\bis_database_role_in_session\s*\(",
+    r"\bis_application_role_in_session\s*\(",
+    r"\bcurrent_available_roles\s*\(",
+    r"\bresult_scan\s*\(",
+    r"\bget_ddl\s*\(",
+    r"\bentity_detail\s*\(",
+))
+# BI UI scaffolding, matched on the canonicalized text: row-count wrappers
+# (pagination) and filter-value population. These recur at dashboard volume but
+# carry no metric logic — without demotion, one embedded-analytics service user
+# floods the admitted set with them.
+BI_CHROME_RES = (
+    re.compile(r"^select count\((?:\*|\?)\) from \("),
+    re.compile(r'count\("?[\w$]+"?\) as "_count"'),
+)
 
 MAX_SAMPLE_CHARS = 4000
 MAX_LIST_ENTRIES = 20
@@ -314,6 +349,31 @@ def agg_signatures(text):
     return sorted({f"{m.group(1)}({m.group(2).strip()})" for m in AGG_RE.finditer(t)})
 
 
+def _is_catalog_relation(table):
+    parts = [p.strip('"').upper() for p in table.split(".")]
+    return "INFORMATION_SCHEMA" in parts or parts[0] == "SNOWFLAKE"
+
+
+def classify_noise(sample_text, tables):
+    """-> (demoted pool, why) when a cluster's SHAPE is operational chrome rather
+    than analytics, else None. Ordered most- to least-specific; the demotion is
+    disclosed in pool_evidence and the cluster stays counted in pools{}."""
+    scrubbed = scrub_sql(sample_text or "", replace_strings=False).lower()
+    for rx in SYSTEM_TEXT_RES:
+        if rx.search(scrubbed):
+            return "system", f"demoted to system pool: matched '{rx.pattern}'"
+    if not tables:
+        return "system", "demoted to system pool: no table references"
+    if all(_is_catalog_relation(t) for t in tables):
+        return "catalog", ("demoted to catalog pool: reads only "
+                           "catalog/metadata relations")
+    canon = canonicalize(sample_text or "")
+    for rx in BI_CHROME_RES:
+        if rx.search(canon):
+            return "bi_chrome", f"demoted to bi_chrome pool: matched '{rx.pattern}'"
+    return None
+
+
 # ----- per-identity classification ------------------------------------------------
 
 def _csv(arg):
@@ -354,6 +414,52 @@ def classify_identity(ident, opts):
             if v and _token_match(v, pat):
                 return "bi", f"{kind} '{v}' matched bi pattern '{pat}'"
     return "human", None
+
+
+def identity_census(ident_rows, opts):
+    """-> (census, service_account_candidates). The census aggregates identity
+    rows per user with their traffic classification. Candidates are users whose
+    HUMAN-classified volume says 'unrecognized service account' (>= max(100, 5%
+    of window executions), username not email-shaped): the single biggest miss in
+    dogfooding was an app service user defaulting to human, whose one identity
+    can never clear min_users. The miner only flags — the agent asks the analyst
+    and re-runs with --bi-users / --exclude-users."""
+    by_user = {}
+    for ident in ident_rows:
+        user = ident["user"]
+        if not user:
+            continue
+        klass, _ = classify_identity(ident, opts)
+        e = by_user.setdefault(user, {"user": user, "fps": set(),
+                                      "n_executions": 0,
+                                      "n_executions_by_class": {},
+                                      "warehouses": set(), "roles": set()})
+        e["fps"].add(ident["fingerprint"])
+        e["n_executions"] += ident["n_executions"]
+        by_class = e["n_executions_by_class"]
+        by_class[klass] = by_class.get(klass, 0) + ident["n_executions"]
+        if ident["warehouse"]:
+            e["warehouses"].add(ident["warehouse"])
+        if ident["role"]:
+            e["roles"].add(ident["role"])
+    census = []
+    for user in sorted(by_user, key=lambda u: (-by_user[u]["n_executions"], u)):
+        e = by_user[user]
+        census.append({
+            "user": user,
+            "classes": sorted(e["n_executions_by_class"]),
+            "n_executions": e["n_executions"],
+            "n_executions_by_class": e["n_executions_by_class"],
+            "n_shapes": len(e["fps"]),
+            "warehouses": sorted(e["warehouses"])[:MAX_LIST_ENTRIES],
+            "roles": sorted(e["roles"])[:MAX_LIST_ENTRIES],
+        })
+    total = sum(e["n_executions"] for e in census)
+    threshold = max(100, total // 20)
+    candidates = [e["user"] for e in census
+                  if e["n_executions_by_class"].get("human", 0) >= threshold
+                  and "@" not in e["user"]]
+    return census, candidates
 
 
 # ----- row normalization -> identity rows ------------------------------------------
@@ -529,8 +635,21 @@ def build_findings(rows, platform, scope, canonicalizer, opts,
     ident_rows = (identities_from_aggregated(rows) if canonicalizer == "warehouse"
                   else identities_from_raw(rows))
     clusters, pools = merge_and_classify(ident_rows, canonicalizer, opts)
+    census, service_account_candidates = identity_census(ident_rows, opts)
+    pools.update({"system": 0, "catalog": 0, "bi_chrome": 0})
 
     for c in clusters:
+        c["tables"] = extract_tables(c["sample_text"])
+        c["agg_signatures"] = agg_signatures(c["sample_text"])
+        c["conflict_group"] = None
+        demoted = classify_noise(c["sample_text"], c["tables"])
+        if demoted:
+            pools[c["pool"]] -= 1
+            c["pool"], why = demoted
+            pools[c["pool"]] += 1
+            c["pool_evidence"].append(why)
+            c["admitted"] = False
+            continue
         # Each traffic class qualifies on its own numbers: BI recurrence can't be
         # padded with human executions, and human traffic must still clear the
         # distinct-consumer bar. (bi_service skips the distinct-consumer test for
@@ -540,19 +659,20 @@ def build_findings(rows, platform, scope, canonicalizer, opts,
         human_ok = (c["n_executions_human"] >= opts["min_count"]
                     and c["n_users_human"] >= opts["min_users"])
         c["admitted"] = bi_ok or human_ok
-        c["tables"] = extract_tables(c["sample_text"])
-        c["agg_signatures"] = agg_signatures(c["sample_text"])
-        c["conflict_group"] = None
 
     # Conflicts over the FULL admitted set (so grouping quality doesn't depend on
     # --top), then rank admitted-first and truncate — force-keeping every member
     # of any group that made the cut, and dropping (with a count) groups whose
-    # members all fell beyond it.
+    # members all fell beyond it. Rejected clusters are ~90% of the bytes and
+    # Stage 0 drafts from admitted ones only, so by default they stay out of the
+    # file (pools{}/coverage{} still count them); --emit-rejected restores them.
     conflict_groups = find_conflict_groups(clusters)
     admitted_total = sum(1 for c in clusters if c["admitted"])
     clusters.sort(key=lambda c: (not c["admitted"], -c["n_executions"],
                                  c["fingerprint"]))
-    emitted = clusters[:opts["top"]]
+    emittable = (clusters if opts["emit_rejected"]
+                 else [c for c in clusters if c["admitted"]])
+    emitted = emittable[:opts["top"]]
     emitted_fps = {c["fingerprint"] for c in emitted}
     by_fp = {c["fingerprint"]: c for c in clusters}
     kept_groups, beyond_top = [], 0
@@ -581,11 +701,14 @@ def build_findings(rows, platform, scope, canonicalizer, opts,
         "clusters": emitted,
         "conflict_groups": kept_groups,
         "pools": pools,
+        "identity_census": census,
+        "service_account_candidates": service_account_candidates,
         "unavailable": unavailable,
         "coverage": {
             "rows_in": len(rows),
             "clusters_total": len(clusters) + pools["excluded"],
             "clusters_admitted": admitted_total,
+            "clusters_emitted": len(emitted),
             "conflict_groups": len(kept_groups),
             "conflict_groups_beyond_top": beyond_top,
         },
@@ -633,6 +756,10 @@ def main(argv=None):
     ap.add_argument("--top", type=_positive_int, default=500,
                     help="max clusters emitted (default 500; conflict-group "
                          "members of emitted groups are always kept)")
+    ap.add_argument("--emit-rejected", action="store_true",
+                    help="also emit non-admitted clusters (demoted/below-"
+                         "threshold), for debugging; by default only admitted "
+                         "clusters and their conflict-group members are written")
     ap.add_argument("-o", "--out", help="write JSON here instead of stdout")
     args = ap.parse_args(argv)
 
@@ -650,6 +777,7 @@ def main(argv=None):
     opts = {
         "days": effective_days, "days_requested": args.days,
         "min_count": args.min_count, "min_users": args.min_users, "top": args.top,
+        "emit_rejected": args.emit_rejected,
         "bi_users": _csv(args.bi_users), "bi_roles": _csv(args.bi_roles),
         "bi_warehouses": _csv(args.bi_warehouses),
         "exclude_users": _csv(args.exclude_users),
