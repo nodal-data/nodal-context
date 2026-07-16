@@ -66,20 +66,31 @@ are transient bootstrap files, gitignored — discard after Stage 0.
   If they can't grant it right now, re-emit with `--scope information_schema` —
   a 7-day, no-privilege fallback whose visibility is limited to what the current
   role can see. Tell the analyst you're mining a one-week, privilege-limited
-  sample, and note the grant as deferred so a later session can re-mine the full
-  window.
-- **When you defer, sell the grant — one sentence of value, then a handoff the
-  analyst can forward.** An admin asked to run mystery SQL says no; an admin
-  told what it buys says yes. Quantify the gap from what you actually saw, e.g.:
-  *"the 7-day fallback could only see my own 5 queries; this one-time read-only
-  grant unlocks a 365-day census of what your dashboards actually compute —
-  recurring query patterns and conflicting metric definitions are typically the
-  richest input to this whole process."* Then hand the analyst a copy-pasteable
-  note for their Snowflake admin with three parts: what it grants (read-only
-  access to query *metadata* for the MCP user — never table data), the exact
-  grant SQL above with `<USER>`/`<WAREHOUSE>` already filled in from the live
-  connection, and what happens next (a later session re-mines the full window —
-  it's on the deferred-checks list).
+  sample.
+- **Hand off the grant the moment authorization fails — not at wrap-up.** It is
+  the session's longest-latency dependency: it usually needs a *different*
+  human (an `ACCOUNTADMIN`) with hours-to-days of turnaround, so start it first
+  and block on nothing. Check whether it's actually async — *"do you have
+  ACCOUNTADMIN, or is that someone else?"* — at small companies the analyst
+  often does, and then it's a ten-second action. Sell it in one sentence,
+  quantified from what you actually saw, e.g.: *"the 7-day fallback could only
+  see my own 5 queries; this one-time read-only grant unlocks a 365-day census
+  of what your dashboards actually compute — recurring query patterns and
+  conflicting metric definitions are typically the richest input to this whole
+  process."* Then hand over a copy-pasteable note for their Snowflake admin
+  with three parts: what it grants (read-only access to query *metadata* for
+  the MCP user — never table data), the exact grant SQL above with
+  `<USER>`/`<WAREHOUSE>` already filled in from the live connection, and what
+  happens next (you re-mine the full window as soon as it lands). Frame it as
+  *"forward this now; nothing waits on it"* — it must never compete with a
+  blocking action item (one primary ask at a time; this one is explicitly a
+  meanwhile).
+- **Re-probe at checkpoints, not just next session.** Put the re-mine on the
+  deferred-checks list, and retry `ACCOUNT_USAGE` at natural seams — before
+  each domain pass (interview-flow §2) and at live-verification pre-flight. If
+  the grant lands mid-interview, run Phase A+B and fold the results into
+  whatever comes next: conflict groups become *this* interview's questions, not
+  a future session's.
 - Not on Snowflake yet? The script names the platform's history source and exits
   loudly (databricks / bigquery / redshift / fabric are registered but not
   implemented). Tell the analyst mining is unavailable on their platform for

@@ -195,8 +195,11 @@ you enter it.
      Stage-2 dashboard-catalog candidates; conflicting calculations over the same
      tables are interview *questions*, never answers. Everything drafted from it
      is `status: draft`, tagged `# query-history-derived`. If the platform isn't
-     implemented yet or privileges are missing, the script and doc say so loudly —
-     note it as deferred (with the other skipped warehouse checks) and continue.
+     implemented yet, the script says so loudly — note it as deferred (with the
+     other skipped warehouse checks) and continue. If privileges are missing,
+     hand the analyst the forwardable admin-grant note **immediately** (it's the
+     session's slowest async dependency — the doc has the handoff pattern), put
+     the re-mine on the deferred-checks list, and continue.
    - existing BI/dashboard titles if reachable.
    Write these into `context.config.yaml` (lineage sources) and as `status: draft`
    stubs. Tell the analyst: "I pulled a rough draft from your dbt project and schema.
