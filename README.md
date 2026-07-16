@@ -128,6 +128,13 @@ agent:
 Use a **read-only role/credential** — the interview and the data-question skill only ever
 `SELECT`. See your agent's MCP docs (e.g. Claude Code: `claude mcp add`) for wiring it in.
 
+One capability note: Stage 0's **query-history mining** reads your warehouse's query
+history, which the MCP user may not see by default — on Snowflake, the 365-day
+`ACCOUNT_USAGE.QUERY_HISTORY` needs a one-time grant to the MCP user (the
+least-privilege `SNOWFLAKE.GOVERNANCE_VIEWER` database role; exact SQL in the
+generated repo's README and `skills/context-interview/references/query-history-extraction.md`).
+Without it, mining degrades to a 7-day fallback and the interview says so.
+
 **2. Clone your dbt repo locally (recommended).** If you use dbt, `git clone` your dbt
 project into a sibling directory and start the interview with both repos visible to the
 agent. The interview reads your `models/`, `schema.yml`, and metric definitions as a

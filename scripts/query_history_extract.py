@@ -121,23 +121,30 @@ SELECT
   query_tag,
   (query_text ILIKE ANY {DBT_MARKER_ILIKE}) AS is_dbt,
   COUNT(*)                              AS n_executions,
+  SUM(COUNT(*)) OVER (PARTITION BY query_parameterized_hash)
+                                        AS cluster_executions,
   LEFT(ANY_VALUE(query_text), 8000)     AS sample_text,
   MIN(start_time)                       AS first_seen,
   MAX(start_time)                       AS last_seen"""
 
+# QUALIFY and ORDER BY reference the cluster_executions ALIAS — Snowflake rejects
+# a window-over-aggregate written directly as an ORDER BY expression.
 _SF_GROUP_TAIL = """\
 GROUP BY 1, 2, 3, 4, 5, 6, 7
-QUALIFY SUM(COUNT(*)) OVER (PARTITION BY query_parameterized_hash) >= 2
-ORDER BY SUM(COUNT(*)) OVER (PARTITION BY query_parameterized_hash) DESC,
-         n_executions DESC
+QUALIFY cluster_executions >= 2
+ORDER BY cluster_executions DESC, n_executions DESC
 LIMIT {limit}"""
 
 
 def _sf_emit_account_usage(days, limit):
     return f"""\
 -- Query-history extraction (Snowflake, ACCOUNT_USAGE scope; {days}-day window).
--- Requires imported privileges on the SNOWFLAKE database (an ACCOUNTADMIN grants
--- them: GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <role>).
+-- The executing user needs ACCOUNT_USAGE access. Least-privilege grant (run as
+-- ACCOUNTADMIN; <USER> = the MCP user, <WAREHOUSE> = its warehouse):
+--   CREATE ROLE IF NOT EXISTS QUERY_HISTORY_READER;
+--   GRANT DATABASE ROLE SNOWFLAKE.GOVERNANCE_VIEWER TO ROLE QUERY_HISTORY_READER;
+--   GRANT USAGE ON WAREHOUSE <WAREHOUSE> TO ROLE QUERY_HISTORY_READER;
+--   GRANT ROLE QUERY_HISTORY_READER TO USER <USER>;
 -- ACCOUNT_USAGE lags ~45min-3h — fine for mining. 365-day retention.
 -- On "Object does not exist or not authorized": re-run --emit-sql with
 --   --scope information_schema (7-day window, no privileges needed).
@@ -156,6 +163,10 @@ WHERE start_time >= DATEADD(day, -{days}, CURRENT_TIMESTAMP())
 
 def _sf_emit_information_schema(days, limit):
     limit = min(limit, 10000)
+    # Start one hour INSIDE the retention boundary: the table function rejects a
+    # range start that touches it ("Cannot retrieve data from more than 7 days
+    # ago"), and DATEADD(day, -7, CURRENT_TIMESTAMP()) is exactly on it.
+    hours = days * 24 - 1
     return f"""\
 -- Query-history extraction (Snowflake, INFORMATION_SCHEMA fallback; {days}-day window).
 -- No special privileges, but: 7-day window max, and visibility limited to queries
@@ -167,7 +178,7 @@ def _sf_emit_information_schema(days, limit):
 -- .query-history-rows.json at the context repo root (gitignored).
 {_SF_SELECT_BODY}
 FROM TABLE(INFORMATION_SCHEMA.QUERY_HISTORY(
-    END_TIME_RANGE_START => DATEADD(day, -{days}, CURRENT_TIMESTAMP()),
+    END_TIME_RANGE_START => DATEADD(hour, -{hours}, CURRENT_TIMESTAMP()),
     RESULT_LIMIT => {limit}))
 WHERE execution_status = 'SUCCESS'
   AND query_type = 'SELECT'

@@ -258,7 +258,11 @@ def run():
     sql = buf.getvalue()
     assert "query_parameterized_hash" in sql and "LIMIT 5000" in sql
     assert "query_parameterized_hash_version" in sql
-    assert "GROUP BY 1, 2, 3, 4, 5, 6, 7" in sql and "QUALIFY" in sql
+    assert "GROUP BY 1, 2, 3, 4, 5, 6, 7" in sql
+    # window-over-aggregate must be aliased; QUALIFY/ORDER BY use the alias
+    # (Snowflake rejects it as a raw ORDER BY expression)
+    assert "QUALIFY cluster_executions >= 2" in sql
+    assert "ORDER BY cluster_executions DESC" in sql
     assert "ILIKE ANY" in sql and "DATEADD(day, -90," in sql
 
     buf = io.StringIO()
@@ -268,7 +272,9 @@ def run():
     isql = buf.getvalue()
     assert "INFORMATION_SCHEMA.QUERY_HISTORY" in isql
     assert "query_parameterized_hash" in isql   # native hash used here too
-    assert "DATEADD(day, -7," in isql           # effective (capped) window
+    # capped window starts one hour INSIDE the 7-day retention boundary — the
+    # table function rejects a range start exactly on it
+    assert "DATEADD(hour, -167," in isql
     assert "BEFORE the outer" in isql           # RESULT_LIMIT pre-filter disclosed
 
     for platform in ("bigquery", "databricks", "redshift", "fabric"):

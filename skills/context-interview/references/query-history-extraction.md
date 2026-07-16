@@ -47,11 +47,25 @@ discard after Stage 0.
 
 **Privilege playbook (Snowflake):**
 - Default scope reads `SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY` (365-day window,
-  ~45min–3h lag — fine for mining). It needs imported privileges on the
-  `SNOWFLAKE` database; on *"Object does not exist or not authorized"*, re-emit
-  with `--scope information_schema` — a 7-day, no-privilege fallback whose
-  visibility is limited to what the current role can see. Tell the analyst
-  you're mining a one-week, privilege-limited sample.
+  ~45min–3h lag — fine for mining). The MCP user cannot see it by default. On
+  *"Object does not exist or not authorized"*, offer the analyst the one-time,
+  least-privilege grant (an `ACCOUNTADMIN` runs it; `<USER>` = the MCP user,
+  `<WAREHOUSE>` = the warehouse it queries on):
+
+  ```sql
+  USE ROLE ACCOUNTADMIN;
+  CREATE ROLE IF NOT EXISTS QUERY_HISTORY_READER;
+  -- ACCOUNT_USAGE views (QUERY_HISTORY among them) via the built-in governance role
+  GRANT DATABASE ROLE SNOWFLAKE.GOVERNANCE_VIEWER TO ROLE QUERY_HISTORY_READER;
+  GRANT USAGE ON WAREHOUSE <WAREHOUSE> TO ROLE QUERY_HISTORY_READER;
+  GRANT ROLE QUERY_HISTORY_READER TO USER <USER>;
+  ```
+
+  If they can't grant it right now, re-emit with `--scope information_schema` —
+  a 7-day, no-privilege fallback whose visibility is limited to what the current
+  role can see. Tell the analyst you're mining a one-week, privilege-limited
+  sample, and note the grant as deferred so a later session can re-mine the full
+  window.
 - Not on Snowflake yet? The script names the platform's history source and exits
   loudly (databricks / bigquery / redshift / fabric are registered but not
   implemented). Tell the analyst mining is unavailable on their platform for
