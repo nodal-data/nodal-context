@@ -51,6 +51,12 @@ For each question you would otherwise put to the human:
    answer used, and (for escalations) the human's reply. One block per question, so
    the run is auditable.
 
+**Real-world actions are never simulated.** Anything that requires hands — running
+a privilege grant, copying a repo into the sandbox, re-authing a connection — is
+addressed to the real human in your user-facing status output, never routed
+through the consult-and-log loop. The sim analyst answers questions; it cannot
+act, and an action buried in the log is an action that never happens.
+
 Batching optimization (optional): when a stage elicits a list (terminology, entities,
 caveats — see `interview-flow.md`), you may pass the whole pending list to one
 subagent consult instead of one call per item, to cut round-trips. Same

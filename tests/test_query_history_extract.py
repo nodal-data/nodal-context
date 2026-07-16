@@ -321,6 +321,21 @@ def run():
                                       "result_limit_pre_filter"}
     assert fi["pools"] == f["pools"]  # same normalization path as account_usage
 
+    # an EMPTY fallback is success-shaped (exit 0, valid file) — the outcome
+    # tripwire must say mining is still blocked, on stderr, loudly
+    err = io.StringIO()
+    with contextlib.redirect_stderr(err):
+        fe = _findings_from_rows(
+            [_row("fp_mine_only", "MCP_USER", 1, "SELECT a FROM P.M.T")],
+            "--scope", "information_schema")
+    assert fe["coverage"]["clusters_admitted"] == 0
+    assert "BLOCKED" in err.getvalue()
+    assert "grant handoff applies now" in err.getvalue()
+    err = io.StringIO()  # non-empty fallback: no tripwire
+    with contextlib.redirect_stderr(err):
+        _findings(AGG_FIXTURE, "--scope", "information_schema")
+    assert "BLOCKED" not in err.getvalue()
+
     # ---- client canonicalizer path (library path for hash-less platforms) ----
     fr = qhe.build_findings(qhe._load_rows(RAW_FIXTURE), "other", "raw", "client",
                             dict(BASE_OPTS, min_count=2))

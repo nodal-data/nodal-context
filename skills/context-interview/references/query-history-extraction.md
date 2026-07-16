@@ -24,7 +24,9 @@ The miner (`scripts/query_history_extract.py`) never touches the warehouse. It
 emits the extraction SQL; **you** execute it read-only via the warehouse MCP —
 the same probe-first discipline as the rest of Stage 0. If the Stage-0 probe
 failed (auth pending), put mining on the deferred-checks list and continue; never
-block the interview on it.
+block the interview on it — but deferral is never *silent*: if privileges are
+the blocker, the admin-grant handoff (privilege playbook below) goes out in the
+same message that reports the deferral.
 
 **Phase A — emit, execute, save:**
 ```
@@ -84,7 +86,10 @@ are transient bootstrap files, gitignored — discard after Stage 0.
   happens next (you re-mine the full window as soon as it lands). Frame it as
   *"forward this now; nothing waits on it"* — it must never compete with a
   blocking action item (one primary ask at a time; this one is explicitly a
-  meanwhile).
+  meanwhile). The note goes in your **user-facing status output**, addressed to
+  the human running the session — even in simulated-analyst mode. The sim
+  analyst can answer interview questions; it cannot run a grant, so this never
+  routes through the consult-and-log loop.
 - **Re-probe at checkpoints, not just next session.** Put the re-mine on the
   deferred-checks list, and retry `ACCOUNT_USAGE` at natural seams — before
   each domain pass (interview-flow §2) and at live-verification pre-flight. If
@@ -160,6 +165,12 @@ decomposition.
 - `"window_beyond_7_days"` / `"result_limit_pre_filter"` in `unavailable` → you
   mined the 7-day INFORMATION_SCHEMA fallback (it still uses Snowflake's native
   fingerprint); say so, and expect weekly-refresh tiles to be under-counted.
+- `scope: information_schema` **and** `coverage.clusters_admitted == 0` →
+  mining is **blocked, not done** (Phase B also warns on stderr). An empty
+  fallback means the executing role can't see the traffic — visibility, not
+  absence. Do NOT report "mining found nothing": the forwardable admin-grant
+  note is a mandatory part of your next status message to the user, and the
+  re-mine goes on the deferred-checks list.
 - `"query_parameterized_hash"` in `unavailable` → a platform without a native
   hash, clustered by the client-side canonicalizer; fingerprints are less exact.
 - `pools.excluded` high → ETL traffic (service-user patterns) plus dbt-stamped

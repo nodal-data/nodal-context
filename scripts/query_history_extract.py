@@ -181,8 +181,12 @@ def _sf_emit_account_usage(days, limit):
 --   GRANT USAGE ON WAREHOUSE <WAREHOUSE> TO ROLE QUERY_HISTORY_READER;
 --   GRANT ROLE QUERY_HISTORY_READER TO USER <USER>;
 -- ACCOUNT_USAGE lags ~45min-3h — fine for mining. 365-day retention.
--- On "Object does not exist or not authorized": re-run --emit-sql with
---   --scope information_schema (7-day window, no privileges needed).
+-- On "Object does not exist or not authorized": (1) hand the analyst the
+--   forwardable admin-grant note NOW (privilege playbook in
+--   query-history-extraction.md) — it needs another human with hours-to-days
+--   of turnaround, so it starts first; (2) meanwhile re-run --emit-sql with
+--   --scope information_schema (7-day window, no privileges needed) — a
+--   stopgap, not a substitute.
 -- One row per (query shape x identity x dbt flag), so mixed traffic on the same
 -- shape is counted per class; LIMIT caps identity-rows, not shapes.
 -- Run read-only via the warehouse MCP; save the result rows VERBATIM as JSON to
@@ -668,6 +672,15 @@ def build_findings(rows, platform, scope, canonicalizer, opts,
     # file (pools{}/coverage{} still count them); --emit-rejected restores them.
     conflict_groups = find_conflict_groups(clusters)
     admitted_total = sum(1 for c in clusters if c["admitted"])
+    if scope == "information_schema" and admitted_total == 0:
+        # Outcome-based tripwire: an empty fallback is success-shaped (exit 0,
+        # valid file) and reads as "mining done, nothing found" — when it
+        # usually means the executing role can't SEE the traffic.
+        _warn("0 admitted clusters from the 7-day INFORMATION_SCHEMA fallback — "
+              "that usually means this role can't see the traffic, not that no "
+              "dashboards run. Mining is still BLOCKED: the ACCOUNT_USAGE grant "
+              "handoff applies now (privilege playbook in "
+              "query-history-extraction.md).")
     clusters.sort(key=lambda c: (not c["admitted"], -c["n_executions"],
                                  c["fingerprint"]))
     emittable = (clusters if opts["emit_rejected"]
