@@ -6,6 +6,7 @@ FINDINGS.md
 responses*.md
 RESPONSES.md
 shorelane.context.md
+3y.context.md
 
 # macOS
 .DS_Store
@@ -20,6 +21,10 @@ __pycache__/
 # Generated context output + dbt bootstrap artifact (if written inside the clone)
 analytics-context/
 .dbt-findings.json
+
+# Transient query-history mining artifacts (Stage 0) — raw warehouse SQL, never committed
+.query-history-rows.json
+.query-findings.json
 
 .env
 .envrc

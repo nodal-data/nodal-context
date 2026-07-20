@@ -24,6 +24,32 @@ read this context but cannot fetch live numbers. Pick the server for your wareho
 
 Use a **read-only role/credential** — answering only ever runs `SELECT`.
 
+### The MCP user may need extra grants for query-history mining (Snowflake)
+
+Interview Stage 0 can mine your warehouse query history into draft context
+(`scripts/query_history_extract.py`). On Snowflake, the full 365-day history
+lives in `SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY`, which an ordinary read-only
+user cannot see by default. Grant the MCP user access with the least-privilege
+built-in database role (run as `ACCOUNTADMIN`):
+
+```sql
+USE ROLE ACCOUNTADMIN;
+
+CREATE ROLE IF NOT EXISTS QUERY_HISTORY_READER;
+
+-- ACCOUNT_USAGE views (QUERY_HISTORY among them) via the built-in governance role
+GRANT DATABASE ROLE SNOWFLAKE.GOVERNANCE_VIEWER TO ROLE QUERY_HISTORY_READER;
+
+GRANT USAGE ON WAREHOUSE <WAREHOUSE> TO ROLE QUERY_HISTORY_READER;
+
+GRANT ROLE QUERY_HISTORY_READER TO USER <USER>;
+```
+
+`<USER>` is the user your warehouse MCP server connects as; `<WAREHOUSE>` is the
+warehouse it runs queries on. Without this grant, mining still works via the
+7-day `INFORMATION_SCHEMA` fallback — the interview will tell you it's working
+from a one-week, privilege-limited sample.
+
 ## Use it with Claude Code (base case)
 
 ```bash

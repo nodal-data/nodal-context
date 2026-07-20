@@ -36,7 +36,9 @@ A handful (≈3–6) per domain is plenty. Lead with the caveat-bearing ones.
   without live numbers — don't fake it.
 - Re-run any warehouse checks deferred earlier in the session for connectivity
   (Stage 0's probe may have failed on auth — dataset listings, empirical grain
-  checks). If the analyst reauthed since, these now resolve open questions cheaply.
+  checks). If the analyst reauthed since, these now resolve open questions
+  cheaply — and if the Stage-0 `ACCOUNT_USAGE` grant landed, re-mine query
+  history: fresh conflict groups are ready-made verification questions.
 - Ask the analyst to have the relevant dashboard open: *"Have the 'Collection Rate
   by Payer' dashboard up — I'll ask you to read a number off it in a moment."*
 
