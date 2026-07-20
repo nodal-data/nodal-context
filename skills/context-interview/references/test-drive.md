@@ -1,7 +1,7 @@
-# Fast Pass — the 30-minute traversal
+# Test Drive — the 30-minute traversal
 
 One domain, five confirmed answers, 3–6 seeds, a live delta, and an **honest depth
-stamp**. The fast pass is not a different product or a different artifact — it is
+stamp**. The test drive is not a different product or a different artifact — it is
 the full interview's state machine traversed on a hard question budget, stopping
 early on purpose. Everything unasked becomes a `status: draft` stub, which is
 already the resume queue: a deep pass later is just normal Stage-0 resume.
@@ -14,21 +14,23 @@ immediately (`eval-seed-harvesting.md`).
 ## When to enter
 
 - **Offer it at the start.** Right after Stage 0 setup, ask: *"Full interview for
-  this domain, or a 30-minute fast pass — five core questions, a live check, and
+  this domain, or a 30-minute test drive — five core questions, a live check, and
   the rest drafted for later?"*
 - **Time-pressure signals**, any time: "I've got half an hour", "quick version",
   "just the essentials", a calendar the analyst keeps checking.
 - **Mid-session conversion.** A full interview running out of time doesn't just
-  stop — jump to the fast-pass close-out ritual below so the session still ends
+  stop — jump to the test-drive close-out ritual below so the session still ends
   with a delta and a depth stamp instead of a trailing question.
 
 Stage 0 is **not skippable**: repo scaffold / resume discovery, the warehouse
 probe, and the platform question run as usual (silently where possible). One
 budget adjustment: run the dbt extraction only if a manifest is already reachable
-on disk — don't spend fast-pass minutes waiting for a clone; note it as deferred
-and move on. Same rule for query-history mining: run it only if the warehouse
+on disk — don't spend test-drive minutes waiting for a clone; note it as deferred
+and move on. Same rule for query-history mining: mine only if the warehouse
 probe already succeeded and the emitted SQL runs first try — never spend
-fast-pass minutes on privilege errors; defer instead.
+test-drive minutes on privilege errors; defer instead. The exit disposition
+report (Stage 0 step 6) still runs in full: a test drive may *defer* a source,
+but it never leaves one without a recorded outcome.
 
 ## Company minimum (~2 minutes)
 
@@ -86,7 +88,7 @@ moment of confirmation** — same rule as the full interview, no batching.
 **Budget discipline:** one follow-up per question, then write and move on. When
 the analyst opens a rich vein (they will), capture the items as draft stubs with
 a one-line note and keep going — the stubs are the deep-pass agenda, and chasing
-them now is how a fast pass fails the analyst.
+them now is how a test drive fails the analyst.
 
 ## Mini live verification (~2–3 questions)
 
@@ -96,37 +98,37 @@ same mismatch harvesting. One honesty requirement in the summary: **say the n** 
 *"3 questions is a smoke test, not a measurement"* — small-n deltas are swingy
 and must not print as false precision.
 
-## Close-out ritual (mandatory — this is what makes fast pass safe)
+## Close-out ritual (mandatory — this is what makes a test drive safe)
 
-The strategic risk of a fast pass is shallow context masquerading as coverage.
+The strategic risk of a test drive is shallow context masquerading as coverage.
 The close-out prices the shallowness visibly. Never skip it, even when time ran
 out — especially when time ran out.
 
 1. **Depth-stamp the domain** in its `context.md` (narrative file, no schema
-   impact): `_Fast-pass capture (YYYY-MM-DD): five core questions confirmed;
+   impact): `_Test-drive capture (YYYY-MM-DD): five core questions confirmed;
    N drafts open._`
 2. **Note it on the roster** in `company/org-structure.md`: the row's `Status`
    column keeps its normal meaning (owner draft/confirmed — don't overload it);
    add the depth to the **Notes** section instead:
-   `<domain>: fast-pass capture (YYYY-MM-DD), N drafts open.`
+   `<domain>: test-drive capture (YYYY-MM-DD), N drafts open.`
 3. **Print the close:** the live delta (with its n), the confirmed count, the
    open-draft count, and the punch list (anything still wrong with context on,
    plus the deferred stubs).
 4. **Offer the next step, punch-list-first:** *"The deep pass on this domain
-   starts from exactly this list — want to book it, or fast-pass another domain
+   starts from exactly this list — want to book it, or test-drive another domain
    first?"* Depth goes where the measurement says it pays, not everywhere by
    default.
 5. **Commit** per the "Pausing a session" rules in `SKILL.md` — drafts included,
-   message naming where work stopped (e.g. `wip: billing fast pass — 5 confirmed,
+   message naming where work stopped (e.g. `wip: billing test drive — 5 confirmed,
    7 drafts open`).
 
 ## Guardrails
 
-- **The budget is hard.** A fast pass that becomes a two-hour interview has
+- **The budget is hard.** A test drive that becomes a two-hour interview has
   failed the analyst's trust; if there is genuinely more appetite, close the fast
   pass properly first, then continue as a normal full-interview session.
-- **Never present a fast-passed domain as covered.** The depth stamp and draft
+- **Never present a domain captured on a test drive as covered.** The depth stamp and draft
   count travel with every summary, resume message, and PR description.
 - **Don't invent to fill the gaps** the budget leaves — `_To be confirmed by
-  [owner]._` + `status: draft`, as always. A fast pass changes how much you ask,
+  [owner]._` + `status: draft`, as always. A test drive changes how much you ask,
   never how much you assume.

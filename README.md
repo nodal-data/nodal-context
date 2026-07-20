@@ -21,8 +21,9 @@ canonical, what the standard filters are, and where the landmines are.
    *Free, open source (Apache-2.0).*
    The skill builds context *with* your analyst, one domain at a time, and writes
    it to a git repo your team reviews by PR. Two depths, one flow: the full
-   multi-stage interview, or a **~30-minute fast pass** that confirms a domain's
-   five highest-leverage answers live and drafts the rest. Take it, fork it,
+   multi-stage interview, or a **~30-minute test drive** that shows the whole
+   loop working on one domain — five highest-leverage answers confirmed live,
+   the rest drafted. Take it, fork it,
    never talk to us.
 
 2. **Share it — the hosted MCP endpoint.**
@@ -75,12 +76,12 @@ The bonus: every disambiguation the analyst makes in the interview ("active clie
 means X, not Y") is simultaneously a context entry **and** a labeled eval pair. The
 act of building context is the act of harvesting ground truth.
 
-## Two depths: the full interview, or a 30-minute fast pass
+## Two depths: the full interview, or a 30-minute test drive
 
 Skill-based extractors (e.g. Anthropic's `data-context-extractor` for Claude
 desktop) set a fair market expectation: an analyst should get useful context in
 about half an hour. The interview meets that budget without giving up governance.
-Say **"fast pass"** (or "I only have 30 minutes") and the same interview runs on a
+Say **"take it for a test drive"** (or "I only have 30 minutes") and the same interview runs on a
 five-question budget for one domain — the grain of the canonical table, the one
 ambiguous entity, the top 2–3 metrics, the standard hygiene filter, and the one
 silent failure — verifies a few answers live against your warehouse, and leaves
@@ -90,10 +91,10 @@ The difference from a quick skill builder is what you keep: every confirmed answ
 is still **human-owned**, still emits an **eval seed**, and the domain is
 **depth-stamped** ("five questions deep, N drafts open") so speed never
 masquerades as coverage. The full interview is the same flow without the budget —
-and the fast pass's punch list (what the agent still gets wrong with context on)
+and the test drive's punch list (what the agent still gets wrong with context on)
 tells you exactly which domains deserve it. Already built a data skill with a
-quick extractor? The harness grades it as-is (`--adapter skill`), and the fast
-pass is the cheapest way to mint the seeds that grade it.
+quick extractor? The harness grades it as-is (`--adapter skill`), and the test
+drive is the cheapest way to mint the seeds that grade it.
 
 ## The format is readable and open-source (Markdown + YAML)
 
@@ -149,7 +150,7 @@ cd nodal-context
 
 # 2. Open your client agent in the repo (Claude Code / Codex / Cursor) and say:
 #    "Build my analytics context."  → the context-interview skill takes over.
-#    Short on time? Say "fast pass" — five core questions, a live check,
+#    Want to see it work first? Say "take it for a test drive" — five core questions, a live check,
 #    the rest drafted for a later session.
 #    (The skill is already discoverable in-repo via .claude/skills/.)
 #    It writes a reviewable ../analytics-context/ repo as a SIBLING of this clone
@@ -251,7 +252,7 @@ the **enterprise tier** (product #3), deployable in your cloud/VPC or ours —
 | Capability | Where | Cost |
 |---|---|---|
 | Context format (ACF) | `SPEC.md`, `schemas/` | Free, Apache-2.0 |
-| Interview skill (full or fast pass) | `skills/context-interview/` | Free |
+| Interview skill (full or test drive) | `skills/context-interview/` | Free |
 | Eval-seed harvesting (interview → labeled pairs) | the skill | Free |
 | One-shot eval delta (on/off, run locally) | the harness, self-run | Free |
 | Compiled skill snapshot for Claude desktop | `scripts/compile_skill.py` | Free |

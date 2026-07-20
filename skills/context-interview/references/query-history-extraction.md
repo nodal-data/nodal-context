@@ -1,6 +1,9 @@
 # Query-History Extraction (Stage 0)
 
-When the warehouse MCP probe succeeded, mine what the company **actually runs**.
+Mine what the company **actually runs**. This step is part of every Stage 0 —
+it always ends in one recorded outcome (`mined` / `deferred: auth` /
+`deferred: privileges` / `unsupported: <platform>`), never in silence; the
+outcome goes in Stage 0's exit disposition report.
 BI tools are pushdown — every dashboard tile already executes in the warehouse —
 so query history is a dashboard catalog and a metric-logic census that needs no BI
 admin. Recurrence after canonicalization separates institutionalized logic from
@@ -23,10 +26,12 @@ simultaneously a context entry (a metric `expression:`) and a labeled eval seed
 The miner (`scripts/query_history_extract.py`) never touches the warehouse. It
 emits the extraction SQL; **you** execute it read-only via the warehouse MCP —
 the same probe-first discipline as the rest of Stage 0. If the Stage-0 probe
-failed (auth pending), put mining on the deferred-checks list and continue; never
-block the interview on it — but deferral is never *silent*: if privileges are
-the blocker, the admin-grant handoff (privilege playbook below) goes out in the
-same message that reports the deferral.
+failed (auth pending), record `deferred: auth` and continue — then re-run the
+moment the probe first succeeds; a mid-session reauth landing re-opens this
+step, it doesn't retire it. Never block the interview on mining — but deferral
+is never *silent*: if privileges are the blocker, the admin-grant handoff
+(privilege playbook below) goes out in the same message that reports the
+deferral.
 
 **Phase A — emit, execute, save:**
 ```
@@ -96,9 +101,77 @@ are transient bootstrap files, gitignored — discard after Stage 0.
   the grant lands mid-interview, run Phase A+B and fold the results into
   whatever comes next: conflict groups become *this* interview's questions, not
   a future session's.
-- Not on Snowflake yet? The script names the platform's history source and exits
-  loudly (databricks / bigquery / redshift / fabric are registered but not
-  implemented). Tell the analyst mining is unavailable on their platform for
+**Privilege playbook (BigQuery):**
+- Source: `` `<project>`.`region-<location>`.INFORMATION_SCHEMA.JOBS `` — the
+  **region qualifier is mandatory** (match the dataset location: `region-us`,
+  `region-eu`, `region-us-central1`, …; an unqualified `INFORMATION_SCHEMA.JOBS`
+  does not exist at project scope). Retention is **180 days** (vs Snowflake's
+  365) — quote window coverage accordingly, and pass `--days` ≤ 180.
+- Visibility model (behavior verified live 2026-07-20 on a reader holding only
+  `roles/bigquery.jobUser`): reading `JOBS` requires `bigquery.jobs.listAll` on
+  the project — without it: *"Access Denied: Table <project>:region-us.
+  INFORMATION_SCHEMA.JOBS: User does not have the required permissions
+  ('bigquery.jobs.listAll' permission(s) at the project level) to query system
+  entity ..."*. `INFORMATION_SCHEMA.JOBS_BY_USER` is NOT a free fallback: it
+  needs `bigquery.jobs.list`, which `jobUser` lacks, so it fails the same way
+  (`'bigquery.jobs.list' permission(s) at the project level`). The silent trap
+  bites readers holding `roles/bigquery.user` (which includes `jobs.list`):
+  for them JOBS_BY_USER succeeds but **shows only the caller's own jobs** — the
+  BigQuery analogue of the "empty fallback = blocked, not done" tripwire. A
+  near-empty JOBS_BY_USER result means visibility, not absence; hand off the
+  grant, don't report "mining found nothing".
+- Least-privilege grant (a project admin runs it; `<READER>` = the MCP reader
+  identity, user or service account):
+
+  ```bash
+  gcloud projects add-iam-policy-binding <PROJECT> \
+    --member="serviceAccount:<READER>" --role="roles/bigquery.resourceViewer"
+  gcloud projects add-iam-policy-binding <PROJECT> \
+    --member="serviceAccount:<READER>" --role="roles/bigquery.jobUser"
+  ```
+
+  (`user:<email>` instead of `serviceAccount:` for a human reader.)
+  `roles/bigquery.resourceViewer` carries `bigquery.jobs.listAll`; `jobUser`
+  lets the reader run the extraction query itself. Same forwardable-note,
+  hand-off-immediately discipline as the Snowflake grant: this is read-only
+  job **metadata** — which includes query text (and any literals embedded in
+  it), the same trust posture as Snowflake's QUERY_HISTORY — never table data.
+- Column mapping to the client-side raw-row contract (`identities_from_raw`):
+  BigQuery has no native query hash, so `"query_parameterized_hash"` lands in
+  `unavailable[]` and the client-side canonicalizer assigns fingerprints.
+  Reference extraction SQL (also the shape a future `--emit-sql --platform
+  bigquery` should print):
+
+  ```sql
+  SELECT query                       AS query_text,
+         user_email                  AS user_name,
+         ''                          AS role_name,
+         COALESCE(reservation_id,'') AS warehouse_name,
+         TO_JSON_STRING(labels)      AS query_tag,
+         CAST(start_time AS STRING)  AS start_time
+  FROM `<project>`.`region-us`.INFORMATION_SCHEMA.JOBS
+  WHERE creation_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 DAY)
+    AND job_type = 'QUERY' AND state = 'DONE' AND error_result IS NULL
+    AND statement_type = 'SELECT'
+  ```
+
+  Loader traffic (Fivetran-style) is `job_type = 'LOAD'` and correctly invisible
+  to this SELECT-only extraction.
+- Classification signals: dbt stamps its JSON query comment (`{"app": "dbt",
+  ...}`) into `query`, and with dbt's `query-comment: job-label: true` the same
+  keys appear as job labels — both channels feed the existing `is_dbt`
+  detection. BI service traffic is identity + labels (`TO_JSON_STRING(labels)`
+  arrives as `query_tag`, so `--bi-users <bi-sa-email>` plus label text both
+  work). Humans are `@`-shaped `user_email`s.
+- **Script status:** `PLATFORMS["bigquery"]` in `scripts/query_history_extract.py`
+  is still a stub — `--emit-sql`/`--rows --platform bigquery` exit loudly by
+  design. Until the reader lands, run the SQL above by hand via the MCP, save
+  rows to `.query-history-rows.json`, and treat clustering as manual/deferred.
+
+- Not on a platform with an implemented reader yet? The script names the
+  platform's history source and exits loudly (databricks / bigquery / redshift /
+  fabric are registered but not implemented; BigQuery has the manual playbook
+  above). Tell the analyst scripted mining is unavailable on their platform for
   now and continue — dbt extraction and the interview cover the same ground by
   hand.
 

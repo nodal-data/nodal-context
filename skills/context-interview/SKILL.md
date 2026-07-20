@@ -14,9 +14,10 @@ description: >
   ground-truth eval seeds as a byproduct. It also runs a live in-session
   verification pass (Stage 5) to confirm answers against the analyst's dashboards
   and show the context working immediately. Supports two depths: the full
-  multi-stage interview, or a ~30-minute FAST PASS ("I only have 30 minutes",
-  "quick version", "just the essentials") that confirms one domain's five
-  highest-leverage answers live and drafts the rest for later. Do NOT use it to
+  multi-stage interview, or a ~30-minute TEST DRIVE ("take it for a test drive",
+  "show me how it works", "I only have 30 minutes", "quick version", "just the
+  essentials") that shows the whole loop working on one domain: five
+  highest-leverage answers confirmed live, the rest drafted for later. Do NOT use it to
   run the formal/continuous eval harness (delta at scale, drift detection, hosted
   "perfect" baseline) or to write transformation/dbt code.
 ---
@@ -68,7 +69,7 @@ reference file — read it when you enter the stage. Don't load all of them up f
 
 | Stage | Goal | Reference |
 |---|---|---|
-| 0. Setup | Lay down the repo, auto-extract a draft (dbt + query history if present) | `references/repo-scaffold.md`, `references/dbt-extraction.md`, `references/query-history-extraction.md` |
+| 0. Setup | Lay down the repo, auto-extract a draft (dbt + query history), report every source's disposition | `references/repo-scaffold.md`, `references/dbt-extraction.md`, `references/query-history-extraction.md` |
 | 1. Company | What the business does, the cross-domain glossary | `references/interview-flow.md` |
 | 2. Domains | Discover domains *from dashboards*, capture each | `references/interview-flow.md` |
 | 3. Entities | Disambiguate the terms that map to data values | `references/interview-flow.md` |
@@ -79,20 +80,23 @@ At every stage from 1 onward, emit eval seeds per
 `references/eval-seed-harvesting.md`. Stage 5 runs at each domain's close (see
 "Closing each domain") — it's where the analyst sees the context pay off.
 
-## Two depths: full interview or fast pass
+## Two depths: full interview or test drive
 
 The stages above are the full interview. There is one other traversal — the
-**fast pass** (`references/fast-pass.md`): the same state machine at a hard
+**test drive** (`references/test-drive.md`): the same state machine at a hard
 ~30-minute, five-question budget for ONE domain, ending with a small live check
-and everything unasked left as `status: draft` stubs. Offer the choice right
-after Stage 0 setup: *"Full interview for this domain, or a 30-minute fast pass —
-five core questions, a live check, and the rest drafted for later?"* Enter it
-whenever the analyst signals time pressure ("I've got half an hour", "quick
-version") — including mid-session: a full interview running out of time converts
-by jumping to the fast-pass close-out ritual. A fast pass is a stopping point,
-not a different product: its close-out depth-stamps the domain ("five questions
-deep, N drafts open") so speed never masquerades as coverage, and resuming later
-is the normal Stage-0 resume from the stubs. Read `references/fast-pass.md` when
+and everything unasked left as `status: draft` stubs. It's the fastest way to
+see the whole loop work on the analyst's own data — interview, context, live
+delta — before they commit real time. Offer the choice right after Stage 0
+setup: *"Full interview for this domain, or a 30-minute test drive — five core
+questions, a live check, and the rest drafted for later?"* Enter it whenever
+the analyst signals time pressure or wants a demo first ("take it for a test
+drive", "show me how it works", "I've got half an hour", "quick version") —
+including mid-session: a full interview running out of time converts by jumping
+to the test-drive close-out ritual. A test drive is a stopping point, not a
+different product: its close-out depth-stamps the domain ("five questions deep,
+N drafts open") so speed never masquerades as coverage, and resuming later is
+the normal Stage-0 resume from the stubs. Read `references/test-drive.md` when
 you enter it.
 
 ### Stage 0 — Setup (do this first, silently where possible)
@@ -187,19 +191,28 @@ you enter it.
      the background, and nothing before Stage 5 requires a live connection. Note
      any warehouse checks you skip for connectivity (schema pulls, empirical grain
      checks) and re-run them at Stage 5 pre-flight;
-   - **warehouse query history — the third extraction source.** If the probe
-     above succeeded, mine what the company actually runs: follow
+   - **warehouse query history — the third extraction source. This step runs
+     in every session; only its outcome varies.** Follow
      `references/query-history-extraction.md` — the script emits the extraction
      SQL, you execute it read-only via the warehouse MCP, and the script clusters
      the rows into `.query-findings.json`. Recurring BI-service clusters become
      Stage-2 dashboard-catalog candidates; conflicting calculations over the same
      tables are interview *questions*, never answers. Everything drafted from it
-     is `status: draft`, tagged `# query-history-derived`. If the platform isn't
-     implemented yet, the script says so loudly — note it as deferred (with the
-     other skipped warehouse checks) and continue. If privileges are missing,
-     hand the analyst the forwardable admin-grant note **immediately** (it's the
-     session's slowest async dependency — the doc has the handoff pattern), put
-     the re-mine on the deferred-checks list, and continue.
+     is `status: draft`, tagged `# query-history-derived`. The step ends in
+     exactly one of four outcomes, each recorded in the step-6 disposition
+     report:
+     - probe succeeded → **mined**: run Phase A+B now;
+     - probe still failing on auth → **deferred: auth** — re-run the moment the
+       probe first succeeds (a mid-session reauth landing is the trigger), and
+       again at the §2 / Stage-5 re-probe seams;
+     - privileges missing → **deferred: privileges** — hand the analyst the
+       forwardable admin-grant note **immediately** (it's the session's slowest
+       async dependency — the doc has the handoff pattern) and continue;
+     - platform not implemented → **unsupported: <platform>** — run
+       `--emit-sql` anyway so the script itself confirms it loudly, tell the
+       analyst mining is unavailable on their platform, and continue.
+     A probe that was down when you first read this bullet does not retire it —
+     the condition gets re-checked, not the step skipped.
    - existing BI/dashboard titles if reachable.
    Write these into `context.config.yaml` (lineage sources) and as `status: draft`
    stubs. Tell the analyst: "I pulled a rough draft from your dbt project and schema.
@@ -207,6 +220,17 @@ you enter it.
    source's `warehouse:` from connection metadata without the analyst confirming it.
 5. Read `references/repo-scaffold.md` for exactly which files to create and how to
    wire `context.config.yaml`'s domain↔lineage map.
+6. **Exit gate — extraction disposition report.** Before entering Stage 1, tell
+   the analyst the disposition of each of the three extraction sources, one line
+   apiece:
+   - dbt: `extracted` / `no project` / `deferred: <why>`
+   - warehouse schema probe: `ok` / `deferred: auth (fix handed over)`
+   - query history: `mined (<N> clusters)` / `deferred: auth` /
+     `deferred: privileges (grant note handed over)` / `unsupported: <platform>`
+   A source you can't write a disposition line for is a source you skipped — go
+   back and run it before proceeding. Every `deferred:` line is the
+   deferred-checks list; carry it forward and re-probe it at the §2 domain
+   passes and Stage-5 pre-flight.
 
 ### Stage 1 — Company
 
