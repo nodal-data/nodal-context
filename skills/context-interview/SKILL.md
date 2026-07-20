@@ -68,7 +68,7 @@ reference file — read it when you enter the stage. Don't load all of them up f
 
 | Stage | Goal | Reference |
 |---|---|---|
-| 0. Setup | Lay down the repo, auto-extract a draft (dbt + query history if present) | `references/repo-scaffold.md`, `references/dbt-extraction.md`, `references/query-history-extraction.md` |
+| 0. Setup | Lay down the repo, auto-extract a draft (dbt + query history), report every source's disposition | `references/repo-scaffold.md`, `references/dbt-extraction.md`, `references/query-history-extraction.md` |
 | 1. Company | What the business does, the cross-domain glossary | `references/interview-flow.md` |
 | 2. Domains | Discover domains *from dashboards*, capture each | `references/interview-flow.md` |
 | 3. Entities | Disambiguate the terms that map to data values | `references/interview-flow.md` |
@@ -187,19 +187,28 @@ you enter it.
      the background, and nothing before Stage 5 requires a live connection. Note
      any warehouse checks you skip for connectivity (schema pulls, empirical grain
      checks) and re-run them at Stage 5 pre-flight;
-   - **warehouse query history — the third extraction source.** If the probe
-     above succeeded, mine what the company actually runs: follow
+   - **warehouse query history — the third extraction source. This step runs
+     in every session; only its outcome varies.** Follow
      `references/query-history-extraction.md` — the script emits the extraction
      SQL, you execute it read-only via the warehouse MCP, and the script clusters
      the rows into `.query-findings.json`. Recurring BI-service clusters become
      Stage-2 dashboard-catalog candidates; conflicting calculations over the same
      tables are interview *questions*, never answers. Everything drafted from it
-     is `status: draft`, tagged `# query-history-derived`. If the platform isn't
-     implemented yet, the script says so loudly — note it as deferred (with the
-     other skipped warehouse checks) and continue. If privileges are missing,
-     hand the analyst the forwardable admin-grant note **immediately** (it's the
-     session's slowest async dependency — the doc has the handoff pattern), put
-     the re-mine on the deferred-checks list, and continue.
+     is `status: draft`, tagged `# query-history-derived`. The step ends in
+     exactly one of four outcomes, each recorded in the step-6 disposition
+     report:
+     - probe succeeded → **mined**: run Phase A+B now;
+     - probe still failing on auth → **deferred: auth** — re-run the moment the
+       probe first succeeds (a mid-session reauth landing is the trigger), and
+       again at the §2 / Stage-5 re-probe seams;
+     - privileges missing → **deferred: privileges** — hand the analyst the
+       forwardable admin-grant note **immediately** (it's the session's slowest
+       async dependency — the doc has the handoff pattern) and continue;
+     - platform not implemented → **unsupported: <platform>** — run
+       `--emit-sql` anyway so the script itself confirms it loudly, tell the
+       analyst mining is unavailable on their platform, and continue.
+     A probe that was down when you first read this bullet does not retire it —
+     the condition gets re-checked, not the step skipped.
    - existing BI/dashboard titles if reachable.
    Write these into `context.config.yaml` (lineage sources) and as `status: draft`
    stubs. Tell the analyst: "I pulled a rough draft from your dbt project and schema.
@@ -207,6 +216,17 @@ you enter it.
    source's `warehouse:` from connection metadata without the analyst confirming it.
 5. Read `references/repo-scaffold.md` for exactly which files to create and how to
    wire `context.config.yaml`'s domain↔lineage map.
+6. **Exit gate — extraction disposition report.** Before entering Stage 1, tell
+   the analyst the disposition of each of the three extraction sources, one line
+   apiece:
+   - dbt: `extracted` / `no project` / `deferred: <why>`
+   - warehouse schema probe: `ok` / `deferred: auth (fix handed over)`
+   - query history: `mined (<N> clusters)` / `deferred: auth` /
+     `deferred: privileges (grant note handed over)` / `unsupported: <platform>`
+   A source you can't write a disposition line for is a source you skipped — go
+   back and run it before proceeding. Every `deferred:` line is the
+   deferred-checks list; carry it forward and re-probe it at the §2 domain
+   passes and Stage-5 pre-flight.
 
 ### Stage 1 — Company
 

@@ -26,9 +26,11 @@ Stage 0 is **not skippable**: repo scaffold / resume discovery, the warehouse
 probe, and the platform question run as usual (silently where possible). One
 budget adjustment: run the dbt extraction only if a manifest is already reachable
 on disk — don't spend fast-pass minutes waiting for a clone; note it as deferred
-and move on. Same rule for query-history mining: run it only if the warehouse
+and move on. Same rule for query-history mining: mine only if the warehouse
 probe already succeeded and the emitted SQL runs first try — never spend
-fast-pass minutes on privilege errors; defer instead.
+fast-pass minutes on privilege errors; defer instead. The exit disposition
+report (Stage 0 step 6) still runs in full: a fast pass may *defer* a source,
+but it never leaves one without a recorded outcome.
 
 ## Company minimum (~2 minutes)
 

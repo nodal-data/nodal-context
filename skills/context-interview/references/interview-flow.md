@@ -94,10 +94,11 @@ rather than asking them to list from scratch. If `unavailable` includes `exposur
 (many dbt projects, including ones with no `exposures:` blocks), ask the question
 above instead.
 
-If Stage 0 deferred query-history mining on a pending `ACCOUNT_USAGE` grant,
-re-probe before clustering the domains — if the grant landed, run the miner's
-Phase A+B now (`query-history-extraction.md`); its conflict groups are this
-section's disambiguation questions, ready-made.
+If Stage 0's disposition report shows query-history mining `deferred:` (auth
+or a pending `ACCOUNT_USAGE` grant), re-probe before clustering the domains —
+if the blocker cleared, run the miner's Phase A+B now
+(`query-history-extraction.md`); its conflict groups are this section's
+disambiguation questions, ready-made.
 
 If Stage 0 also produced `.query-findings.json` (query-history mining), its
 admitted `bi_service` clusters are a **parallel draft catalog** — each recurring
