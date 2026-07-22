@@ -36,6 +36,7 @@ deferral.
 **Phase A — emit, execute, save:**
 ```
 python3 scripts/query_history_extract.py --emit-sql --platform snowflake [--days 90]
+python3 scripts/query_history_extract.py --emit-sql --platform bigquery [--region us]
 ```
 Run the printed SQL via the warehouse MCP (read-only SELECT — it already is).
 Save the result rows **verbatim** as JSON to `.query-history-rows.json` at the
@@ -136,44 +137,33 @@ are transient bootstrap files, gitignored — discard after Stage 0.
   hand-off-immediately discipline as the Snowflake grant: this is read-only
   job **metadata** — which includes query text (and any literals embedded in
   it), the same trust posture as Snowflake's QUERY_HISTORY — never table data.
-- Column mapping to the client-side raw-row contract (`identities_from_raw`):
-  BigQuery has no native query hash, so `"query_parameterized_hash"` lands in
-  `unavailable[]` and the client-side canonicalizer assigns fingerprints.
-  Reference extraction SQL (also the shape a future `--emit-sql --platform
-  bigquery` should print):
-
-  ```sql
-  SELECT query                       AS query_text,
-         user_email                  AS user_name,
-         ''                          AS role_name,
-         COALESCE(reservation_id,'') AS warehouse_name,
-         TO_JSON_STRING(labels)      AS query_tag,
-         CAST(start_time AS STRING)  AS start_time
-  FROM `<project>`.`region-us`.INFORMATION_SCHEMA.JOBS
-  WHERE creation_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 DAY)
-    AND job_type = 'QUERY' AND state = 'DONE' AND error_result IS NULL
-    AND statement_type = 'SELECT'
-  ```
-
-  Loader traffic (Fivetran-style) is `job_type = 'LOAD'` and correctly invisible
-  to this SELECT-only extraction.
+- Scopes: `--scope jobs` (default; needs `bigquery.jobs.listAll`, synonym view
+  `JOBS_BY_PROJECT`) and `--scope jobs_by_user` (the privilege-limited fallback
+  above — caller's own jobs only). `--region <location>` sets the mandatory
+  region qualifier (default `us`). BigQuery has no native query hash, so both
+  scopes print RAW per-job rows in the `identities_from_raw` column contract
+  (`query_text`, `user_name`, `role_name` — always empty here,
+  `warehouse_name` ← `reservation_id`, `query_tag` ← `TO_JSON_STRING(labels)`,
+  `start_time`); Phase B fingerprints them with the client-side canonicalizer
+  and `"query_parameterized_hash"` lands in `unavailable[]`. Loader traffic
+  (Fivetran-style) is `job_type = 'LOAD'` and correctly invisible to this
+  SELECT-only extraction.
 - Classification signals: dbt stamps its JSON query comment (`{"app": "dbt",
   ...}`) into `query`, and with dbt's `query-comment: job-label: true` the same
   keys appear as job labels — both channels feed the existing `is_dbt`
   detection. BI service traffic is identity + labels (`TO_JSON_STRING(labels)`
   arrives as `query_tag`, so `--bi-users <bi-sa-email>` plus label text both
   work). Humans are `@`-shaped `user_email`s.
-- **Script status:** `PLATFORMS["bigquery"]` in `scripts/query_history_extract.py`
-  is still a stub — `--emit-sql`/`--rows --platform bigquery` exit loudly by
-  design. Until the reader lands, run the SQL above by hand via the MCP, save
-  rows to `.query-history-rows.json`, and treat clustering as manual/deferred.
+- Retention caps the window at 180 days: `--days` beyond that is capped with a
+  warning and `window_days_requested` in the findings. An empty `jobs_by_user`
+  run trips the same blocked-not-done stderr warning as Snowflake's
+  INFORMATION_SCHEMA fallback.
 
 - Not on a platform with an implemented reader yet? The script names the
-  platform's history source and exits loudly (databricks / bigquery / redshift /
-  fabric are registered but not implemented; BigQuery has the manual playbook
-  above). Tell the analyst scripted mining is unavailable on their platform for
-  now and continue — dbt extraction and the interview cover the same ground by
-  hand.
+  platform's history source and exits loudly (databricks / redshift / fabric
+  are registered but not implemented). Tell the analyst scripted mining is
+  unavailable on their platform for now and continue — dbt extraction and the
+  interview cover the same ground by hand.
 
 ## Step 2 — census first, then read the findings, then draft (one domain at a time, as always)
 
@@ -244,6 +234,10 @@ decomposition.
   absence. Do NOT report "mining found nothing": the forwardable admin-grant
   note is a mandatory part of your next status message to the user, and the
   re-mine goes on the deferred-checks list.
+- `"other_users_jobs"` in `unavailable` → the BigQuery `jobs_by_user` fallback:
+  only the caller's own jobs were visible. Same rule as above — a thin or empty
+  result means visibility, not absence (Phase B warns on stderr when nothing is
+  admitted), and the `bigquery.jobs.listAll` grant handoff applies.
 - `"query_parameterized_hash"` in `unavailable` → a platform without a native
   hash, clustered by the client-side canonicalizer; fingerprints are less exact.
 - `pools.excluded` high → ETL traffic (service-user patterns) plus dbt-stamped
