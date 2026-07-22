@@ -35,13 +35,13 @@ qualify on its own for admission), and ETL/dbt executions are subtracted and
 disclosed (`n_executions_excluded`, `pool_evidence`) instead of suppressing the
 whole shape.
 
-Platforms are a registry: snowflake is implemented; databricks / bigquery /
+Platforms are a registry: snowflake and bigquery are implemented; databricks /
 redshift / fabric are registered stubs that fail loudly (their history sources are
 named so a contributor knows where to start). Each platform declares, per scope,
 whether canonicalization happens in-warehouse (Snowflake's
 QUERY_PARAMETERIZED_HASH — both scopes) or client-side (the lexer + regex
-canonicalizer here, for platforms without a native hash) — new platforms reuse
-one of the two paths.
+canonicalizer here, for platforms without a native hash — BigQuery's path) — new
+platforms reuse one of the two paths.
 
 Stdlib-only. Both input and output files are transient bootstrap artifacts,
 gitignored at the context repo root — raw SQL never reaches a committed file.
@@ -91,15 +91,18 @@ AGG_RE = re.compile(
     re.IGNORECASE,
 )
 # Dotted, optionally quoted identifier after FROM/JOIN, applied to lexer-scrubbed
-# text (strings already replaced), so literals can't fake a table. Subqueries
+# text (strings already replaced), so literals can't fake a table. Quoting
+# dialects: "part" (Snowflake et al.) and `part` / `whole.dotted.path`
+# (BigQuery — one backtick pair may wrap the ENTIRE path, and project ids
+# contain hyphens, so `[^`]+` is the only safe part pattern). Subqueries
 # don't match (they start with a paren). Known misses, acceptable for a hint:
 # LATERAL views, table functions (TABLE(...)), UNNEST, and nested-aggregate
 # arguments like SUM(COALESCE(x, 0)) (the inner call still registers). If sqlglot
 # is ever adopted, these regexes and the canonicalizer are what it replaces —
 # tables[] stays a hint the agent cross-checks, never authoritative.
 TABLE_RE = re.compile(
-    r"\b(?:FROM|JOIN)\s+((?:\"[^\"]+\"|[A-Za-z_][\w$]*)"
-    r"(?:\.(?:\"[^\"]+\"|[A-Za-z_][\w$]*)){0,2})",
+    r"\b(?:FROM|JOIN)\s+((?:`[^`]+`|\"[^\"]+\"|[A-Za-z_][\w$]*)"
+    r"(?:\.(?:`[^`]+`|\"[^\"]+\"|[A-Za-z_][\w$]*)){0,2})",
     re.IGNORECASE,
 )
 CTE_RE = re.compile(r"\b([A-Za-z_][\w$]*)\s+AS\s*\(", re.IGNORECASE)
@@ -171,7 +174,7 @@ ORDER BY cluster_executions DESC, n_executions DESC
 LIMIT {limit}"""
 
 
-def _sf_emit_account_usage(days, limit):
+def _sf_emit_account_usage(days, limit, region):
     return f"""\
 -- Query-history extraction (Snowflake, ACCOUNT_USAGE scope; {days}-day window).
 -- The executing user needs ACCOUNT_USAGE access. Least-privilege grant (run as
@@ -200,7 +203,7 @@ WHERE start_time >= DATEADD(day, -{days}, CURRENT_TIMESTAMP())
 {_SF_GROUP_TAIL.format(limit=limit)}"""
 
 
-def _sf_emit_information_schema(days, limit):
+def _sf_emit_information_schema(days, limit, region):
     limit = min(limit, 10000)
     # Start one hour INSIDE the retention boundary: the table function rejects a
     # range start that touches it ("Cannot retrieve data from more than 7 days
@@ -225,6 +228,99 @@ WHERE execution_status = 'SUCCESS'
 {_SF_GROUP_TAIL.format(limit=limit)}"""
 
 
+# Outcome-based tripwires for privilege-limited fallback scopes: an empty
+# fallback is success-shaped (exit 0, valid file) and reads as "mining done,
+# nothing found" — when it usually means the executing identity can't SEE the
+# traffic. Attached per scope; build_findings warns on stderr when the scope's
+# admitted count is 0.
+_SF_IS_EMPTY_WARNING = (
+    "0 admitted clusters from the 7-day INFORMATION_SCHEMA fallback — "
+    "that usually means this role can't see the traffic, not that no "
+    "dashboards run. Mining is still BLOCKED: the ACCOUNT_USAGE grant "
+    "handoff applies now (privilege playbook in "
+    "query-history-extraction.md).")
+_BQ_BY_USER_EMPTY_WARNING = (
+    "0 admitted clusters from the JOBS_BY_USER fallback — it shows only the "
+    "caller's own jobs, so this usually means visibility, not absence. "
+    "Mining is still BLOCKED: the bigquery.jobs.listAll grant "
+    "handoff applies now (privilege playbook in "
+    "query-history-extraction.md).")
+
+
+# ----- BigQuery ----------------------------------------------------------------
+# No native query hash: the emitted SQL returns RAW per-job rows in the
+# identities_from_raw column contract, and Phase B fingerprints them with the
+# client-side canonicalizer. INFORMATION_SCHEMA job views are region-qualified
+# (--region, matching the dataset location: us, eu, us-central1, ...) and retain
+# 180 days. Verified live 2026-07-20; the visibility/permission model is written
+# up in skills/context-interview/references/query-history-extraction.md.
+
+_BQ_SELECT_BODY = """\
+SELECT
+  query                                 AS query_text,
+  user_email                            AS user_name,
+  ''                                    AS role_name,
+  COALESCE(reservation_id, '')          AS warehouse_name,
+  NULLIF(TO_JSON_STRING(labels), '[]')  AS query_tag,
+  CAST(start_time AS STRING)            AS start_time"""
+
+# creation_time is the view's partitioning column — the window filter MUST use
+# it (a start_time-only filter scans all 180 days). Loader traffic
+# (Fivetran-style) is job_type = 'LOAD', correctly invisible to this
+# SELECT-only extraction.
+_BQ_FILTER_TAIL = """\
+WHERE creation_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {days} DAY)
+  AND job_type = 'QUERY'
+  AND statement_type = 'SELECT'
+  AND state = 'DONE'
+  AND error_result IS NULL
+ORDER BY start_time DESC
+LIMIT {limit}"""
+
+
+def _bq_emit_jobs(days, limit, region):
+    return f"""\
+-- Query-history extraction (BigQuery, JOBS scope; {days}-day window,
+-- region {region}). Synonym view: JOBS_BY_PROJECT.
+-- Reading JOBS needs 'bigquery.jobs.listAll' at the project level. Least-
+-- privilege grant (a project admin runs it; <READER> = the MCP reader
+-- identity; use user:<email> for a human reader):
+--   gcloud projects add-iam-policy-binding <PROJECT> \\
+--     --member="serviceAccount:<READER>" --role="roles/bigquery.resourceViewer"
+-- JOBS retains 180 days and covers ONE project — prefix `<project>`. before
+-- `region-{region}` to mine a different project than the connection default.
+-- On "Access Denied ... bigquery.jobs.listAll": (1) hand the analyst the
+--   forwardable admin-grant note NOW (privilege playbook in
+--   query-history-extraction.md) — it needs another human with hours-to-days
+--   of turnaround, so it starts first; (2) meanwhile re-run --emit-sql with
+--   --scope jobs_by_user (the caller's OWN jobs only) — a stopgap, not a
+--   substitute.
+-- Raw per-job rows (no native query hash on BigQuery; Phase B canonicalizes
+-- and clusters client-side) — LIMIT caps jobs, not shapes.
+-- Run read-only via the warehouse MCP; save the result rows VERBATIM as JSON to
+-- .query-history-rows.json at the context repo root (gitignored).
+{_BQ_SELECT_BODY}
+FROM `region-{region}`.INFORMATION_SCHEMA.JOBS
+{_BQ_FILTER_TAIL.format(days=days, limit=limit)}"""
+
+
+def _bq_emit_jobs_by_user(days, limit, region):
+    return f"""\
+-- Query-history extraction (BigQuery, JOBS_BY_USER fallback; {days}-day window,
+-- region {region}).
+-- Needs only 'bigquery.jobs.list' (roles/bigquery.user carries it; plain
+-- roles/bigquery.jobUser does NOT — it fails the same "Access Denied" way).
+-- Shows ONLY the caller's own jobs: dashboard and teammate traffic is
+-- invisible, so a near-empty result means visibility, not absence — the JOBS
+-- grant handoff still applies (privilege playbook in
+-- query-history-extraction.md). Prefer --scope jobs when privileges allow.
+-- Run read-only via the warehouse MCP; save the result rows VERBATIM as JSON to
+-- .query-history-rows.json at the context repo root (gitignored).
+{_BQ_SELECT_BODY}
+FROM `region-{region}`.INFORMATION_SCHEMA.JOBS_BY_USER
+{_BQ_FILTER_TAIL.format(days=days, limit=limit)}"""
+
+
 def _stub(history_source):
     return {"stub": history_source}
 
@@ -236,20 +332,33 @@ PLATFORMS = {
             # (canonicalizer "warehouse"). canonicalizer "client" is the library
             # path for platforms without a native hash: raw rows, canonicalized
             # and grouped here. max_days caps the effective window; "unavailable"
-            # is what the scope can never provide (disclosed in findings).
+            # is what the scope can never provide (disclosed in findings);
+            # "empty_warning" marks a privilege-limited fallback whose empty
+            # result must read as blocked, not done.
             "account_usage": {"emit_sql": _sf_emit_account_usage,
                               "canonicalizer": "warehouse", "max_days": None,
                               "unavailable": []},
             "information_schema": {"emit_sql": _sf_emit_information_schema,
                                    "canonicalizer": "warehouse", "max_days": 7,
                                    "unavailable": ["window_beyond_7_days",
-                                                   "result_limit_pre_filter"]},
+                                                   "result_limit_pre_filter"],
+                                   "empty_warning": _SF_IS_EMPTY_WARNING},
         },
         "default_scope": "account_usage",
     },
+    "bigquery": {
+        "scopes": {
+            "jobs": {"emit_sql": _bq_emit_jobs,
+                     "canonicalizer": "client", "max_days": 180,
+                     "unavailable": []},
+            "jobs_by_user": {"emit_sql": _bq_emit_jobs_by_user,
+                             "canonicalizer": "client", "max_days": 180,
+                             "unavailable": ["other_users_jobs"],
+                             "empty_warning": _BQ_BY_USER_EMPTY_WARNING},
+        },
+        "default_scope": "jobs",
+    },
     "databricks": _stub("system.query.history"),
-    "bigquery": _stub("region-qualified INFORMATION_SCHEMA.JOBS "
-                      "(no native hash — reuse the client-side canonicalizer)"),
     "redshift": _stub("SYS_QUERY_HISTORY / STL_QUERY"),
     "fabric": _stub("queryinsights views"),
 }
@@ -332,16 +441,28 @@ def _client_fingerprint(text):
 
 # ----- SQL feature extraction (hints, never authoritative) -----------------------
 
+def _split_table_ident(ident):
+    """-> dotted parts, quoting resolved. One backtick pair may wrap the WHOLE
+    dotted path (BigQuery: `proj-x.ds.tbl`); otherwise split on dots and strip
+    per-part backticks. Backticked and double-quoted parts keep their case
+    (double quotes stay, marking them); unquoted parts are uppercased."""
+    if ident.startswith("`") and ident.endswith("`") and ident.count("`") == 2:
+        return ident[1:-1].split(".")
+    return [p.strip("`") if p.startswith("`")
+            else p if p.startswith('"')
+            else p.upper()
+            for p in ident.split(".")]
+
+
 def extract_tables(text):
     """FROM/JOIN targets, minus CTE names, uppercased (quoted parts keep case)."""
     t = scrub_sql(text, replace_strings=True)
     ctes = {m.group(1).upper() for m in CTE_RE.finditer(t)}
     tables = set()
     for m in TABLE_RE.finditer(t):
-        ident = m.group(1)
-        parts = [p if p.startswith('"') else p.upper() for p in ident.split(".")]
-        if len(parts) == 1 and (parts[0] in ctes or parts[0] in ("TABLE", "LATERAL",
-                                                                 "UNNEST")):
+        parts = _split_table_ident(m.group(1))
+        if len(parts) == 1 and parts[0].upper() in (ctes | {"TABLE", "LATERAL",
+                                                            "UNNEST"}):
             continue
         tables.add(".".join(parts))
     return sorted(tables)
@@ -424,7 +545,9 @@ def identity_census(ident_rows, opts):
     """-> (census, service_account_candidates). The census aggregates identity
     rows per user with their traffic classification. Candidates are users whose
     HUMAN-classified volume says 'unrecognized service account' (>= max(100, 5%
-    of window executions), username not email-shaped): the single biggest miss in
+    of window executions), username not email-shaped — except GCP service
+    accounts, which ARE email-shaped, *@*.gserviceaccount.com): the single
+    biggest miss in
     dogfooding was an app service user defaulting to human, whose one identity
     can never clear min_users. The miner only flags — the agent asks the analyst
     and re-runs with --bi-users / --exclude-users."""
@@ -462,7 +585,8 @@ def identity_census(ident_rows, opts):
     threshold = max(100, total // 20)
     candidates = [e["user"] for e in census
                   if e["n_executions_by_class"].get("human", 0) >= threshold
-                  and "@" not in e["user"]]
+                  and ("@" not in e["user"]
+                       or e["user"].lower().endswith(".gserviceaccount.com"))]
     return census, candidates
 
 
@@ -635,7 +759,7 @@ def find_conflict_groups(clusters):
 # ----- assembly ------------------------------------------------------------------
 
 def build_findings(rows, platform, scope, canonicalizer, opts,
-                   scope_unavailable=()):
+                   scope_unavailable=(), empty_warning=None):
     ident_rows = (identities_from_aggregated(rows) if canonicalizer == "warehouse"
                   else identities_from_raw(rows))
     clusters, pools = merge_and_classify(ident_rows, canonicalizer, opts)
@@ -672,15 +796,8 @@ def build_findings(rows, platform, scope, canonicalizer, opts,
     # file (pools{}/coverage{} still count them); --emit-rejected restores them.
     conflict_groups = find_conflict_groups(clusters)
     admitted_total = sum(1 for c in clusters if c["admitted"])
-    if scope == "information_schema" and admitted_total == 0:
-        # Outcome-based tripwire: an empty fallback is success-shaped (exit 0,
-        # valid file) and reads as "mining done, nothing found" — when it
-        # usually means the executing role can't SEE the traffic.
-        _warn("0 admitted clusters from the 7-day INFORMATION_SCHEMA fallback — "
-              "that usually means this role can't see the traffic, not that no "
-              "dashboards run. Mining is still BLOCKED: the ACCOUNT_USAGE grant "
-              "handoff applies now (privilege playbook in "
-              "query-history-extraction.md).")
+    if empty_warning and admitted_total == 0:
+        _warn(empty_warning)
     clusters.sort(key=lambda c: (not c["admitted"], -c["n_executions"],
                                  c["fingerprint"]))
     emittable = (clusters if opts["emit_rejected"]
@@ -749,7 +866,12 @@ def main(argv=None):
     ap.add_argument("--platform", required=True,
                     help=f"warehouse platform ({', '.join(sorted(PLATFORMS))})")
     ap.add_argument("--scope", help="history source scope (platform-specific; "
-                                    "snowflake: account_usage | information_schema)")
+                                    "snowflake: account_usage | information_schema; "
+                                    "bigquery: jobs | jobs_by_user)")
+    ap.add_argument("--region", default="us",
+                    help="BigQuery dataset location for the region-qualified "
+                         "INFORMATION_SCHEMA (default 'us'; e.g. eu, "
+                         "us-central1). Ignored by other platforms.")
     ap.add_argument("--days", type=_positive_int, default=90,
                     help="lookback window (default 90; scopes may cap it)")
     ap.add_argument("--limit", type=_positive_int, default=5000,
@@ -784,7 +906,7 @@ def main(argv=None):
               f"(requested {args.days}); findings will report the effective window.")
 
     if args.emit_sql:
-        print(scope_entry["emit_sql"](effective_days, args.limit))
+        print(scope_entry["emit_sql"](effective_days, args.limit, args.region))
         return 0
 
     opts = {
@@ -797,7 +919,8 @@ def main(argv=None):
     }
     findings = build_findings(_load_rows(args.rows), args.platform, scope,
                               scope_entry["canonicalizer"], opts,
-                              scope_entry.get("unavailable", ()))
+                              scope_entry.get("unavailable", ()),
+                              scope_entry.get("empty_warning"))
 
     text = json.dumps(findings, indent=2, sort_keys=True)
     if args.out:

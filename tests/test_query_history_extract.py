@@ -188,6 +188,22 @@ def run():
     assert b == c and "in (?)" in b
     assert qhe.canonicalize("SELECT 'it''s' FROM t") == "select ? from t"
     assert qhe.extract_tables("SELECT 'FROM fake_table' FROM real_t") == ["REAL_T"]
+    # BigQuery backtick quoting: one pair around the whole dotted path (case
+    # kept, hyphenated project ids survive), per-part backticks, and mixed forms
+    assert qhe.extract_tables(
+        "SELECT * FROM `proj-x.ds.fct_orders` JOIN `ds`.dim_c ON 1=1") == [
+        "ds.DIM_C", "proj-x.ds.fct_orders"]
+    assert qhe.extract_tables(
+        "SELECT COUNT(*) FROM `region-us`.INFORMATION_SCHEMA.JOBS_BY_PROJECT") == [
+        "region-us.INFORMATION_SCHEMA.JOBS_BY_PROJECT"]
+    # ...and a backticked catalog probe demotes to the catalog pool
+    fcat = _findings_from_rows(
+        [{"query_text": "SELECT COUNT(*) AS job_count FROM `region-us`."
+                        "INFORMATION_SCHEMA.JOBS_BY_PROJECT",
+          "user_name": "sa-bi@p.iam.gserviceaccount.com",
+          "start_time": "2026-07-10T00:00:00Z"}],
+        "--platform", "bigquery", "--emit-rejected")
+    assert fcat["clusters"][0]["pool"] == "catalog"
     assert qhe.agg_signatures("SELECT 'sum(nope)', COUNT(*) FROM t") == ["count(*)"]
 
     # ---- conflict rule: identical signatures are NOT a conflict ----
@@ -379,7 +395,74 @@ def run():
     assert "DATEADD(hour, -167," in isql
     assert "BEFORE the outer" in isql           # RESULT_LIMIT pre-filter disclosed
 
-    for platform in ("bigquery", "databricks", "redshift", "fabric"):
+    # ---- bigquery: raw-row emitters, region qualifier, 180-day cap ----
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        assert qhe.main(["--emit-sql", "--platform", "bigquery"]) == 0
+    bsql = buf.getvalue()
+    # the identities_from_raw column contract, aliased in-warehouse
+    for col in ("AS query_text", "AS user_name", "AS role_name",
+                "AS warehouse_name", "AS query_tag", "AS start_time"):
+        assert col in bsql
+    assert "FROM `region-us`.INFORMATION_SCHEMA.JOBS\n" in bsql
+    assert "creation_time >= TIMESTAMP_SUB" in bsql  # partition column filters
+    assert "statement_type = 'SELECT'" in bsql and "LIMIT 5000" in bsql
+    assert "bigquery.jobs.listAll" in bsql           # grant playbook named
+
+    err = io.StringIO()  # requested window beyond the 180-day retention: capped
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(err):
+        assert qhe.main(["--emit-sql", "--platform", "bigquery",
+                         "--days", "365", "--region", "eu"]) == 0
+    assert "INTERVAL 180 DAY" in buf.getvalue()
+    assert "caps the window at 180 days" in err.getvalue()
+    assert "`region-eu`.INFORMATION_SCHEMA.JOBS" in buf.getvalue()
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        assert qhe.main(["--emit-sql", "--platform", "bigquery",
+                         "--scope", "jobs_by_user"]) == 0
+    usql = buf.getvalue()
+    assert "INFORMATION_SCHEMA.JOBS_BY_USER" in usql
+    assert "visibility, not absence" in usql        # fallback trap disclosed
+
+    # rows path: client canonicalizer end-to-end, scope + degradation disclosed
+    fbq = _findings_from_rows(
+        [{"query_text": "SELECT SUM(x) FROM P.M.F WHERE d = 'a'",
+          "user_name": f"u{i}@acme.com", "start_time": f"2026-07-1{i}T00:00:00Z"}
+         for i in range(5)],
+        "--platform", "bigquery", "--min-count", "5")
+    assert fbq["platform"] == "bigquery" and fbq["scope"] == "jobs"
+    assert set(fbq["unavailable"]) == {"viewer_counts",
+                                       "query_parameterized_hash"}
+    assert fbq["window_days"] == 90
+    only = fbq["clusters"][0]
+    assert only["fingerprint_source"] == "client" and only["admitted"]
+    assert only["n_users_human"] == 5
+
+    # an EMPTY JOBS_BY_USER fallback = the caller's own jobs only — blocked,
+    # not done (same outcome tripwire as the Snowflake fallback)
+    err = io.StringIO()
+    with contextlib.redirect_stderr(err):
+        fbu = _findings_from_rows(
+            [{"query_text": "SELECT a FROM P.M.T",
+              "user_name": "me@acme.com", "start_time": "2026-07-10T00:00:00Z"}],
+            "--platform", "bigquery", "--scope", "jobs_by_user")
+    assert fbu["coverage"]["clusters_admitted"] == 0
+    assert "other_users_jobs" in fbu["unavailable"]
+    assert "BLOCKED" in err.getvalue()
+    assert "jobs.listAll grant" in err.getvalue()
+
+    # GCP service accounts are email-shaped — still census candidates
+    fsa = _findings_from_rows(
+        [{"query_text": f"SELECT {i}, SUM(x) FROM P.M.F GROUP BY 1",
+          "user_name": "app@proj.iam.gserviceaccount.com",
+          "start_time": "2026-07-10T00:00:00Z"} for i in range(120)],
+        "--platform", "bigquery")
+    assert fsa["service_account_candidates"] == [
+        "app@proj.iam.gserviceaccount.com"]
+
+    for platform in ("databricks", "redshift", "fabric"):
         err = io.StringIO()
         try:
             with contextlib.redirect_stderr(err):
@@ -387,7 +470,7 @@ def run():
         except SystemExit as e:
             assert e.code == 2
             assert "not implemented" in err.getvalue()
-            assert "Implemented: snowflake" in err.getvalue()
+            assert "Implemented: bigquery, snowflake" in err.getvalue()
         else:
             raise AssertionError(f"stub platform {platform} did not exit loudly")
 
