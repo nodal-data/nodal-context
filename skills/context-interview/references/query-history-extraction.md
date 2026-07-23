@@ -37,6 +37,7 @@ deferral.
 ```
 python3 scripts/query_history_extract.py --emit-sql --platform snowflake [--days 90]
 python3 scripts/query_history_extract.py --emit-sql --platform bigquery [--region us]
+python3 scripts/query_history_extract.py --emit-sql --platform redshift
 ```
 Run the printed SQL via the warehouse MCP (read-only SELECT — it already is).
 Save the result rows **verbatim** as JSON to `.query-history-rows.json` at the
@@ -159,9 +160,48 @@ are transient bootstrap files, gitignored — discard after Stage 0.
   run trips the same blocked-not-done stderr warning as Snowflake's
   INFORMATION_SCHEMA fallback.
 
+**Privilege playbook (Redshift):**
+- Source: `SYS_QUERY_HISTORY` (one scope, `sys_query_history`; provisioned
+  clusters and Serverless workgroups alike), fingerprinted by Redshift's own
+  literal-excluding `generic_query_hash` — the same in-warehouse
+  canonicalization class as Snowflake, so `unavailable[]` does NOT carry
+  `query_parameterized_hash`. SYS views retain only ~7 days: `--days` is
+  capped at 7, so expect weekly-refresh tiles to be under-counted and
+  `--min-users 2` to be hard to clear — the same short-window caveats as
+  Snowflake's INFORMATION_SCHEMA fallback.
+- **Visibility is the silent trap — there is no separate fallback scope.** The
+  view is readable by every user, but a regular user sees only *their own*
+  queries: the extraction succeeds and looks fine while dashboards and
+  teammates are invisible. Probe before mining
+  (`SELECT usesuper FROM pg_user WHERE usename = current_user;`) and treat a
+  thin or empty result as visibility, not absence (Phase B warns on stderr
+  when nothing is admitted).
+- Least-privilege grant (a superuser runs it; `<USER>` = the MCP user):
+
+  ```sql
+  ALTER USER <USER> SYSLOG ACCESS UNRESTRICTED;
+  ```
+
+  It makes other users' rows in user-visible system views readable — query
+  *metadata*, which includes query text and any literals embedded in it, the
+  same trust posture as Snowflake's QUERY_HISTORY — never table data. Same
+  forwardable-note, hand-off-immediately discipline as the other platforms;
+  it's a one-line action, so ask *"are you a superuser here, or is that
+  someone else?"* — at small companies it's often ten seconds.
+- Classification signals: identity is `pg_user.usename`; `query_label` (set
+  via `SET query_group`, some BI tools stamp it) arrives as `query_tag`;
+  `database_name` arrives as `warehouse_name` (a census/token-matching
+  dimension — Redshift has no per-query warehouse); `role_name` is always
+  empty. dbt's query comment rides in `query_text` and feeds the in-SQL
+  `is_dbt` flag as usual.
+- `query_text` is stored truncated at 4000 chars —
+  `"query_text_beyond_4000_chars"` lands in `unavailable[]`. Fingerprints are
+  unaffected (Redshift hashes the full text), but `sample_text` and the
+  regex table/agg hints can be cut mid-query on very long statements.
+
 - Not on a platform with an implemented reader yet? The script names the
-  platform's history source and exits loudly (databricks / redshift / fabric
-  are registered but not implemented). Tell the analyst scripted mining is
+  platform's history source and exits loudly (databricks / fabric are
+  registered but not implemented). Tell the analyst scripted mining is
   unavailable on their platform for now and continue — dbt extraction and the
   interview cover the same ground by hand.
 
@@ -225,15 +265,23 @@ decomposition.
   service user per BI tool, not the humans behind it. Dashboard names, element
   structure, and viewer stats are optional BI-API enrichment — offer to draft an
   "email your BI admin" note rather than blocking on it.
-- `"window_beyond_7_days"` / `"result_limit_pre_filter"` in `unavailable` → you
-  mined the 7-day INFORMATION_SCHEMA fallback (it still uses Snowflake's native
-  fingerprint); say so, and expect weekly-refresh tiles to be under-counted.
-- `scope: information_schema` **and** `coverage.clusters_admitted == 0` →
-  mining is **blocked, not done** (Phase B also warns on stderr). An empty
-  fallback means the executing role can't see the traffic — visibility, not
-  absence. Do NOT report "mining found nothing": the forwardable admin-grant
-  note is a mandatory part of your next status message to the user, and the
-  re-mine goes on the deferred-checks list.
+- `"window_beyond_7_days"` / `"result_limit_pre_filter"` in `unavailable` → a
+  7-day window: Snowflake's INFORMATION_SCHEMA fallback, or Redshift's SYS
+  retention (both still use the platform's native fingerprint); say so, and
+  expect weekly-refresh tiles to be under-counted.
+- `scope: information_schema` (Snowflake) **and**
+  `coverage.clusters_admitted == 0` → mining is **blocked, not done** (Phase B
+  also warns on stderr). An empty fallback means the executing role can't see
+  the traffic — visibility, not absence. Do NOT report "mining found nothing":
+  the forwardable admin-grant note is a mandatory part of your next status
+  message to the user, and the re-mine goes on the deferred-checks list. The
+  same tripwire fires on Redshift's *default* scope (a non-superuser sees only
+  their own queries) — there the `ALTER USER ... SYSLOG ACCESS UNRESTRICTED`
+  handoff applies.
+- `"query_text_beyond_4000_chars"` in `unavailable` → Redshift stores query
+  text truncated at 4000 chars; fingerprints are native and unaffected, but
+  `sample_text` and the table/agg hints can be cut on very long statements —
+  read cut samples with extra suspicion.
 - `"other_users_jobs"` in `unavailable` → the BigQuery `jobs_by_user` fallback:
   only the caller's own jobs were visible. Same rule as above — a thin or empty
   result means visibility, not absence (Phase B warns on stderr when nothing is
