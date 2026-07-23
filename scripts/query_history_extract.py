@@ -35,13 +35,13 @@ qualify on its own for admission), and ETL/dbt executions are subtracted and
 disclosed (`n_executions_excluded`, `pool_evidence`) instead of suppressing the
 whole shape.
 
-Platforms are a registry: snowflake and bigquery are implemented; databricks /
-redshift / fabric are registered stubs that fail loudly (their history sources are
-named so a contributor knows where to start). Each platform declares, per scope,
-whether canonicalization happens in-warehouse (Snowflake's
-QUERY_PARAMETERIZED_HASH — both scopes) or client-side (the lexer + regex
-canonicalizer here, for platforms without a native hash — BigQuery's path) — new
-platforms reuse one of the two paths.
+Platforms are a registry: snowflake, bigquery, and redshift are implemented;
+databricks / fabric are registered stubs that fail loudly (their history sources
+are named so a contributor knows where to start). Each platform declares, per
+scope, whether canonicalization happens in-warehouse (Snowflake's
+QUERY_PARAMETERIZED_HASH, Redshift's GENERIC_QUERY_HASH) or client-side (the
+lexer + regex canonicalizer here, for platforms without a native hash —
+BigQuery's path) — new platforms reuse one of the two paths.
 
 Stdlib-only. Both input and output files are transient bootstrap artifacts,
 gitignored at the context repo root — raw SQL never reaches a committed file.
@@ -76,9 +76,12 @@ DBT_MARKER_RES = (
     re.compile(r"\bdbt_internal_test\b", re.IGNORECASE),
     re.compile(r"__dbt__cte__", re.IGNORECASE),
 )
-# Keep in sync with DBT_MARKER_RES — the same three markers, as ILIKE patterns
-# for the emitted SQL's is_dbt column.
-DBT_MARKER_ILIKE = "('%\"app\": \"dbt\"%', '%dbt_internal_test%', '%__dbt__cte__%')"
+# Keep in sync with DBT_MARKER_RES — the same three markers as LIKE patterns,
+# rendered per platform into the emitted SQL's is_dbt column (Snowflake takes
+# the ILIKE ANY list form; Redshift has no ILIKE ANY, so it gets an OR-chain).
+DBT_MARKER_LIKE_PATTERNS = ('%"app": "dbt"%', '%dbt_internal_test%',
+                            '%__dbt__cte__%')
+DBT_MARKER_ILIKE = "(" + ", ".join(f"'{p}'" for p in DBT_MARKER_LIKE_PATTERNS) + ")"
 
 
 def dbt_markers(text):
@@ -321,6 +324,75 @@ FROM `region-{region}`.INFORMATION_SCHEMA.JOBS_BY_USER
 {_BQ_FILTER_TAIL.format(days=days, limit=limit)}"""
 
 
+# ----- Redshift ----------------------------------------------------------------
+# SYS_QUERY_HISTORY (provisioned clusters and Serverless workgroups alike)
+# carries a native literal-excluding hash — GENERIC_QUERY_HASH +
+# QUERY_HASH_VERSION — so Redshift takes the same in-warehouse aggregation path
+# as Snowflake (canonicalizer "warehouse"), no client-side fingerprinting.
+# Structural caveats, disclosed per scope: SYS system logs retain only ~7 days,
+# and query_text is stored truncated at CHAR(4000) — that affects sample_text
+# and the table/agg hints, NOT the fingerprint (Redshift computes the hash from
+# the full text). CHAR columns are space-padded, hence the TRIMs.
+
+def _rs_emit_sys_query_history(days, limit, region):
+    is_dbt = " OR ".join(f"qh.query_text ILIKE '{p}'"
+                         for p in DBT_MARKER_LIKE_PATTERNS)
+    return f"""\
+-- Query-history extraction (Redshift, SYS_QUERY_HISTORY scope; {days}-day window).
+-- Visibility is the silent trap here: this query succeeds for ANY user, but
+-- without superuser or SYSLOG ACCESS UNRESTRICTED it returns only the caller's
+-- OWN queries — dashboards and teammates are invisible while the result still
+-- looks fine. A thin result means visibility, not absence. Probe first:
+--   SELECT usesuper FROM pg_user WHERE usename = current_user;
+-- If not superuser: (1) hand the analyst the one-line grant NOW (a superuser
+-- runs it; privilege playbook in query-history-extraction.md) — it grants
+-- read-only query *metadata* visibility for the MCP user, never table data:
+--   ALTER USER <USER> SYSLOG ACCESS UNRESTRICTED;
+-- (2) meanwhile run this anyway — a caller's-own-queries sample, a stopgap.
+-- SYS views retain ~7 days; query_text is truncated at 4000 chars (fingerprint
+-- unaffected — it's Redshift's own generic_query_hash over the full text).
+-- One row per (query shape x identity x dbt flag), so mixed traffic on the same
+-- shape is counted per class; LIMIT caps identity-rows, not shapes.
+-- Run read-only via the warehouse MCP; save the result rows VERBATIM as JSON to
+-- .query-history-rows.json at the context repo root (gitignored).
+SELECT * FROM (
+  SELECT
+    TRIM(qh.generic_query_hash)       AS fingerprint,
+    qh.query_hash_version             AS fingerprint_version,
+    u.usename                         AS user_name,
+    ''                                AS role_name,
+    TRIM(qh.database_name)            AS warehouse_name,
+    TRIM(qh.query_label)              AS query_tag,
+    ({is_dbt}) AS is_dbt,
+    COUNT(*)                          AS n_executions,
+    SUM(COUNT(*)) OVER (PARTITION BY TRIM(qh.generic_query_hash))
+                                      AS cluster_executions,
+    TRIM(ANY_VALUE(qh.query_text))    AS sample_text,
+    MIN(qh.start_time)                AS first_seen,
+    MAX(qh.start_time)                AS last_seen
+  FROM sys_query_history qh
+  LEFT JOIN pg_user u ON qh.user_id = u.usesysid
+  WHERE qh.start_time >= DATEADD(day, -{days}, GETDATE())
+    AND qh.status = 'success'
+    AND qh.query_type = 'SELECT'
+    AND qh.user_id > 1                -- drop internal rdsdb traffic
+    AND qh.generic_query_hash IS NOT NULL
+  GROUP BY 1, 2, 3, 5, 6, 7           -- 4 is the '' role_name constant
+) shapes
+WHERE cluster_executions >= 2
+ORDER BY cluster_executions DESC, n_executions DESC
+LIMIT {limit}"""
+
+
+_RS_EMPTY_WARNING = (
+    "0 admitted clusters from SYS_QUERY_HISTORY — without superuser or SYSLOG "
+    "ACCESS UNRESTRICTED, Redshift shows only the caller's own queries, so "
+    "this usually means visibility, not absence. Mining is still BLOCKED: the "
+    "ALTER USER ... SYSLOG ACCESS UNRESTRICTED grant "
+    "handoff applies now (privilege playbook in "
+    "query-history-extraction.md).")
+
+
 def _stub(history_source):
     return {"stub": history_source}
 
@@ -358,8 +430,20 @@ PLATFORMS = {
         },
         "default_scope": "jobs",
     },
+    "redshift": {
+        "scopes": {
+            # No fallback scope: the SAME view silently narrows to the caller's
+            # own queries without SYSLOG ACCESS UNRESTRICTED, so the default
+            # scope itself carries the blocked-not-done tripwire.
+            "sys_query_history": {"emit_sql": _rs_emit_sys_query_history,
+                                  "canonicalizer": "warehouse", "max_days": 7,
+                                  "unavailable": ["window_beyond_7_days",
+                                                  "query_text_beyond_4000_chars"],
+                                  "empty_warning": _RS_EMPTY_WARNING},
+        },
+        "default_scope": "sys_query_history",
+    },
     "databricks": _stub("system.query.history"),
-    "redshift": _stub("SYS_QUERY_HISTORY / STL_QUERY"),
     "fabric": _stub("queryinsights views"),
 }
 
@@ -867,7 +951,8 @@ def main(argv=None):
                     help=f"warehouse platform ({', '.join(sorted(PLATFORMS))})")
     ap.add_argument("--scope", help="history source scope (platform-specific; "
                                     "snowflake: account_usage | information_schema; "
-                                    "bigquery: jobs | jobs_by_user)")
+                                    "bigquery: jobs | jobs_by_user; "
+                                    "redshift: sys_query_history)")
     ap.add_argument("--region", default="us",
                     help="BigQuery dataset location for the region-qualified "
                          "INFORMATION_SCHEMA (default 'us'; e.g. eu, "

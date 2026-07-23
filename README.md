@@ -132,9 +132,11 @@ Use a **read-only role/credential** — the interview and the data-question skil
 One capability note: Stage 0's **query-history mining** reads your warehouse's query
 history, which the MCP user may not see by default — on Snowflake, the 365-day
 `ACCOUNT_USAGE.QUERY_HISTORY` needs a one-time grant to the MCP user (the
-least-privilege `SNOWFLAKE.GOVERNANCE_VIEWER` database role; exact SQL in the
+least-privilege `SNOWFLAKE.GOVERNANCE_VIEWER` database role); on Redshift,
+`SYS_QUERY_HISTORY` shows a regular user only their own queries until a superuser
+runs `ALTER USER <mcp_user> SYSLOG ACCESS UNRESTRICTED` (exact SQL for both in the
 generated repo's README and `skills/context-interview/references/query-history-extraction.md`).
-Without it, mining degrades to a 7-day fallback and the interview says so.
+Without it, mining degrades to a privilege-limited sample and the interview says so.
 
 **2. Clone your dbt repo locally (recommended).** If you use dbt, `git clone` your dbt
 project into a sibling directory and start the interview with both repos visible to the

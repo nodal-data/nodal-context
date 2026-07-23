@@ -24,7 +24,7 @@ read this context but cannot fetch live numbers. Pick the server for your wareho
 
 Use a **read-only role/credential** — answering only ever runs `SELECT`.
 
-### The MCP user may need extra grants for query-history mining (Snowflake)
+### The MCP user may need extra grants for query-history mining (Snowflake, Redshift)
 
 Interview Stage 0 can mine your warehouse query history into draft context
 (`scripts/query_history_extract.py`). On Snowflake, the full 365-day history
@@ -49,6 +49,18 @@ GRANT ROLE QUERY_HISTORY_READER TO USER <USER>;
 warehouse it runs queries on. Without this grant, mining still works via the
 7-day `INFORMATION_SCHEMA` fallback — the interview will tell you it's working
 from a one-week, privilege-limited sample.
+
+On Redshift, history lives in `SYS_QUERY_HISTORY`, where a regular user sees
+only their **own** queries — dashboards and teammates are invisible. Grant the
+MCP user visibility of everyone's query *metadata* (never table data) with one
+line, run as a superuser:
+
+```sql
+ALTER USER <USER> SYSLOG ACCESS UNRESTRICTED;
+```
+
+Without it, mining still runs but only over the MCP user's own queries — the
+interview will tell you the sample was privilege-limited.
 
 ## Use it with Claude Code (base case)
 

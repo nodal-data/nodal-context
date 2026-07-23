@@ -462,7 +462,52 @@ def run():
     assert fsa["service_account_candidates"] == [
         "app@proj.iam.gserviceaccount.com"]
 
-    for platform in ("databricks", "redshift", "fabric"):
+    # ---- redshift: native generic_query_hash, 7-day cap, visibility trap ----
+    err = io.StringIO()
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(err):
+        assert qhe.main(["--emit-sql", "--platform", "redshift"]) == 0
+    rsql = buf.getvalue()
+    assert "caps the window at 7 days" in err.getvalue()  # default 90 capped
+    assert "FROM sys_query_history qh" in rsql
+    assert "TRIM(qh.generic_query_hash)" in rsql          # native hash, TRIMmed
+    assert "qh.query_hash_version" in rsql
+    assert "DATEADD(day, -7," in rsql and "LIMIT 5000" in rsql
+    assert "qh.status = 'success'" in rsql
+    assert "qh.query_type = 'SELECT'" in rsql
+    assert "qh.user_id > 1" in rsql                       # internal rdsdb dropped
+    # no QUALIFY / ILIKE ANY on Redshift: derived-table wrapper + OR-chain
+    assert "QUALIFY" not in rsql and "ILIKE ANY" not in rsql
+    assert ") shapes" in rsql and "WHERE cluster_executions >= 2" in rsql
+    assert "ILIKE '%__dbt__cte__%'" in rsql
+    assert "GROUP BY 1, 2, 3, 5, 6, 7" in rsql            # 4 = '' role_name const
+    assert "SYSLOG ACCESS UNRESTRICTED" in rsql           # grant playbook named
+    assert "visibility, not absence" in rsql              # silent trap disclosed
+
+    # rows path: warehouse canonicalizer (native hash), degradation disclosed
+    with contextlib.redirect_stderr(io.StringIO()):  # 90->7 cap warning
+        frs = _findings_from_rows(
+            {"rows": [_row("fp_rs", f"user{i}", 5,
+                           "SELECT SUM(x) FROM analytics.fct_orders",
+                           FINGERPRINT_VERSION=1) for i in range(2)]},
+            "--platform", "redshift")
+    assert frs["platform"] == "redshift" and frs["scope"] == "sys_query_history"
+    assert frs["window_days"] == 7 and frs["window_days_requested"] == 90
+    assert set(frs["unavailable"]) == {"viewer_counts", "window_beyond_7_days",
+                                       "query_text_beyond_4000_chars"}
+    rs = _cluster(frs, "fp_rs")
+    assert rs["fingerprint_source"] == "warehouse" and rs["admitted"]
+    assert rs["fingerprint_versions"] == [1]
+
+    # empty result = the caller's own queries only — blocked, not done
+    err = io.StringIO()
+    with contextlib.redirect_stderr(err):
+        fre = _findings_from_rows([], "--platform", "redshift")
+    assert fre["coverage"]["clusters_admitted"] == 0
+    assert "BLOCKED" in err.getvalue()
+    assert "SYSLOG ACCESS UNRESTRICTED grant" in err.getvalue()
+
+    for platform in ("databricks", "fabric"):
         err = io.StringIO()
         try:
             with contextlib.redirect_stderr(err):
@@ -470,7 +515,7 @@ def run():
         except SystemExit as e:
             assert e.code == 2
             assert "not implemented" in err.getvalue()
-            assert "Implemented: bigquery, snowflake" in err.getvalue()
+            assert "Implemented: bigquery, redshift, snowflake" in err.getvalue()
         else:
             raise AssertionError(f"stub platform {platform} did not exit loudly")
 
