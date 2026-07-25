@@ -61,7 +61,9 @@ moment of confirmation** — same rule as the full interview, no batching.
    succeeded, pull this ONE table's column list now and run Q2–Q4 against it as
    a draft to react to (*"I see `client_id` and `client_uuid` — which one do
    joins use?"*). Reacting to real columns is faster and more accurate than free
-   recall. One table only — the budget doesn't cover a schema tour.
+   recall. One table only — the budget doesn't cover a schema tour. That
+   question is the model for Q2–Q4: pose them as selections among the real
+   columns/definitions on screen, per SKILL.md "Selection beats confirmation".
 2. **The one ambiguous entity — and its ID.** *"When someone asks about this
    domain, which word could mean two different things in the data?"* Disambiguate
    just that one, then: *"Which ID field identifies it — and is there more than
@@ -72,8 +74,9 @@ moment of confirmation** — same rule as the full interview, no batching.
    for most — and for each, what's the definition and the single biggest way to
    get it wrong?"* Listen for: exact formulas, time-grain conventions (trailing
    7 days vs calendar month), which table/column feeds each. One caveat per
-   metric is the budget; further caveats become draft stubs. → `metrics.yaml` +
-   a seed per metric.
+   metric is the budget; further caveats become draft stubs. If Stage-0 mining
+   produced conflict groups touching this domain's tables, they ARE the metric
+   questions — ask them verbatim. → `metrics.yaml` + a seed per metric.
 4. **The standard hygiene filter.** *"Which filter does every correct query here
    apply that a newcomer would forget?"* Listen for: flag columns (`is_test`,
    `is_internal`), status values to exclude, and the cases where the filter
@@ -88,7 +91,9 @@ moment of confirmation** — same rule as the full interview, no batching.
 **Budget discipline:** one follow-up per question, then write and move on. When
 the analyst opens a rich vein (they will), capture the items as draft stubs with
 a one-line note and keep going — the stubs are the deep-pass agenda, and chasing
-them now is how a test drive fails the analyst.
+them now is how a test drive fails the analyst. Forced choices are cheaper than
+open probes — picking among real candidates is faster than free recall — so the
+selection doctrine tightens the budget; it never threatens it.
 
 ## Mini live verification (~2–3 questions)
 

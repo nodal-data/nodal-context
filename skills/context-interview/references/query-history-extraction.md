@@ -259,6 +259,12 @@ definition — and do the others have legitimate names of their own?"* The
 resolution lands as the metric's `expression:` and a seed whose `ir:` records the
 decomposition.
 
+This forced-choice form is the canonical instance of SKILL.md's "Selection
+beats confirmation" ladder — apply the same shape wherever *any* extraction
+source yields competing readings, not only `conflict_groups[]`. A recurring
+predicate present in some clusters and absent from others over the same table
+is the same kind of evidence.
+
 ## Step 3 — degrade loudly (consume `unavailable[]`, `coverage{}`, `pools{}`)
 
 - `"viewer_counts"` in `unavailable` (always, for now) → the warehouse sees one

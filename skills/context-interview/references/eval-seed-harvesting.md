@@ -63,6 +63,22 @@ descending order of robustness:
 **Avoid grading a live number with no snapshot** — it'll fail the moment the data
 moves and tell you nothing.
 
+## Seeds from selections
+
+When the analyst chose one reading over real alternatives (SKILL.md, "Selection
+beats confirmation"), the rejected candidates are ground truth too — they are
+exactly the confusions an agent will reproduce. Record them with the existing
+fields; no new schema fields:
+
+- fold them into `intent`: "…recognized revenue = SUM(net_revenue). NOT
+  gross_revenue (that's bookings) and NOT the ad-hoc net-minus-refunds variant
+  (unreconciled)."
+- on `sql_shape` seeds, encode each loser as an `expected.must_exclude` entry:
+  `- "gross_revenue as revenue (bookings, not recognized revenue)"`.
+
+A selection seed is strictly richer than a confirmation seed — harvest it at
+the moment of choice, while the losing candidates are still on screen.
+
 ## The `ir:` block — structure, not just phrasing
 
 Populate `ir:` whenever the question decomposes to a metric defined in the
