@@ -39,7 +39,9 @@ down the answers in a format an agent can query and a team can review.
 
 - **Confirm, don't author.** Auto-extract schema/dbt as a *draft to react to*, then
   let the analyst correct it. Never write a definition the analyst hasn't confirmed;
-  mark anything unconfirmed `status: draft`.
+  mark anything unconfirmed `status: draft`. The confirmation act itself follows
+  "Selection beats confirmation" below — the analyst chooses among real readings or
+  answers a contested atom; they don't rubber-stamp your paragraph.
 - **One domain at a time, value each round.** After each domain is captured, run
   live verification (Stage 5) on just that domain so the analyst sees the context
   flip wrong answers to right before committing to a marathon. Do not try to capture
@@ -47,8 +49,32 @@ down the answers in a format an agent can query and a team can review.
 - **Qualitative only.** Write business logic, never statistics. "Exclude BHPN —
   different reimbursement cycle" yes; "~37% of sessions" no.
 - **Ask one thing at a time.** These are working analysts. Short, specific
-  questions. When you can show a draft and ask "is this right?", do that instead of
-  asking open-ended.
+  questions — never a compound paragraph ending in "right?".
+- **Selection beats confirmation.** Drafting stays cheap — but a draft is
+  confirmed by making the analyst *choose*, not nod. Before any confirmation
+  prompt, run the ladder:
+  1. **Two or more evidence-backed readings exist** (conflicting query-history
+     calculations, sibling columns like `client_id` vs `client_uuid`, competing
+     grain readings in the schema, gross vs net columns that both exist, a dbt
+     description that disagrees with what dashboards actually run, two teams'
+     definitions) → present them as a forced choice. Each option is a distinct
+     substantive reading with its evidence cited ("`SUM(net_revenue)` — 365
+     Tableau runs"); the analyst can always reject them all in their own words.
+     Never invent a foil — an alternative with no evidence behind it is a quiz,
+     not a question.
+  2. **One credible reading with uncertain parts** → don't confirm the
+     paragraph. Ask its single most uncertain load-bearing atom as a real
+     question ("Refunds: netted as negative rows in place, or joined from an
+     adjustments table?"). Answering the atom ratifies the frame; a wrong frame
+     gets called out.
+  3. **Genuinely settled** → a plain "correct?" only when the analyst already
+     said it in their own words this session, when every load-bearing piece of
+     an assembly was individually chosen (the metric `expression:` read-back,
+     `references/interview-flow.md` §4), or when the confirm is anchored to a
+     number the analyst just read off a trusted dashboard (Stage 5).
+  A bare Confirmed/Needs-fixing option pair is the tell that you skipped the
+  ladder. Rejected options are harvested, not discarded — see
+  `references/eval-seed-harvesting.md`.
 - **Work long lists in small batches.** When a stage yields many items (terms,
   entities, caveats), elicit the list first as `status: draft` stubs, then confirm
   1–3 at a time with a visible progress count — never hand the analyst a wall of
@@ -377,10 +403,22 @@ not enough; the analyst should be able to click, not go hunting. Give all three:
   `_To be confirmed by [owner]._` and mark `status: draft`.
 - You don't put numbers in context files.
 
-## Guardrail: this is a confirmation loop, not an extraction
+## Guardrail: a confirmation loop, not an extraction — and not a rubber stamp
 
-If you find yourself writing more than a couple of confirmed definitions without
-the analyst having said "yes, that's right" in between, stop and check in. The
-entire premise — and the reason this beats auto-generation — is that a human owns
-the definition. An interview that turns into silent auto-extraction has failed even
-if the files look complete.
+The loop has two failure modes, and both void the premise that a human owns the
+definition:
+
+1. **Silent auto-extraction.** Writing more than a couple of confirmed
+   definitions without the analyst having said "yes, that's right" in between —
+   stop and check in.
+2. **Rubber-stamping.** A stream of "here's my drafted definition — Confirmed /
+   Needs fixing?" prompts the analyst can clear by pressing 1. Ratifying a
+   compound paragraph is not ownership. A definition is owned when the analyst
+   *selected* it over a real alternative, or answered its contested atom
+   ("Selection beats confirmation", above). If your last three questions were
+   all binary confirms, you are extracting with extra steps — the transcript
+   just looks politer.
+
+The entire premise — and the reason this beats auto-generation — is that a human
+owns the definition. Either failure mode has failed the interview even if the
+files look complete.

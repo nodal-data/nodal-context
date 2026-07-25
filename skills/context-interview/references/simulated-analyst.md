@@ -62,6 +62,13 @@ caveats — see `interview-flow.md`), you may pass the whole pending list to one
 subagent consult instead of one call per item, to cut round-trips. Same
 CONFIDENT/NOT_CONFIDENT contract per item.
 
+Forced-choice questions pass through the same contract: give the responder the
+full option list *with each option's evidence*, and it answers
+`CONFIDENT: <option or its own wording>` only if the brief actually
+discriminates between the candidates. A brief that supports the frame but not
+the choice is precisely a `NOT_CONFIDENT` — escalate. The responder must never
+default to the most-cited option.
+
 ## `responses.md` format (the brief)
 
 Freeform Markdown the responder reasons over — robust to reworded questions. Cover

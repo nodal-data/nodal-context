@@ -45,7 +45,7 @@ Map each artifact to its ACF field — all `status: draft`, all tagged:
 | model `relation` | `domain.yaml.tables.{canonical,others}` | real warehouse table names |
 | column `description` | entity `mappings` / `analytical_notes` | texture the DB schema lacks |
 | test `accepted_values` (`kwargs.values`) | entity `mappings` (value enumeration) | high-value, low-ambiguity |
-| `grain_hint` (from `unique` / `unique_combination_of_columns`) | `domain.yaml.grain` + `reference.md` — **confirm with the analyst** | grain is the #1 wrong-answer mode |
+| `grain_hint` (from `unique` / `unique_combination_of_columns`) | `domain.yaml.grain` + `reference.md` — **confirm with the analyst** | grain is the #1 wrong-answer mode; when the schema/tests admit a competing grain reading, present both as a choice (SKILL.md "Selection beats confirmation") |
 | test `relationships` (`kwargs.to`/`field`) | entity `important` (join hint) | canonical join path |
 | test `not_null` | `known-issues.md` caveat stub | "nulls forbidden here — investigate" |
 | `exposures[]` | `domain.yaml.dashboards[]` + domain clustering | the Stage-2/Stage-5 dashboard backlog |
@@ -55,7 +55,8 @@ Map each artifact to its ACF field — all `status: draft`, all tagged:
 
 `grain_hint` is the headline win: phrase it as a question, e.g. *"dbt has a
 uniqueness test on `soap_note_id` for `fct_session_financials` — is one row really
-one SOAP note, or is the real grain note × service?"*
+one SOAP note, or is the real grain note × service?"* That is ladder rung 1: the
+uniqueness test and the plausible finer grain are two evidence-backed readings.
 
 ## Step 3 — degrade loudly (consume `unavailable[]` and `coverage{}`)
 

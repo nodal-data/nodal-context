@@ -2,8 +2,11 @@
 
 The question script for each stage. These are starting points, not a rigid form —
 follow the analyst's lead, but make sure each stage's *goal* is met before moving
-on. Ask one question at a time. When you can draft and ask "is this right?",
-prefer that over an open question.
+on. Ask one question at a time. When you can draft, do — drafting is still
+cheaper than open-ended questions — but confirm the draft by the "Selection
+beats confirmation" ladder in SKILL.md: competing evidence-backed readings as a
+forced choice; a single reading via its most contested atom; a plain yes/no
+only for the genuinely settled.
 
 Throughout: when the analyst confirms a disambiguation, immediately write the eval
 seed (see `eval-seed-harvesting.md`). Don't batch them to the end — you'll lose the
@@ -23,10 +26,12 @@ them all in one turn; that's a wall of line items no one can react to. Instead:
    file, using the no-invented-definitions placeholder: `_To be confirmed._` with a
    trailing `<!-- status: draft -->`. These stubs are your scratchpad **and** your
    progress tracker.
-2. **Confirm 1–3 at a time.** Take one to three stubs, ask that stage's probe (meaning
-   + misconception, or the disambiguation), draft it, confirm with the analyst, then
-   flip `draft → confirmed`. Start with one or two; go up to three only if the analyst
-   is moving fast.
+2. **Confirm 1–3 at a time — by selection.** Take one to three stubs; for each,
+   ask that stage's probe (meaning + misconception, or the disambiguation),
+   draft it, then run the SKILL.md confirmation ladder: evidence-backed
+   alternates as a forced choice, otherwise the draft's most contested atom.
+   Flip `draft → confirmed` only on the analyst's pick or answer. Start with
+   one or two; go up to three only if the analyst is moving fast.
 3. **Write the seed right then.** Each confirmed item emits its eval seed *at the
    moment of confirmation* — small batches don't defer seeds, they make it natural to
    capture each one immediately (this is the same "don't batch seeds to the end" rule
@@ -40,6 +45,30 @@ them all in one turn; that's a wall of line items no one can react to. Instead:
    "Updating an existing repo" in `repo-scaffold.md`).
 
 §1, §3, and §4 below each invoke this pattern.
+
+---
+
+## The shape of a forced choice
+
+When the ladder lands on rung 1, the options themselves carry the content:
+
+- **Each option is a distinct substantive reading, labeled by content, with its
+  evidence in the description.** e.g. for "net revenue" on `FCT_ORDERS`:
+  1. `SUM(net_revenue)` — 365 runs/90d by the Tableau service user
+  2. `SUM(gross_revenue) − SUM(refunds)` — 8 ad-hoc runs, finance analysts
+  3. `SUM(gross_revenue)` — 45 Looker runs (possibly a different metric)
+  *"Which is the governed definition — and do the losers have legitimate names
+  of their own?"*
+- **Never pair one substantive option with "Confirmed"/"Yes"/"Needs fixing".**
+  If you only have one reading, you're on rung 2 (contested atom), not rung 1.
+- **The exit stays open.** The analyst can reject every option in free text;
+  record their wording verbatim — that's the definition, and often a new seed.
+- **Losers are signal.** Each rejected candidate goes into the seed
+  (`eval-seed-harvesting.md`, "Seeds from selections") and often earns its own
+  name ("that one's *bookings*, not revenue" → a terminology entry).
+- A contested-atom question is itself usually a two-option choice between real
+  mechanisms ("negative rows netted in place, or a separate adjustments
+  join?") — same form, evidence permitting.
 
 ---
 
@@ -69,7 +98,13 @@ Then:
    pattern (above): write each named term as a `status: draft` stub in
    `terminology.md`, then work them 1–3 at a time — for each, "What does it mean here,
    and what do people *think* it means?" → a terminology entry **and** an eval seed —
-   showing the progress line each round.
+   showing the progress line each round. Before confirming each drafted
+   definition, check the extraction findings for competing uses of the term — a
+   `conflict_groups[]` entry touching it, sibling columns, or the two-teams
+   answers from item 4. Found → the confirmation is a forced choice between the
+   real readings. Not found → ask the draft's most contested atom instead of
+   reading the paragraph back ("'Active client': rolling 90-day lookback, or
+   calendar quarter?").
 4. While eliciting, also ask "Are there terms that two teams define differently?" Add
    these to the same list (they're high-value — a guaranteed silent-failure source).
 
@@ -210,7 +245,12 @@ confirmed a metric's measure, its must-have filters (follow-ups 1–2), and what
 may be sliced by, assemble them into the metric's structured `expression:` block in
 `metrics.yaml` — `measure` + `mandatory_filters` (each with a `reason` naming the
 failure it prevents) + `allowed_dimensions` — and read it back for confirmation
-like any other draft (see SPEC.md "Deterministic anchor"). The schema requires
+(see SPEC.md "Deterministic anchor"). The assembled read-back is the one
+legitimate plain confirm (ladder rung 3) — *provided every load-bearing piece
+(the measure, each mandatory filter, the grain) was individually selected or
+contested during drafting*. If any piece is entering the expression un-chosen,
+ask that piece's atom first; never introduce a new clause for the first time
+inside a read-back. The schema requires
 `grain` and `lineage` on any metric carrying an expression, so confirm those at the
 same moment (§2 steps 3–4 usually already captured them). Later edits to a
 confirmed metric's expression reset it to `status: draft` until re-confirmed.

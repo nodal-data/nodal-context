@@ -82,7 +82,8 @@ date?"* Record the value and the `as_of` date. (Let the analyst set the toleranc
 
 1. Show the assumptions and the SQL the context-on agent used, and ask the analyst
    to bless them: *"Here's the query and what it assumed — good to save these as the
-   answer key?"*
+   answer key?"* (A legitimate rung-3 plain confirm — the truth anchor is the
+   dashboard number the analyst just read, not your prose.)
 2. Write/upgrade the seed:
    - `provenance: dashboard`, `status: confirmed`
    - `expected.kind: value_at_snapshot`, `value: <dashboard number>`, `as_of: <date>`
