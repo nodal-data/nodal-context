@@ -281,8 +281,10 @@ roster) — keep the two in sync. See `references/interview-flow.md` §2.
 
 For each domain, find the terms that map to specific data values and are ambiguous:
 the "active client", the "provider" that could mean two things, the payer that's
-really state-specific. Write `entities/*.yaml` (cross-domain) or
-`domains/*/entities.yaml` (domain-specific) per the placement rule in `SPEC.md`.
+really state-specific. Write subject entities (business nouns — customer,
+channel, geography) to `entities/<group>.yaml` and single-fact-table status/type
+values to `domains/*/entities.yaml`, per the placement rule in `SPEC.md`. Even
+in a single-domain repo, subject entities go top-level.
 Each ambiguity confirmed → an eval seed. See `references/interview-flow.md` §3.
 
 ### Stage 4 — Caveats
@@ -307,7 +309,9 @@ formal/continuous harness. See `references/live-verification.md`.
 
 ## Closing each domain
 
-When a domain's `reference.md`, `metrics.yaml`, `entities.yaml`, and seeds exist:
+When a domain's `reference.md`, `metrics.yaml`, seeds, and entity coverage
+(subject entities in `entities/<group>.yaml`, domain statuses in the domain's
+`entities.yaml`) exist:
 
 1. Validate against the schemas (`schemas/*.json`); fix anything that fails.
 2. Summarize what you captured and what's still `draft`. Confirm the domain's owner

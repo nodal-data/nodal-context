@@ -55,6 +55,49 @@ def run():
         assert validate.main([str(ctx), "--schemas", "schemas"]) == 0, \
             "a local repo path must warn, not fail"
 
+    # --- entity placement: per-domain-only entities warn but do not fail ---
+    ENTITY_DOC = ("entities:\n"
+                  "  - name: customer\n"
+                  "    description: Paying customer.\n"
+                  "    status: confirmed\n")
+    with tempfile.TemporaryDirectory() as td:
+        ctx = Path(td) / "ctx"
+        shutil.copytree(ROOT / "examples" / "example-fintech-company", ctx)
+        dom = ctx / "domains" / "lending-performance"
+        (dom / "entities.yaml").write_text(ENTITY_DOC)
+        import yaml as y
+        warns = validate.entity_placement_warnings(validate.discover_docs(ctx), y, ctx)
+        assert warns and "entities/<group>.yaml" in warns[0], \
+            f"expected a promotion warning, got {warns}"
+        assert validate.main([str(ctx), "--schemas", "schemas"]) == 0, \
+            "per-domain-only entities must warn, not fail"
+
+        # a real top-level entities file silences the promotion warning
+        (ctx / "entities").mkdir(exist_ok=True)
+        (ctx / "entities" / "customers.yaml").write_text(ENTITY_DOC)
+        warns = validate.entity_placement_warnings(validate.discover_docs(ctx), y, ctx)
+        assert not warns, f"expected no warning once entities/ is real, got {warns}"
+
+        # the same entity name in two domains is cross-domain by definition
+        second = ctx / "domains" / "collections"
+        second.mkdir()
+        (second / "entities.yaml").write_text(ENTITY_DOC)
+        warns = validate.entity_placement_warnings(validate.discover_docs(ctx), y, ctx)
+        assert any("cross-domain by definition" in w for w in warns), \
+            f"expected a duplicate-name warning, got {warns}"
+
+    # --- canonical filenames: a .yml near-miss warns but does not fail ---
+    with tempfile.TemporaryDirectory() as td:
+        ctx = Path(td) / "ctx"
+        shutil.copytree(ROOT / "examples" / "example-fintech-company", ctx)
+        (ctx / "domains" / "lending-performance" / "metrics.yml").write_text(
+            "metrics: []\n")
+        warns = validate.canonical_name_warnings(ctx)
+        assert warns and "rename to .yaml" in warns[0], \
+            f"expected a near-miss filename warning, got {warns}"
+        assert validate.main([str(ctx), "--schemas", "schemas"]) == 0, \
+            "a .yml near-miss must warn, not fail"
+
     # --- structural failure: unknown field in a copied template doc ---
     with tempfile.TemporaryDirectory() as td:
         tpl = Path(td) / "template"

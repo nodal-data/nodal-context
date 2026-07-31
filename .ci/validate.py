@@ -134,6 +134,73 @@ def lineage_repo_warnings(docs, yaml):
     return warns
 
 
+# ----- entity placement (warn, never fail) ------------------------------------
+
+def entity_placement_warnings(docs, yaml, root):
+    """Warn when entity definitions exist only per-domain. Both locations are
+    valid ACF, but consumers (compile_skill, the Nodal platform index) surface
+    top-level entities/ as the primary entity listing, so subject entities filed
+    only under domains/*/entities.yaml are slower to discover. Two signals:
+      - domains/*/entities.yaml defines entities while entities/ has no real
+        (non-underscore) file → suggest promoting subject entities;
+      - the same entity name in ≥2 domains → cross-domain by definition."""
+    root = Path(root).resolve()
+    has_top_level = False
+    per_domain = {}  # domain -> (rel path, [entity names])
+    for path, kind in docs:
+        if kind != "entity":
+            continue
+        rel = path.resolve().relative_to(root)
+        if rel.parts[0] == "entities":
+            if not path.name.startswith("_"):
+                has_top_level = True
+        elif (rel.parts[0] == "domains" and len(rel.parts) >= 3
+              and not rel.parts[1].startswith("_")):
+            doc = _load_yaml(path, yaml)
+            names = [e["name"] for e in (doc.get("entities") or [])
+                     if isinstance(e, dict) and e.get("name")] \
+                if isinstance(doc, dict) else []
+            per_domain[rel.parts[1]] = (rel, names)
+
+    warns = []
+    total = sum(len(names) for _, names in per_domain.values())
+    if total and not has_top_level:
+        files = ", ".join(str(rel) for rel, _ in per_domain.values())
+        warns.append(
+            f"{total} entity(ies) defined only per-domain ({files}) and entities/ "
+            "has no real file — subject entities (business nouns: customer, "
+            "channel, geography, …) belong in entities/<group>.yaml even in a "
+            "single-domain repo; consumers index entities/ first, so retrieval "
+            "performs better there. Keep only single-fact-table status/type "
+            "values per-domain. See the placement rule in SPEC.md.")
+    domains_by_name = {}
+    for domain, (_rel, names) in per_domain.items():
+        for n in names:
+            domains_by_name.setdefault(n, []).append(domain)
+    for n, ds in sorted(domains_by_name.items()):
+        if len(ds) >= 2:
+            warns.append(
+                f"entity '{n}' is defined in {len(ds)} domains "
+                f"({', '.join(sorted(ds))}) — cross-domain by definition; "
+                "promote it to entities/<group>.yaml.")
+    return warns
+
+
+def canonical_name_warnings(root):
+    """Warn on near-miss filenames. Consumers match canonical names exactly
+    (KIND_BY_NAME above, the platform index, compile_skill), so a
+    domains/<d>/domain.yml is silently invisible — not validated, not indexed."""
+    warns = []
+    for p in sorted(Path(root).glob("domains/*/*.yml")):
+        if p.parent.name.startswith("_"):
+            continue
+        if p.name in ("domain.yml", "metrics.yml", "entities.yml"):
+            warns.append(
+                f"{p}: consumers match '{p.stem}.yaml' exactly — this .yml "
+                "variant is not validated or indexed; rename to .yaml.")
+    return warns
+
+
 # ----- IR coverage (warn, never fail) -----------------------------------------
 
 def ir_coverage_report(docs, yaml):
@@ -264,6 +331,8 @@ def main(argv=None):
         total_drafts += drafts
         all_errors += errs
         all_warnings += lineage_repo_warnings(docs, yaml)
+        all_warnings += entity_placement_warnings(docs, yaml, root)
+        all_warnings += canonical_name_warnings(root)
         ir_warns, ir_summary = ir_coverage_report(docs, yaml)
         all_warnings += ir_warns
         print(f"validate: {root}/ — {len(docs)} doc(s), "

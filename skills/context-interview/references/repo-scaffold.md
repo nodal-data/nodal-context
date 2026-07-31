@@ -43,7 +43,10 @@ per project.
    `.ci/lineage-baseline.json` (the snapshot drift compares against). The scaffold
    script never overwrites an existing baseline.
 3. For each domain discovered in Stage 2, copy `_domain-template/` to
-   `domains/<domain>/` and fill it in.
+   `domains/<domain>/` and fill it in. The copied `entities.yaml` is for
+   domain-specific status/type values only — subject entities (customer,
+   channel, geography, …) go in `entities/<group>.yaml` (copy
+   `entities/_entity-template.yaml`), even when there is only one domain.
 4. Replace the `[company]` placeholder in `README.md` and `CLAUDE.md` with the
    company name (from the analyst or their website — never from a schema).
 5. **Initialize the repo.** Run `git init -b main` in the target dir — pin the
