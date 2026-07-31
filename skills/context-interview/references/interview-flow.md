@@ -185,7 +185,8 @@ with a `value_at_snapshot` expectation.
 
 For each domain, run the **elicit-then-batch** pattern (above): first surface the
 candidate ambiguous terms across the three patterns below as `status: draft` stubs in
-`entities/*.yaml` (cross-domain) or `domains/<domain>/entities.yaml`, then disambiguate
+`entities/<group>.yaml` (subject entities) or `domains/<domain>/entities.yaml`
+(domain statuses), then disambiguate
 them 1–3 at a time with a progress line — a seed per confirmed term. Hunt for three
 patterns:
 
@@ -200,8 +201,11 @@ patterns:
    blank-but-meaningful values. Ask: "Are there values that look like one thing but
    are really several, or blanks that change the answer if you filter them out?"
 
-Placement: cross-domain (lives in a `dim_*` table or spans facts) → `entities/`;
-single-fact-table status/type → `domains/<domain>/entities.yaml`. (See `SPEC.md`.)
+Placement: decide by what the term *is*, not how many domains use it today.
+Subject entity (business noun — customer, provider, channel, geography — that
+lives in or belongs in a `dim_*` table) → `entities/<group>.yaml`, **even in a
+single-domain repo**; single-fact-table status/type value →
+`domains/<domain>/entities.yaml`. (See `SPEC.md`.)
 
 ---
 

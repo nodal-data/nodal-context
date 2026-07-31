@@ -99,10 +99,17 @@ allowed dimensions. The `reference.md` pattern keeps the routing prose and the
     └── runs/                    # live-verification traces (generated; gitignored)
 ```
 
-Placement rule:
-**cross-domain entity** (lives in a `dim_*` table or spans fact tables) →
-`entities/`; **domain-specific status/type** (one fact table, one owner) →
-`domains/<domain>/entities.yaml`.
+Placement rule — decide by what the entity **is**, not by how many domains use
+it today:
+**subject entity** (a business noun — customer, provider, channel, geography —
+that lives in or belongs in a `dim_*` table, or would be shared the moment a
+second domain existed) → `entities/<group>.yaml`; **domain-specific status/type**
+(enumerated values of a column on one fact table, one owner — "active",
+"churned", a collection status) → `domains/<domain>/entities.yaml`.
+A single-domain repo still puts its subject entities in `entities/` — "spans
+domains today" is never the test, because it can't fire until a second domain
+exists. Consumers (including the Nodal platform index) discover `entities/`
+first, so subject entities buried per-domain are slower to retrieve.
 
 ## Where a domain comes from
 
