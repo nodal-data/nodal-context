@@ -22,7 +22,7 @@ from pathlib import Path
 # Test names we map to ACF (namespace-stripped). Everything else is ignored.
 GRAIN_TESTS = {"unique", "unique_combination_of_columns"}
 KNOWN_TESTS = GRAIN_TESTS | {"not_null", "accepted_values", "relationships"}
-SUPPORTED_SCHEMA = "v11"  # dbt 1.7; other recent versions warn but still parse.
+SUPPORTED_SCHEMA = "v12"  # dbt 1.8+; other recent versions warn but still parse.
 
 
 def _warn(msg):
