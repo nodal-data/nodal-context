@@ -126,6 +126,14 @@ The one file that makes "context lives apart from lineage" safe. It maps each
 domain to its upstream lineage source(s), so a change there can flag stale context.
 See [`template/context.config.yaml`](./template/context.config.yaml).
 
+**When the dbt repo gitignores `target/` (the norm):** drift's clone fallback can't
+find a manifest on `main`. The recommended pattern is the sender workflow
+([`template/dbt-repo/notify-context-repo.yml`](./template/dbt-repo/notify-context-repo.yml)),
+which publishes the parsed `manifest.json` on a single-commit orphan `dbt-manifest`
+branch in the dbt repo; the source entry then reads `ref: dbt-manifest`,
+`manifest_path: manifest.json`. Inline dispatch payloads only work for manifests under
+GitHub's ~64 KB payload cap — real manifests need the branch.
+
 **Multiple warehouses / clouds.** The top-level `warehouse:` is the repo-wide
 *default*. Each `lineage_sources` entry may carry its own `warehouse:` (snowflake |
 bigquery | …) when a company's domains span platforms; an entry without one inherits

@@ -17,6 +17,11 @@ affected domains and their context files and exit non-zero. CI turns that into a
 Each `--manifest SOURCE_ID=PATH` supplies one lineage source's manifest (run
 `dbt parse` in that repo first — no warehouse needed). A referenced source with no
 manifest provided is reported as an unchecked coverage gap, never silently skipped.
+Pass --fail-on-unchecked to turn that gap into a non-zero exit as well, so CI can
+alert on it instead of quietly passing a run that evaluated nothing.
+
+Exit codes: 0 = clean, 1 = drift found, 2 = setup error,
+3 = no drift but ≥1 unchecked source (only with --fail-on-unchecked).
 
 This script is deliberately free of any network/GitHub calls so it is fully testable
 offline; the CI workflow owns manifest acquisition and issue creation.
@@ -200,12 +205,25 @@ def build_report(domains, changes, missing_models, unchecked_sources, repo_root)
     missing_set = {(s, m) for s, ms in missing_models.items() for m in ms}
     drifted = bool(changes) or bool(missing_set)
 
-    out = ["## Context drift detected" if drifted else "## No context drift", ""]
+    if drifted:
+        header = "## Context drift detected"
+    elif unchecked_sources:
+        header = "## Context drift not fully evaluated"
+    else:
+        header = "## No context drift"
+    out = [header, ""]
     if drifted:
         out += [
             "Upstream dbt models changed since the last reconciled baseline. Review the",
             "context files below, update them where the meaning changed, then refresh the",
             "baseline (`python .ci/drift.py --update-baseline ...`) and commit it.",
+            "",
+        ]
+    elif unchecked_sources:
+        out += [
+            "No drift was found, but not every lineage source could be checked. Fix",
+            "manifest acquisition for the sources below (publish a `dbt-manifest` branch",
+            "from the dbt repo, or set DBT_REPO_TOKEN if it is private).",
             "",
         ]
 
@@ -264,6 +282,8 @@ def main(argv=None):
                     help="manifest for one lineage source; repeatable")
     ap.add_argument("--update-baseline", action="store_true",
                     help="write the current state to --baseline and exit 0")
+    ap.add_argument("--fail-on-unchecked", action="store_true",
+                    help="exit 3 when a referenced source has no manifest supplied")
     ap.add_argument("--out", help="also write the markdown report here")
     ap.add_argument("--repo-root", default=".",
                     help="repo root used to locate domains/ context files")
@@ -299,7 +319,11 @@ def main(argv=None):
     print(report)
     if args.out:
         Path(args.out).write_text(report)
-    return 1 if drifted else 0
+    if drifted:
+        return 1
+    if unchecked and args.fail_on_unchecked:
+        return 3
+    return 0
 
 
 if __name__ == "__main__":

@@ -95,6 +95,10 @@ into your prompt.
 - Review every change **by PR**. The bundled `.github/workflows/` validate the YAML,
   flag unconfirmed `status: draft` entries, run the on/off eval delta, and detect
   drift when an upstream model changes.
+- **Wire the dbt repo** so model changes trigger the drift check the moment they
+  merge: copy [`dbt-repo/notify-context-repo.yml`](./dbt-repo/notify-context-repo.yml)
+  into the dbt repo's `.github/workflows/` — setup in
+  [`dbt-repo/README.md`](./dbt-repo/README.md).
 - **Keep it in sync with dbt automatically (optional, Nodal).** Connect your dbt repo
   and upstream changes — renamed columns, redefined metrics — propagate into the
   affected definitions as drafts for your analyst to confirm, so the context tracks the

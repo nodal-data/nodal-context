@@ -30,9 +30,10 @@ This repository is the open-source **tooling** — the context format (ACF), the
 interview skill, and the eval harness contract. It does not itself process
 production data or hold credentials. Note in particular:
 
-- CI workflows read repository **secrets** (`ANTHROPIC_API_KEY`, `DBT_REPO_TOKEN`).
-  Reports concerning secret exposure, workflow injection, or fork-PR privilege
-  escalation are in scope.
+- CI workflows read repository **secrets** (`ANTHROPIC_API_KEY` and `DBT_REPO_TOKEN`
+  in the context repo; `CONTEXT_DISPATCH_TOKEN` lives in the *dbt* repo and grants
+  `repository_dispatch` against the context repo). Reports concerning secret
+  exposure, workflow injection, or fork-PR privilege escalation are in scope.
 - Please **do not** include real customer data, credentials, or secrets in any
   report or reproduction.
 
