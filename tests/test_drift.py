@@ -112,6 +112,45 @@ def run():
     except ImportError:
         print("test_drift: PyYAML not installed; skipped load_config round-trip")
 
+    # --- main() exit codes: 0 clean, 0 unchecked (back-compat), 3 with
+    # --fail-on-unchecked, 1 drift regardless (only if PyYAML present) ---------
+    try:
+        import yaml  # noqa: F401
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            cfg = td / "context.config.yaml"
+            cfg.write_text(
+                "version: 0.1\nwarehouse: snowflake\n"
+                "lineage_sources:\n  - id: dbt_core\n    type: dbt\n"
+                "domains:\n  orders:\n    lineage:\n"
+                "      - source: dbt_core\n        models: [fct_orders]\n"
+            )
+            base = td / "baseline.json"
+            common = ["--config", str(cfg), "--baseline", str(base),
+                      "--repo-root", str(td)]
+            rc = drift.main(common + ["--update-baseline",
+                                      "--manifest", f"dbt_core={FIXTURE}"])
+            assert rc == 0, rc
+            rc = drift.main(common + ["--manifest", f"dbt_core={FIXTURE}"])
+            assert rc == 0, rc
+            # no manifest supplied: rc 0 without the flag, rc 3 with it, and the
+            # report says the evaluation was incomplete rather than clean
+            report = td / "r.md"
+            rc = drift.main(common + ["--out", str(report)])
+            assert rc == 0, rc
+            assert "## Context drift not fully evaluated" in report.read_text()
+            rc = drift.main(common + ["--fail-on-unchecked"])
+            assert rc == 3, rc
+            # real drift wins over unchecked handling: rc 1 either way
+            b = json.loads(base.read_text())
+            b["sources"]["dbt_core"]["models"]["fct_orders"]["columns"].append("zzz")
+            base.write_text(json.dumps(b))
+            rc = drift.main(common + ["--manifest", f"dbt_core={FIXTURE}",
+                                      "--fail-on-unchecked"])
+            assert rc == 1, rc
+    except ImportError:
+        print("test_drift: PyYAML not installed; skipped main() exit-code checks")
+
     print("test_drift: OK")
 
 

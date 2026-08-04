@@ -25,6 +25,9 @@ repo root and have no other way to find their code:
                        repo root. No shipped workflow imports it yet.
   eval_harness/        vendored — eval-delta runs `python -m eval_harness.run`
                        from the repo root; there is no pip package.
+  dbt-repo/            reference sender workflow the analyst copies into the
+                       dbt repo to publish manifests + dispatch lineage-changed
+                       (source: template/dbt-repo/).
 
 Every mode ends with a self-check; a non-zero exit names the missing piece.
 Stdlib only — safe to run before any pip install.
@@ -39,7 +42,8 @@ TOOL_ROOT = Path(__file__).resolve().parent.parent
 
 IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store")
 
-# The support set: (source relative to the tool repo, copied on upgrade too).
+# The support set: copied on upgrade too. Entries are either a path relative to
+# both repos, or a (src_rel, dst_rel) tuple when the two differ.
 # Directories are copied recursively with IGNORE applied.
 SUPPORT_SET = [
     ".github/workflows",
@@ -48,6 +52,7 @@ SUPPORT_SET = [
     "scripts/dbt_extract.py",
     "scripts/query_history_extract.py",
     "eval_harness",
+    ("template/dbt-repo", "dbt-repo"),
 ]
 
 # Never overwrite these target paths (created per-context-repo, not shipped).
@@ -75,12 +80,14 @@ def copy_support_set(target: Path):
         p = target / rel
         if p.exists():
             preserved[rel] = p.read_bytes()
-    for rel in SUPPORT_SET:
-        src = TOOL_ROOT / rel
+    for entry in SUPPORT_SET:
+        src_rel, dst_rel = entry if isinstance(entry, tuple) else (entry, entry)
+        src = TOOL_ROOT / src_rel
         if not src.exists():
-            _fail(f"tool repo is missing {rel} — is this a full nodal-context clone?")
-        _copy(src, target / rel)
-        print(f"scaffold: copied {rel}")
+            _fail(f"tool repo is missing {src_rel} — is this a full nodal-context clone?")
+        _copy(src, target / dst_rel)
+        print(f"scaffold: copied {src_rel}" +
+              (f" -> {dst_rel}" if dst_rel != src_rel else ""))
     for rel, blob in preserved.items():
         (target / rel).write_bytes(blob)
         print(f"scaffold: preserved existing {rel}")
@@ -100,7 +107,8 @@ def self_check(target: Path) -> int:
     problems = []
 
     required = ["context.config.yaml", "scripts/dbt_extract.py",
-                "scripts/query_history_extract.py", "eval_harness/run.py"]
+                "scripts/query_history_extract.py", "eval_harness/run.py",
+                "dbt-repo/notify-context-repo.yml"]
     required += [f".github/workflows/{w}" for w in WORKFLOWS]
     required += [f".ci/{p.name}" for p in sorted((TOOL_ROOT / ".ci").glob("*.py"))]
     required += [f"schemas/{p.name}" for p in sorted((TOOL_ROOT / "schemas").glob("*.json"))]
@@ -173,8 +181,10 @@ scaffold: done. Next steps:
   - fresh repo: `git init -b main` + initial commit (the interview skill does this)
   - once a dbt manifest is available, create the drift baseline once and commit it:
       python .ci/drift.py --update-baseline --manifest <source_id>=<path/to/manifest.json>
+  - wire the dbt repo: copy dbt-repo/notify-context-repo.yml into its
+    .github/workflows/ and set CONTEXT_DISPATCH_TOKEN there (see dbt-repo/README.md)
   - CI needs repo secrets to do more than validate: ANTHROPIC_API_KEY (eval delta),
-    DBT_REPO_TOKEN (drift manifest clone fallback)""")
+    DBT_REPO_TOKEN (drift manifest clone fallback; not needed for public dbt repos)""")
     return 0
 
 

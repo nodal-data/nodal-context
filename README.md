@@ -238,8 +238,19 @@ for reach.
 Context goes stale the moment a dbt model changes underneath it — a renamed column, a
 redefined metric, a dropped table — and stale context is worse than none, because the
 agent trusts it. The free CI contract catches this: the bundled `context-drift` workflow
-flags, on every PR, when an upstream dbt model a domain depends on has changed, so a
-human re-confirms the definition.
+flags when an upstream dbt model a domain depends on has changed (on dispatch from the
+dbt repo, weekly cron, or manual run), so a human re-confirms the definition.
+
+**Wiring it up:** copy `dbt-repo/notify-context-repo.yml` (shipped into every scaffolded
+context repo; source [`template/dbt-repo/`](./template/dbt-repo/)) into your dbt repo's
+`.github/workflows/`. On every model change it runs `dbt parse` credential-free,
+publishes `manifest.json` on a single-commit orphan `dbt-manifest` branch, and fires a
+`lineage-changed` dispatch at the context repo — whose `context-drift` workflow clones
+that branch and diffs it. One secret in the dbt repo (`CONTEXT_DISPATCH_TOKEN`, a
+fine-grained PAT scoped to the context repo); `DBT_REPO_TOKEN` in the context repo only
+if the dbt repo is private. Sources the workflow cannot acquire fail the run loudly
+("lineage sources unchecked") instead of passing silently. Setup details:
+[`template/dbt-repo/README.md`](./template/dbt-repo/README.md).
 
 Nodal offers the **managed version of that loop**: connect your dbt repo and changes
 there propagate into the business context automatically — the affected definitions are

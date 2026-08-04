@@ -3,9 +3,14 @@
 # by automation even though the files live in different repos.
 #
 # How a model change reaches here:
-#   - The dbt repo's CI posts a `repository_dispatch` of type `lineage-changed`,
-#     ideally with client_payload.manifests = {source_id: "<base64 manifest.json>"}
-#     so we can diff without cloning. (See .ci/collect_manifests.py.)
+#   - The dbt repo's CI publishes its parsed manifest.json to an orphan `dbt-manifest`
+#     branch and posts a `repository_dispatch` of type `lineage-changed` (see
+#     dbt-repo/notify-context-repo.yml for the ready-made sender workflow). Point the
+#     source's `ref`/`manifest_path` in context.config.yaml at that branch and the
+#     clone fallback in .ci/collect_manifests.py acquires it at any manifest size.
+#     Tiny manifests may instead ride inline as
+#     client_payload.manifests = {source_id: "<base64 manifest.json>"} — but note
+#     GitHub caps dispatch payloads at ~64 KB, which real manifests quickly exceed.
 #   - A weekly cron is the safety net if nothing dispatches.
 #   - workflow_dispatch lets you run it by hand.
 name: context-drift
@@ -42,13 +47,14 @@ jobs:
           python .ci/collect_manifests.py --out-dir .manifests > manifest-args.txt
           echo "manifest args: $(cat manifest-args.txt)"
 
-      # Diff column/test sets vs the committed baseline. Exit 1 == drift; we capture
-      # it so we can open the issue before failing the check.
+      # Diff column/test sets vs the committed baseline. Exit 1 == drift, exit 3 ==
+      # no drift but a source could not be acquired (a silent false negative unless we
+      # surface it); we capture the code so we can open the issue before failing.
       - name: Detect drift
         id: drift
         run: |
           set +e
-          python .ci/drift.py $(cat manifest-args.txt) --out drift-report.md
+          python .ci/drift.py $(cat manifest-args.txt) --fail-on-unchecked --out drift-report.md
           echo "rc=$?" >> "$GITHUB_OUTPUT"
 
       # Optional BYO-key step: if ANTHROPIC_API_KEY is configured, draft status:draft
@@ -63,7 +69,7 @@ jobs:
           python .ci/suggest.py --report drift-report.md --out drift-suggestions.md
 
       - name: Open or update drift issue
-        if: steps.drift.outputs.rc == '1'
+        if: steps.drift.outputs.rc == '1' || steps.drift.outputs.rc == '3'
         uses: actions/github-script@v7
         with:
           script: |
@@ -72,14 +78,16 @@ jobs:
               ? '\n\n' + fs.readFileSync('drift-suggestions.md', 'utf8') : '';
             const body = fs.readFileSync('drift-report.md', 'utf8') + suggestions
               + '\n\n_Filed automatically by the context-drift workflow._';
-            const title = 'Context drift detected';
+            const title = '${{ steps.drift.outputs.rc }}' === '1'
+              ? 'Context drift detected'
+              : 'Context drift: lineage sources unchecked';
             const { owner, repo } = context.repo;
             const existing = await github.rest.issues.listForRepo({
               owner, repo, state: 'open', labels: 'context-drift', per_page: 1,
             });
             if (existing.data.length) {
               await github.rest.issues.update({
-                owner, repo, issue_number: existing.data[0].number, body,
+                owner, repo, issue_number: existing.data[0].number, title, body,
               });
             } else {
               await github.rest.issues.create({
@@ -87,6 +95,6 @@ jobs:
               });
             }
 
-      - name: Fail the check if drift was found
-        if: steps.drift.outputs.rc == '1'
+      - name: Fail the check if drift was found or a source went unchecked
+        if: steps.drift.outputs.rc != '0'
         run: exit 1

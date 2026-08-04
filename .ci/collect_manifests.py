@@ -3,10 +3,13 @@
 
 Two acquisition mechanisms, tried in order per source:
   1. repository_dispatch payload — the dbt repo's CI pushes manifests inline as
-     client_payload.manifests = {source_id: "<base64 of manifest.json>"}. This is the
-     proactive "lineage-changed" path (the dbt repo already parsed its manifest).
+     client_payload.manifests = {source_id: "<base64 of manifest.json>"}. Only viable
+     for tiny manifests: GitHub caps dispatch payloads at ~64 KB.
   2. clone — read the source's repo/ref/manifest_path from context.config.yaml, shallow
-     `git clone` it with $DBT_REPO_TOKEN, and copy the committed manifest out.
+     `git clone` it (with $DBT_REPO_TOKEN if set; tokenless for public repos) and copy
+     the manifest out. This is the recommended path: the dbt repo's sender workflow
+     (dbt-repo/notify-context-repo.yml) publishes manifest.json on an orphan
+     `dbt-manifest` branch, so point ref/manifest_path at that branch.
 
 Manifests are written to <out-dir>/<source_id>.json and the matching
 `--manifest source_id=path` flags are printed to stdout for drift.py to consume.
@@ -88,7 +91,8 @@ def clone_source(src, out_dir, token):
         manifest = Path(td) / src["manifest_path"]
         if not manifest.exists():
             _warn(f"{src['id']}: {src['manifest_path']} not found in repo (have the dbt "
-                  "CI commit it, or push it via the dispatch payload)")
+                  "repo's sender workflow publish it on a `dbt-manifest` branch — see "
+                  "dbt-repo/notify-context-repo.yml — or push it via the dispatch payload)")
             return False
         (Path(out_dir) / f"{src['id']}.json").write_text(manifest.read_text())
         return True

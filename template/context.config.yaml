@@ -9,6 +9,9 @@ lineage_sources:
   - id: dbt_core
     type: dbt                   # dbt | sqlmesh | raw_sql | none
     repo: github.com/your-org/your-dbt
+    # If the dbt repo runs the sender workflow (dbt-repo/notify-context-repo.yml) —
+    # the norm, since target/ is usually gitignored on main — use its published
+    # branch instead: `ref: dbt-manifest`, `manifest_path: manifest.json`.
     ref: main
     manifest_path: target/manifest.json
   # Multiple warehouses / clouds? Tag the non-default source(s) with `warehouse:`,
