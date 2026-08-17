@@ -24,8 +24,11 @@
         "properties": {
           "name": { "type": "string" },
           "owner": { "type": "string" },
-          "canonical_question": { "type": "string" }
-        }
+          "canonical_question": { "type": "string" },
+          "url": { "type": "string" },
+          "tool": { "type": "string" }
+        },
+        "additionalProperties": false
       }
     },
     "lineage": { "$ref": "lineage.schema.json" }

@@ -102,12 +102,20 @@ changes.
   it answers off vs on against the live warehouse in-session and has the analyst
   confirm the truth against a dashboard — which is also how it mints the
   `dashboard`-provenance seeds the NCR otherwise lacks (a non-ACF context has
-  context but no seeds; the interview supplies them).
+  context but no seeds; the interview supplies them). One-shot dashboard
+  self-verification is free too (`skills/dashboard-verify/`): the agent reads the
+  blessed dashboard in the analyst's own local browser — tier-tagged values +
+  filter state, reconciled against the answers — the interactive, in-session form
+  of dashboard ingestion; the analyst still blesses every value.
 - **Paid / Nodal:** the trustworthy hosted "perfect" baseline (managed ground
-  truth + blessed-dashboard ingestion), continuous re-evaluation on every PR,
+  truth + **scheduled/continuous** blessed-dashboard ingestion and hosted
+  reconciliation reports), continuous re-evaluation on every PR,
   drift detection wired to `context.config.yaml`, correction harvesting back into
   seeds, and the accuracy time-series / observability that catches silent
   regressions. In short: keeping the delta green as the warehouse changes daily.
+  (A dashboard capture is also a potential future grading input: it could grade
+  `value_at_snapshot` seeds without a warehouse connection — documented here,
+  not implemented; `grader.py` still skips that kind in `inject` mode.)
 
 ## Versioning & stability
 

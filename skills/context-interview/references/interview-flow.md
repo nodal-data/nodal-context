@@ -175,7 +175,10 @@ Cluster the dashboards. For each cluster (domain):
 
 For each dashboard, ask: "What's the canonical question this dashboard answers, and
 what's the right answer as of a fixed date?" → a `dashboard`-provenance eval seed
-with a `value_at_snapshot` expectation.
+with a `value_at_snapshot` expectation. Also ask — optional, never blocking —
+"and the URL, if you have it handy? Which BI tool is it in?" → the entry's `url:`
+and `tool:` fields, which let Stage 5 read the dashboard itself (`dashboard-verify`)
+instead of asking the analyst to read numbers aloud.
 
 ---
 
