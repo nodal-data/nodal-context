@@ -13,6 +13,8 @@ dashboards:                      # the cluster that defines this domain
   - name: <dashboard name>
     owner: <owner>
     canonical_question: <the question it answers>   # -> a dashboard eval seed
+    # url: <https://...>         # optional — lets Stage 5 read the dashboard itself (dashboard-verify)
+    # tool: <plotly|tableau|powerbi|metabase|...>   # optional — picks the extraction playbook
 lineage:                         # REQUIRED — keeps drift detection working
   - source: dbt_core
     models: []

@@ -71,6 +71,11 @@ Their conclusion: **generate the documentation with the model, but have a human 
 the definition.** That's exactly what the interview does. We *do* auto-extract
 schema and dbt as a **draft to correct** (so the analyst isn't staring at a blank
 page) — but the analyst's confirmations, not the extraction, are what we trust.
+(Reading a *value* off a dashboard the analyst has blessed — Stage 5's
+`dashboard-verify` — is not auto-extraction of a definition; it's ground-truth
+harvesting: the robot reads the number the analyst would have read aloud, with
+its extraction confidence visible, and the analyst still owns every definition
+and blesses every capture.)
 
 The bonus: every disambiguation the analyst makes in the interview ("active client
 means X, not Y") is simultaneously a context entry **and** a labeled eval pair. The
@@ -268,11 +273,12 @@ the **enterprise tier** (product #3), deployable in your cloud/VPC or ours —
 | Interview skill (full or test drive) | `skills/context-interview/` | Free |
 | Eval-seed harvesting (interview → labeled pairs) | the skill | Free |
 | One-shot eval delta (on/off, run locally) | the harness, self-run | Free |
+| Dashboard self-verification (one-shot, your own local browser) | `skills/dashboard-verify/` | Free |
 | Compiled skill snapshot for Claude desktop | `scripts/compile_skill.py` | Free |
 | Self-hosted agent against the raw context files | your agent | Free |
 | **Team-shared MCP endpoint (governed answers, auth, usage logging, non-technical editing via PRs)** | Nodal (hosted) | **Paid — self-serve** |
 | **dbt-repo sync (dbt changes re-drafted into context, analyst-confirmed)** | Nodal (hosted) | **Paid — enterprise** |
-| **The learning loop: observability into who's asking what, coverage evaluations, regression tests, drift detection** | Nodal (hosted) | **Paid — enterprise** |
+| **The learning loop: observability into who's asking what, coverage evaluations, regression tests, drift detection, scheduled dashboard re-verification** | Nodal (hosted) | **Paid — enterprise** |
 
 The **hosted MCP endpoint is the self-serve entry point**: subscribe, connect the
 repo, share the endpoint — minutes, no sales call. The **learning loop

@@ -217,6 +217,14 @@ back to `status: draft` until re-confirmed.
 ### domain (`domains/*/domain.yaml`)
 `name`, `summary`, `tables`, `grain`, `dashboards`, `owner`, `lineage`.
 
+Each `dashboards[]` entry carries `name`, `owner`, `canonical_question`, and
+optionally `url` and `tool` (the BI platform, e.g. `plotly`, `tableau`,
+`metabase`). `url` + `tool` are what let Stage 5 verify against the dashboard
+*itself* (the `dashboard-verify` skill reads it in the analyst's browser)
+instead of asking the analyst to read numbers aloud — and they declare the
+trusted surface precisely, so a redesigned or retired dashboard is detectable
+drift rather than a silent mismatch against a prose description.
+
 ### eval seed (`evals/seeds/*.seed.yaml`)
 `question`, `intent` (the disambiguated meaning), `ir` (optional structured
 decomposition, below), `expected` (one of:
