@@ -96,7 +96,9 @@ allowed dimensions. The `reference.md` pattern keeps the routing prose and the
 └── evals/
     ├── seeds/<name>.seed.yaml   # interview-harvested ground-truth pairs (committed)
     ├── verified/<name>.sql      # blessed read-only SQL per seed (LOCAL ONLY; gitignored)
-    └── runs/                    # live-verification traces (generated; gitignored)
+    ├── runs/                    # live-verification traces (generated; gitignored)
+    ├── captures/                # dashboard-verify captures + reconciliation reports (generated; gitignored)
+    └── playbooks/<slug>.md      # learned per-dashboard playbooks (committed — recipes, not results)
 ```
 
 Placement rule — decide by what the entity **is**, not by how many domains use
@@ -261,14 +263,24 @@ degrades to grading `value_at_snapshot` / `sql_shape` where it is absent.
 The interview's [Stage 5](./skills/context-interview/references/live-verification.md)
 answers each candidate question twice — once with context off, once on — against the
 live warehouse, then has the analyst confirm the on-answer against their dashboard.
-A confirmed match upgrades the seed to `provenance: dashboard`,
-`expected.kind: value_at_snapshot` (with `value` + `as_of`) and writes the blessed
-SQL to the gitignored sidecar `evals/verified/<name>.sql`, pointed to by the seed's
-`verified_query_file`. A mismatch is harvested back into the domain's `reference.md` /
-`known-issues.md` plus a `provenance: correction` seed. The per-answer agent traces
-are written under `evals/runs/<timestamp>/` — these are generated output, not ACF,
-and are gitignored in a generated context repo; the durable outputs are the seeds
-and the updated context files.
+The dashboard's numbers are read either by the analyst aloud or — when a browser MCP
+binding is available — by the
+[dashboard-verify skill](./skills/dashboard-verify/SKILL.md), which reads the
+dashboard in the analyst's own local browser and emits a tier-tagged capture
+(values + filter state) under `evals/captures/<timestamp>/`, alongside a
+`reconciliation.md` diffing capture against answers; the analyst still blesses
+every value, with its extraction tier visible. A confirmed match upgrades the seed
+to `provenance: dashboard`, `expected.kind: value_at_snapshot` (with `value` +
+`as_of`) and writes the blessed SQL to the gitignored sidecar
+`evals/verified/<name>.sql`, pointed to by the seed's `verified_query_file`. A
+mismatch is harvested back into the domain's `reference.md` / `known-issues.md`
+plus a `provenance: correction` seed. The per-answer agent traces under
+`evals/runs/<timestamp>/` and the captures under `evals/captures/` are generated
+output, not ACF, and are gitignored in a generated context repo; the durable
+outputs are the seeds and the updated context files. One dashboard-verify artifact
+IS committed: learned per-dashboard playbooks in `evals/playbooks/<slug>.md` —
+replay recipes (selectors, completion conditions; no data values), maintained like
+any other authored file.
 
 ## Versioning
 

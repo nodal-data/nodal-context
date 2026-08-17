@@ -32,4 +32,10 @@ toolbox
 
 .vscode/
 
+evals/captures/*
+!evals/captures/.gitkeep
+
+# Local browser-binding config for dashboard-verify testing — machine-specific.
+.mcp.json
+
 query-upgrade-2026-07-15.md

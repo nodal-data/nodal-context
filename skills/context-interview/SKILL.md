@@ -71,7 +71,9 @@ down the answers in a format an agent can query and a team can review.
      said it in their own words this session, when every load-bearing piece of
      an assembly was individually chosen (the metric `expression:` read-back,
      `references/interview-flow.md` §4), or when the confirm is anchored to a
-     number the analyst just read off a trusted dashboard (Stage 5).
+     number from a dashboard the analyst trusts (Stage 5) — read aloud by the
+     analyst, or captured by `dashboard-verify` and reviewed by the analyst with
+     its extraction tier and filter state visible.
   A bare Confirmed/Needs-fixing option pair is the tell that you skipped the
   ladder. Rejected options are harvested, not discarded — see
   `references/eval-seed-harvesting.md`.
@@ -300,7 +302,10 @@ they're the failures users won't notice. See `references/interview-flow.md` §4.
 Prove the context works before asking for more. Answer a handful of the domain's
 questions against the live warehouse twice — context **off** and **on** — using
 parallel in-session subagents, then have the analyst confirm the on-answer against a
-dashboard they trust. A match becomes a `value_at_snapshot` / `dashboard` seed; the
+dashboard they trust. When a browser MCP binding is available, the `dashboard-verify`
+skill reads the dashboard (tier-tagged capture + filter state) and the analyst
+blesses the capture instead of reading numbers aloud; the reconciliation report it
+yields is the shareable proof. A match becomes a `value_at_snapshot` / `dashboard` seed; the
 blessed SQL is written to a gitignored sidecar (`evals/verified/<name>.sql`) that the
 seed's `verified_query_file` points at — never committed. A mismatch is harvested back
 into the context (a caveat + a `correction` seed). Print the off→on→truth delta so the

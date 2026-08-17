@@ -83,7 +83,13 @@ when nobody asked.
    - standalone: `./dashboard-verify-captures/<UTC timestamp>/`.
    Report back a compact table: widget · value · tier · filter state. If invoked
    from context-interview Stage 5, return the capture path(s) — the interview owns
-   the reconciliation and the analyst's blessing; you never mint seeds yourself.
+   the analyst's blessing; you never mint seeds yourself.
+6. **Reconcile (optional).** When the caller also hands you answers to check —
+   Stage 5's context-on results, or warehouse numbers the user provides — produce
+   the per-value diff per `references/reconcile.md`: windows compared before
+   values, tolerance honest about display rounding, report rendered in-session
+   and written next to the capture as `reconciliation.md`. Without answers to
+   compare, stop at step 5 — never query a warehouse from this skill.
 
 ## Reference files (load per step, not all up front)
 
@@ -94,3 +100,5 @@ when nobody asked.
 - `references/playbooks/<tool>.md` — per-BI-tool knowledge (currently: `plotly.md`).
   Load when the tool is identified.
 - `references/capture-format.md` — the capture file shape. Load at step 5.
+- `references/reconcile.md` — the capture-vs-answers diff and report. Load only
+  at step 6, when there are answers to compare.

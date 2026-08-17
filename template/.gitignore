@@ -2,6 +2,13 @@
 evals/runs/*
 !evals/runs/.gitkeep
 
+# Dashboard captures (dashboard-verify skill) are generated output — values read
+# from a dashboard at a point in time, plus their reconciliation reports. Keep
+# them local; the durable outputs are seeds and context edits. (Learned
+# playbooks in evals/playbooks/ ARE committed — recipes, not results.)
+evals/captures/*
+!evals/captures/.gitkeep
+
 # Verified read-only SQL ("answer keys") for seeds — LOCAL ONLY, never committed.
 # SQL goes stale fast and must not be cloneable from the repo; the seed keeps a
 # `verified_query_file` pointer, not the query body.

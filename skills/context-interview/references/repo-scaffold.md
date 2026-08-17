@@ -188,6 +188,10 @@ clone:
 
 - **`evals/verified/*` sidecars** are gitignored — local to the machine that ran
   Stage 5. Never fabricate them; re-run Stage 5 live verification to mint new ones.
+- **`evals/captures/*`** (dashboard-verify captures + reconciliation reports) are
+  gitignored — point-in-time generated output; re-run the skill for fresh ones.
+  Learned playbooks in `evals/playbooks/` DO travel (committed), so a teammate's
+  first dashboard read is already a deterministic replay.
 - **The local dbt clone.** When drafting a new domain, re-clone from the
   `lineage_sources[].repo` URL already recorded in `context.config.yaml` and
   `dbt parse` — don't ask the analyst where the project lives. If the new domain
