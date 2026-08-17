@@ -40,8 +40,14 @@ A handful (≈3–6) per domain is plenty. Lead with the caveat-bearing ones.
   cheaply — and if query history is still `deferred:` in Stage 0's disposition
   report and its blocker cleared (reauth done, `ACCOUNT_USAGE` grant landed),
   re-mine: fresh conflict groups are ready-made verification questions.
-- Ask the analyst to have the relevant dashboard open: *"Have the 'Collection Rate
-  by Payer' dashboard up — I'll ask you to read a number off it in a moment."*
+- Decide how the dashboard gets read. If a browser MCP binding is available (see
+  `skills/dashboard-verify/references/browser-contract.md`) and the dashboard has a
+  URL — from the domain's `domain.yaml` `dashboards:` entry, or ask — tell the
+  analyst you'll read it yourself: *"I'll open the 'Collection Rate by Payer'
+  dashboard in your browser and read the numbers — you just confirm them."* (If it
+  needs a login, they log in; the skill waits.) Otherwise fall back to the human
+  read: *"Have the 'Collection Rate by Payer' dashboard up — I'll ask you to read
+  a number off it in a moment."* Either path feeds the same steps below.
 
 ## 3. Spawn the answering agents in parallel
 
@@ -74,9 +80,28 @@ Q: What is our collection rate by payer, last quarter?
   context-on  → 0.92   (state-split payers, sessions ≥ 45 days)
 ```
 
-Then ask for the truth: *"What does your dashboard show for this, and as of what
-date?"* Record the value and the `as_of` date. (Let the analyst set the tolerance —
-"close enough" is their call, not yours.)
+Then get the truth from the dashboard:
+
+- **Automated read** (browser binding available): invoke the `dashboard-verify`
+  skill for the dashboard once — it emits a capture
+  (`evals/captures/<timestamp>/…capture.json`) covering all its widgets; reuse
+  that capture for every question on the same dashboard. Show the analyst the
+  relevant value **with its extraction tier and the capture's filter state
+  visible**, and have them bless it as the truth: *"Your dashboard shows 0.92
+  for this (read exactly from the chart data; window Jan–Mar, sessions ≥ 45
+  days) — is that the number you'd trust?"* A tier-4 (vision) value is called
+  out as low-confidence before they bless it. Take `as_of` from the capture's
+  `filter_state.as_of` (the dashboard's own freshness stamp), falling back to
+  `captured_at`.
+- **Human read** (no binding): ask *"What does your dashboard show for this, and
+  as of what date?"* and record the value and `as_of`.
+
+Either way, the analyst sets the tolerance — "close enough" is their call, not
+yours (and a display-rounded tile like "$5.9M" can never be held tighter than
+its rounding; see `skills/dashboard-verify/references/reconcile.md`). With a
+capture in hand, render the per-question diff as a reconciliation report
+(reconcile.md) and write it to `<capture dir>/reconciliation.md` — it doubles as
+the shareable "the system validated itself" artifact.
 
 ## 5. On a match (on-answer == dashboard)
 
@@ -110,9 +135,14 @@ date?"* Record the value and the `as_of` date. (Let the analyst set the toleranc
 
 ## 6. On a mismatch (on-answer != dashboard)
 
-Don't paper over it — this is the most valuable moment. Ask: **"Why doesn't it
-match?"** The analyst's answer names a missing caveat or disambiguation. Harvest it
-the Stage-4 way:
+Don't paper over it — this is the most valuable moment. With a capture in hand,
+check its `filter_state` against the query's window and filters *first*: the
+mismatch often explains itself, and you lead with the explanation rather than a
+question — *"Your dashboard filters to fully-elapsed months through Jul 31; my
+query summed through Aug 12 — same number otherwise. Which framing should the
+context encode?"* Only when the filter state doesn't account for it, ask the open
+question: **"Why doesn't it match?"** Either way the analyst's answer names a
+missing caveat or disambiguation. Harvest it the Stage-4 way:
 
 - add the caveat to the domain's `known-issues.md` and an `IF … DO NOT …` routing
   trigger to its `reference.md`, and
