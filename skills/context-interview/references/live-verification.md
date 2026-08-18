@@ -47,7 +47,12 @@ A handful (≈3–6) per domain is plenty. Lead with the caveat-bearing ones.
   dashboard in your browser and read the numbers — you just confirm them."* (If it
   needs a login, they log in; the skill waits.) Otherwise fall back to the human
   read: *"Have the 'Collection Rate by Payer' dashboard up — I'll ask you to read
-  a number off it in a moment."* Either path feeds the same steps below.
+  a number off it in a moment."* — and mention the one-time fix for next session:
+  the tool repo ships a `.mcp.json` with the default chrome-devtools binding, so
+  a missing binding usually means a pre-`.mcp.json` clone or an unapproved
+  project server (offer to set it up per
+  `skills/dashboard-verify/references/browser-contract.md`; takes effect after a
+  restart). Either path feeds the same steps below.
 
 ## 3. Spawn the answering agents in parallel
 

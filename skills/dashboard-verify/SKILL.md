@@ -66,7 +66,9 @@ when nobody asked.
 1. **Resolve the target.** A dashboard name + URL from the caller, from the context
    repo's `domains/*/domain.yaml` `dashboards:` entry, or by asking the user for
    the URL. One dashboard per run.
-2. **Attach the browser** per `references/browser-contract.md`. If the page lands
+2. **Attach the browser** per `references/browser-contract.md`. If no browser
+   binding is discoverable, run that doc's no-binding preflight (offer the
+   shipped `.mcp.json` setup + restart) instead of failing. If the page lands
    on a login wall, do the credential handoff (fences above).
 3. **Playbook check.** If the context repo has a learned playbook for this
    dashboard (`evals/playbooks/<dashboard-slug>.md`), replay its `replay:` steps
