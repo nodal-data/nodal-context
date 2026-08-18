@@ -35,7 +35,9 @@ toolbox
 evals/captures/*
 !evals/captures/.gitkeep
 
-# Local browser-binding config for dashboard-verify testing — machine-specific.
-.mcp.json
+# Dedicated Chrome profile for dashboard-verify, if a user relocates it into the
+# repo (default is ${HOME}/.nodal-dashboard-verify-profile — see .mcp.json).
+# Profiles hold session cookies; never commit one.
+.nodal-dashboard-verify-profile/
 
 query-upgrade-2026-07-15.md

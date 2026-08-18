@@ -17,11 +17,35 @@ listing; map verbs → tools from the table; note the binding in the capture fil
 **Default binding setup** (dedicated profile; visible navigation is the product
 posture — the user watches the agent read their dashboard):
 
+The tool repo ships this as a committed `.mcp.json` at its root, so a fresh clone
+has the default binding out of the box (Claude Code asks the user to approve the
+project MCP server on first launch):
+
 ```json
 {"mcpServers": {"chrome-devtools": {"command": "npx",
   "args": ["-y", "chrome-devtools-mcp@1.7.0", "--channel=stable",
-           "--user-data-dir=/absolute/path/to/.nodal-dashboard-verify-profile"]}}}
+           "--user-data-dir=${HOME}/.nodal-dashboard-verify-profile"]}}}
 ```
+
+`${HOME}` is expanded by Claude Code at server launch (verified), giving a
+machine-independent *absolute* profile path. Keep it absolute — chrome-devtools-mcp
+passes `--user-data-dir` through unresolved, so a relative path lands wherever
+Chrome's cwd happens to be.
+
+**No-binding preflight.** If tool discovery finds *no* browser binding (none of
+the tools in the table above), do not fail and do not improvise with Bash:
+
+1. Say what's missing: no browser MCP server is loaded in this session.
+2. Offer to write the JSON above to `.mcp.json` at the repo root (the file may be
+   missing on clones that predate it, or the user may have deleted it).
+3. Tell the user a **session restart** is required for a new `.mcp.json` to load,
+   and that they'll get a one-time approval prompt for the project server.
+4. If the user prefers Playwright MCP or Claude in Chrome, use whichever binding
+   their session already has — the verbs table covers all three.
+
+When called from context-interview Stage 5, report "no binding" back to the
+interview instead of blocking: it falls back to the human read for this session
+and can offer the setup for next time.
 
 chrome-devtools notes (learned live): `--user-data-dir` and `--isolated` are
 **mutually exclusive** — passing both (even `--isolated=false`) makes the server
