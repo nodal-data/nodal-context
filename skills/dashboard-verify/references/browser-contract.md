@@ -14,12 +14,11 @@ listing; map verbs → tools from the table; note the binding in the capture fil
 | click / export | `click` (uid from `take_snapshot`) | `browser_click` (ref from snapshot) | `computer` (coordinate clicks — least reliable; prefer JS/state reads) |
 | screenshot | `take_screenshot` | `browser_take_screenshot` | `computer {action: screenshot}` |
 
-**Default binding setup** (dedicated profile; visible navigation is the product
+**Optional default binding** (dedicated profile; visible navigation is the product
 posture — the user watches the agent read their dashboard):
 
-The tool repo ships this as a committed `.mcp.json` at its root, so a fresh clone
-has the default binding out of the box (Claude Code asks the user to approve the
-project MCP server on first launch):
+The explicitly invoked `setup-nodal` skill owns a bundled template for this
+binding. Installing Nodal does not enable an MCP server automatically:
 
 ```json
 {"mcpServers": {"chrome-devtools": {"command": "npx",
@@ -36,11 +35,12 @@ Chrome's cwd happens to be.
 the tools in the table above), do not fail and do not improvise with Bash:
 
 1. Say what's missing: no browser MCP server is loaded in this session.
-2. Offer to write the JSON above to `.mcp.json` at the repo root (the file may be
-   missing on clones that predate it, or the user may have deleted it).
+2. Offer to invoke `setup-nodal`, which shows the destination and asks for consent
+   before safely merging the bundled binding into the project `.mcp.json`.
 3. Tell the user a **session restart** is required for a new `.mcp.json` to load,
    and that they'll get a one-time approval prompt for the project server.
-4. If the user prefers Playwright MCP or Claude in Chrome, use whichever binding
+4. Never overwrite an existing binding. If the user prefers Playwright MCP or
+   Claude in Chrome, use whichever binding
    their session already has — the verbs table covers all three.
 
 When called from context-interview Stage 5, report "no binding" back to the

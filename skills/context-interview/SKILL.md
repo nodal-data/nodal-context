@@ -1,25 +1,6 @@
 ---
 name: context-interview
-description: >
-  Build an analytics context layer by interviewing the data analyst, one domain
-  at a time, and write it to a reviewable git repo in Analytics Context Format
-  (ACF). Use this skill WHENEVER the user wants to bootstrap, build, document, or
-  improve the business context / semantic grounding that an analytics agent uses
-  to query a warehouse — including phrases like "build my context layer", "document
-  our metrics for the agent", "set up analytics context", "the agent keeps getting
-  our definitions wrong", "onboard Claude to our data", or "make a context repo".
-  Also use it when the user wants to capture metric definitions, entity
-  disambiguations, or data caveats so an agent stops writing wrong SQL. Prefer this
-  skill over free-form documentation: it produces a validated repo AND harvests
-  ground-truth eval seeds as a byproduct. It also runs a live in-session
-  verification pass (Stage 5) to confirm answers against the analyst's dashboards
-  and show the context working immediately. Supports two depths: the full
-  multi-stage interview, or a ~30-minute TEST DRIVE ("take it for a test drive",
-  "show me how it works", "I only have 30 minutes", "quick version", "just the
-  essentials") that shows the whole loop working on one domain: five
-  highest-leverage answers confirmed live, the rest drafted for later. Do NOT use it to
-  run the formal/continuous eval harness (delta at scale, drift detection, hosted
-  "perfect" baseline) or to write transformation/dbt code.
+description: Interview an analyst to build or improve an ACF analytics-context repo, including metrics, entities, caveats, eval seeds, and a five-question test drive. Use for context-layer creation or correction. Do not use for dbt code or continuous eval-harness operation.
 ---
 
 # Context Interview
@@ -31,7 +12,8 @@ questions a sharp new senior analyst would ask on their first week, and to write
 down the answers in a format an agent can query and a team can review.
 
 **Two outputs, always produced together:**
-1. The **context repo** in ACF (`SPEC.md` in this project's root defines it).
+1. The **context repo** in ACF (the bundled `references/SPEC.md` defines it until
+   the scaffold creates the repo-local `SPEC.md`).
 2. **Eval seeds** — every confirmed disambiguation becomes a labeled ground-truth
    pair in `evals/seeds/`. This is not optional; it's how the value gets measured.
 
@@ -90,6 +72,17 @@ down the answers in a format an agent can query and a team can review.
   codenames, acquisitions, or internal project names that differ from the company. If you 
   don't have the name from the analyst or a URL, **ask** — don't guess from what you queried.
 
+## Local setup context
+
+Before Stage 0, look for the nearest `.nodal.local.json` from the user's current
+directory upward, stopping at its git root. Accept only `version: 1`. Treat it as
+a hint, never as proof: re-probe live warehouse, metadata, query-history, and
+browser capabilities before relying on them, especially when `verified_at` is
+stale. If the file is absent, invalid, or a probe fails, report the degraded path
+and continue normally. Never write or repair this file; only the explicitly
+invoked `setup-nodal` skill may do that. Never expose raw authentication errors or
+secrets in context files or reports.
+
 ## The interview proceeds in six stages
 
 Run them in order, but let the analyst jump around. Each stage has its own
@@ -134,11 +127,15 @@ you enter it.
    `references/simulated-analyst.md` and follow it for every question in all stages (a
    subagent answers from a brief; you escalate to the human only when it's not
    confident). If the marker is absent, ignore this and run the normal human interview.
-1. Read `SPEC.md` so you know the format you're writing.
+1. Resolve resources from the directory containing the actually loaded
+   `SKILL.md`; do not assume an environment variable or repository checkout.
+   Read its bundled `references/SPEC.md`. After scaffolding, switch to the
+   generated repo's own `SPEC.md`, schemas, scripts, and harness.
 2. **Fresh start or resume? Discover, then ask — never infer intent from disk
    layout.** A context repo is identified by a `context.config.yaml` at its root
-   (default target: `../analytics-context/`, a sibling of the tool repo, which
-   stays read-only — never author into the tool clone). An empty default path is
+   (default target: `../analytics-context/`, resolved relative to the user's
+   project root). Always show the resolved destination and get confirmation
+   before writing. An empty default path is
    *not* evidence of a fresh build: the analyst's repo may live elsewhere, or
    only on GitHub.
    - **Discover candidates silently (bounded — never a full-disk scan):** search
@@ -174,13 +171,13 @@ you enter it.
      github.com/acme/acme-dbt`, then `dbt parse`"*) rather than asking where
      the project lives.
    - **Analyst says fresh → scaffold** — only after they explicitly said so, and
-     never into a directory that already contains a `context.config.yaml`: run
-     `python3 scripts/scaffold.py <target>`
-     from the tool-repo clone. The script copies the template (end-user
+     never into a directory that already contains a `context.config.yaml`:
+     resolve `scripts/scaffold.py` from this loaded skill directory and run it
+     with the confirmed target. The script copies the template (end-user
      `README.md`, consumption-first `CLAUDE.md`, the bundled
      `.claude/skills/data-question/` skill, …) **plus** the CI support set
-     (`.github/workflows/`, `.ci/`, `schemas/`, `scripts/dbt_extract.py`,
-     `eval_harness/`) and self-checks the result. **Confirm the self-check
+     (`.github/workflows/`, `.ci/`, `schemas/`, `SPEC.md`, context-repo-local
+     scripts, and `eval_harness/`) and self-checks the result. **Confirm the self-check
      passes before continuing.** Then `git init -b main` + an initial commit — see
      `references/repo-scaffold.md` for details.
 3. Ask one breadth-first question: *"Which data platforms do your dashboards run on
@@ -318,7 +315,8 @@ When a domain's `reference.md`, `metrics.yaml`, seeds, and entity coverage
 (subject entities in `entities/<group>.yaml`, domain statuses in the domain's
 `entities.yaml`) exist:
 
-1. Validate against the schemas (`schemas/*.json`); fix anything that fails.
+1. From the generated context repo, validate against its `schemas/*.json`; fix
+   anything that fails.
 2. Summarize what you captured and what's still `draft`. Confirm the domain's owner
    is recorded in both `domain.yaml` and `company/org-structure.md` (they must agree).
 3. Offer: "Want to see the context working — I'll answer a few of this domain's

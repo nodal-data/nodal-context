@@ -1,0 +1,7 @@
+interface:
+  display_name: "Setup Nodal"
+  short_description: "Configure local Nodal analytics connections"
+  default_prompt: "Use $setup-nodal to configure Nodal for this project."
+policy:
+  allow_implicit_invocation: false
+

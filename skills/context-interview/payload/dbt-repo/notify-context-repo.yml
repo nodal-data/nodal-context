@@ -1,0 +1,83 @@
+# Sender workflow for your **dbt repo** — copy this file into that repo's
+# .github/workflows/ and fill in every "EDIT" line. It is shipped inside the
+# context repo only as reference material; it does nothing here.
+#
+# What it does, on every push to main that touches model-relevant files:
+#   1. `dbt parse` (no warehouse connection — zero credentials needed)
+#   2. force-push target/manifest.json as a single-commit orphan `dbt-manifest`
+#      branch (bounded repo size, like gh-pages)
+#   3. fire a `repository_dispatch` of type `lineage-changed` at your context
+#      repo, whose context-drift workflow clones the branch and diffs it
+#
+# Match it in the context repo's context.config.yaml:
+#   lineage_sources:
+#     - id: <source_id>
+#       type: dbt
+#       repo: github.com/<org>/<this-dbt-repo>
+#       ref: dbt-manifest
+#       manifest_path: manifest.json
+#
+# Secret required (in THIS dbt repo): CONTEXT_DISPATCH_TOKEN — a fine-grained
+# PAT with access to the context repo only, permission Contents: Read and write
+# (what POST /repos/{owner}/{repo}/dispatches requires). See dbt-repo/README.md.
+#
+# No "did the manifest really change?" gating is needed: drift.py exits clean on
+# a no-op and the drift issue dedupes, so a spurious dispatch costs one green run.
+name: notify-context-repo
+on:
+  push:
+    branches: [main]
+    paths:                          # EDIT: prefix with your dbt subdirectory if nested
+      - "models/**"
+      - "dbt_project.yml"
+      - "seeds/**"
+      - "snapshots/**"
+      - "macros/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write                   # pushes the dbt-manifest branch in THIS repo
+
+env:
+  SOURCE_ID: "<source_id>"          # EDIT: the lineage source id in context.config.yaml
+  CONTEXT_REPO: "<org>/<company>-analytics-context"   # EDIT
+  MANIFEST_BRANCH: dbt-manifest
+
+jobs:
+  publish-and-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install dbt-core dbt-<adapter>         # EDIT: e.g. dbt-bigquery
+
+      # `dbt parse` never opens a warehouse connection, so a committed profiles
+      # dir with placeholder credentials is enough.
+      - run: dbt parse --profiles-dir <parse-profiles-dir>   # EDIT
+
+      - name: Publish manifest branch (single-commit orphan, force-pushed)
+        run: |
+          d=$(mktemp -d)
+          cp target/manifest.json "$d/manifest.json"    # EDIT path if dbt is nested
+          cd "$d"
+          git init -b "$MANIFEST_BRANCH"
+          git -c user.name=github-actions -c user.email=actions@github.com add manifest.json
+          git -c user.name=github-actions -c user.email=actions@github.com \
+            commit -m "dbt manifest @ ${GITHUB_SHA}"
+          git push --force \
+            "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" \
+            "$MANIFEST_BRANCH"
+
+      - name: Notify context repo
+        env:
+          TOKEN: ${{ secrets.CONTEXT_DISPATCH_TOKEN }}
+        run: |
+          curl -sS -f -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${CONTEXT_REPO}/dispatches" \
+            -d "{\"event_type\":\"lineage-changed\",\"client_payload\":{\"source_id\":\"${SOURCE_ID}\",\"repo\":\"${GITHUB_REPOSITORY}\",\"sha\":\"${GITHUB_SHA}\"}}"

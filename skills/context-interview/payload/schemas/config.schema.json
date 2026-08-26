@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nodaldata.io/acf/config.schema.json",
+  "title": "ACF Repo Config",
+  "type": "object",
+  "required": ["version", "warehouse", "lineage_sources"],
+  "properties": {
+    "version": { "type": ["number", "string"] },
+    "warehouse": { "type": "string" },
+    "lineage_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "enum": ["dbt", "sqlmesh", "raw_sql", "none"] },
+          "warehouse": { "type": "string" },
+          "repo": { "type": "string" },
+          "ref": { "type": "string" },
+          "manifest_path": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "domains": { "type": "object" }
+  },
+  "additionalProperties": false
+}

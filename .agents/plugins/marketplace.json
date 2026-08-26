@@ -1,0 +1,21 @@
+{
+  "name": "nodal",
+  "interface": {
+    "displayName": "Nodal"
+  },
+  "plugins": [
+    {
+      "name": "nodal-analytics",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Data & Analytics"
+    }
+  ]
+}
+

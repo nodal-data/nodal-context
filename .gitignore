@@ -1,5 +1,6 @@
 # Scratch / local-only files
 FINDINGS.md
+.nodal.local.json
 
 # Simulated-analyst briefs — local only; may contain customer-confidential data.
 # (Inline comments are NOT allowed on gitignore pattern lines — keep them above.)
@@ -36,7 +37,7 @@ evals/captures/*
 !evals/captures/.gitkeep
 
 # Dedicated Chrome profile for dashboard-verify, if a user relocates it into the
-# repo (default is ${HOME}/.nodal-dashboard-verify-profile — see .mcp.json).
+# repo (the optional setup-nodal browser template defaults to a home-directory profile).
 # Profiles hold session cookies; never commit one.
 .nodal-dashboard-verify-profile/
 

@@ -1,0 +1,15 @@
+{
+  "name": "nodal-analytics",
+  "version": "1.0.0",
+  "description": "Build analytics context through interviews and verify it against live dashboards.",
+  "author": {
+    "name": "Nodal Data",
+    "url": "https://github.com/nodal-data"
+  },
+  "homepage": "https://github.com/nodal-data/nodal-context",
+  "repository": "https://github.com/nodal-data/nodal-context",
+  "license": "Apache-2.0",
+  "keywords": ["analytics", "context", "dashboard", "dbt"],
+  "skills": "./skills/"
+}
+

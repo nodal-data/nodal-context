@@ -1,0 +1,3 @@
+# Stage 5 live-verification traces land here (one file per answering agent).
+# Generated output, not ACF — gitignored. The durable outputs are the seeds in
+# ../seeds/ and the updated domain reference.md / known-issues.md.

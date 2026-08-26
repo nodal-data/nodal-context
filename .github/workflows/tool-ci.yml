@@ -1,0 +1,54 @@
+name: Tool package CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install validation dependencies
+        run: |
+          python -m pip install jsonschema pyyaml
+          npm install --global @anthropic-ai/claude-code @openai/codex
+
+      - name: Check generated payload
+        run: python3 scripts/sync_skill_payload.py --check
+
+      - name: Lint skills and run every direct test
+        run: |
+          python3 scripts/lint_skills.py
+          python3 scripts/run_tests.py
+
+      - name: Validate root ACF sources
+        run: python3 .ci/validate.py
+
+      - name: Smoke-test repository and isolated skill scaffolds
+        run: |
+          target="$(mktemp -d)/analytics-context"
+          python3 scripts/scaffold.py "$target"
+          python3 scripts/scaffold.py --check "$target"
+          isolated="$(mktemp -d)/context-interview"
+          cp -R skills/context-interview "$isolated"
+          isolated_target="$(mktemp -d)/analytics-context"
+          python3 "$isolated/scripts/scaffold.py" "$isolated_target"
+          python3 "$isolated/scripts/scaffold.py" --check "$isolated_target"
+
+      - name: Validate Claude plugin
+        run: claude plugin validate . --strict
+
+      - name: Validate and list Codex plugin
+        run: python3 scripts/validate_codex_package.py --list-available
+
