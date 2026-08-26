@@ -62,9 +62,13 @@ def run():
             (copied_skill / "references/SPEC.md").write_text("diverged")
             executable = copied_skill / "scripts/dbt_extract.py"
             executable.chmod(stat.S_IMODE(executable.stat().st_mode) & ~0o111)
+            stray_cache = copied_skill / "payload/.pytest_cache"
+            stray_cache.mkdir()
+            (stray_cache / "README.md").write_text("dev-time cache artifact")
             missing, extra, divergent, mode_divergent = sync.compare()
             assert Path("payload/template/evals/captures/.gitkeep") in missing
             assert Path("payload/extra.txt") in extra
+            assert Path("payload/.pytest_cache/README.md") not in extra
             assert Path("references/SPEC.md") in divergent
             assert Path("scripts/dbt_extract.py") in mode_divergent
         finally:

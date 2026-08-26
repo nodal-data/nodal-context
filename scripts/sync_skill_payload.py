@@ -68,7 +68,11 @@ def actual_files():
         if not root.exists():
             continue
         for item in root.rglob("*"):
-            if (item.is_file() or item.is_symlink()) and not ignored(item):
+            if (
+                (item.is_file() or item.is_symlink())
+                and not ignored(item)
+                and not any(ignored(part) for part in item.relative_to(SKILL).parents)
+            ):
                 actual.add(item.relative_to(SKILL))
     for relative in generated_files_outside_trees():
         path = SKILL / relative
@@ -77,8 +81,8 @@ def actual_files():
     return actual
 
 
-def compare():
-    expected = expected_files()
+def compare(expected=None):
+    expected = expected_files() if expected is None else expected
     actual = actual_files()
     missing = sorted(set(expected) - actual, key=str)
     extra = sorted(actual - set(expected), key=str)
@@ -120,7 +124,8 @@ def write():
 
 def check():
     labels = ("missing", "extra", "content-divergent", "mode-divergent")
-    groups = compare()
+    expected = expected_files()
+    groups = compare(expected)
     failed = False
     for label, paths in zip(labels, groups):
         if paths:
@@ -129,7 +134,7 @@ def check():
                 print(f"{label}: {path}")
     if failed:
         return 1
-    print(f"sync_skill_payload: OK — {len(expected_files())} files synchronized")
+    print(f"sync_skill_payload: OK — {len(expected)} files synchronized")
     return 0
 
 
