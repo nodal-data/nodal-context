@@ -1,0 +1,30 @@
+# context.config.yaml — repo metadata + the domain↔lineage map that makes
+# "context lives apart from lineage" safe. Every domain MUST carry a lineage
+# pointer so drift detection can fire when an upstream model changes.
+version: 0.1
+warehouse: snowflake            # default platform; a per-source `warehouse:` overrides it
+                                # (snowflake | bigquery | databricks | postgres | ...)
+
+lineage_sources:
+  - id: dbt_core
+    type: dbt                   # dbt | sqlmesh | raw_sql | none
+    repo: github.com/your-org/your-dbt
+    # If the dbt repo runs the sender workflow (dbt-repo/notify-context-repo.yml) —
+    # the norm, since target/ is usually gitignored on main — use its published
+    # branch instead: `ref: dbt-manifest`, `manifest_path: manifest.json`.
+    ref: main
+    manifest_path: target/manifest.json
+  # Multiple warehouses / clouds? Tag the non-default source(s) with `warehouse:`,
+  # e.g. a second platform — entries without `warehouse:` inherit the default above:
+  # - id: dbt_bq_marketing
+  #   type: dbt
+  #   warehouse: bigquery
+  #   repo: github.com/your-org/marketing-dbt
+  #   ref: main
+  #   manifest_path: target/manifest.json
+
+domains: {}                     # filled in per domain during the interview, e.g.:
+  # session-financials:
+  #   lineage:
+  #     - source: dbt_core
+  #       models: [fct_session_financials, dim_client]

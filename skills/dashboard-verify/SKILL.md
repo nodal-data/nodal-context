@@ -1,18 +1,6 @@
 ---
 name: dashboard-verify
-description: >
-  Read a BI dashboard in the analyst's own local browser and extract its widget
-  values AND active filter state as tier-tagged capture files — so answers can be
-  verified against the dashboard without asking a human to read numbers off a
-  screen. Use this skill whenever the user wants to check answers, context, or SQL
-  against what a dashboard shows — "validate against my dashboard", "read the
-  dashboard", "does this match the dashboard", "self-validate", "extract the
-  dashboard values" — and from Stage 5 of the context-interview skill in place of
-  asking the analyst what the dashboard says. Works with any MCP browser binding
-  (chrome-devtools MCP is the default). It is NOT a general browser agent: it does
-  exactly one workflow (navigate to a named dashboard → enumerate widgets → capture
-  filter state → extract values → emit captures) and refuses side quests. It never
-  handles credentials — the user logs in themselves in their own browser.
+description: Verify answers against a named BI dashboard in the user's local browser, capturing widget values and active filters with extraction tiers. Use for dashboard checks and context-interview Stage 5. Not for general browsing, credentials, or warehouse queries.
 ---
 
 # Dashboard Verify
@@ -21,6 +9,12 @@ Extract what a BI dashboard actually shows — values *and* the filter state tha
 makes those values mean something — into capture files another process (or a
 human) can reconcile against. The analyst's browser does the showing; you do the
 reading; the analyst stays the authority on what counts as truth.
+
+Look for the nearest `.nodal.local.json` upward to the current git root and accept
+only version 1. Treat its browser binding and capability timestamps as hints:
+discover the live tools again before use. Missing, invalid, or stale config
+degrades to binding discovery below. Never write configuration; only the
+explicitly invoked `setup-nodal` skill may do so.
 
 ## Hard fences (non-negotiable)
 
@@ -67,8 +61,8 @@ when nobody asked.
    repo's `domains/*/domain.yaml` `dashboards:` entry, or by asking the user for
    the URL. One dashboard per run.
 2. **Attach the browser** per `references/browser-contract.md`. If no browser
-   binding is discoverable, run that doc's no-binding preflight (offer the
-   shipped `.mcp.json` setup + restart) instead of failing. If the page lands
+   binding is discoverable, run that doc's no-binding preflight (offer explicit
+   `setup-nodal` configuration + restart) instead of failing. If the page lands
    on a login wall, do the credential handoff (fences above).
 3. **Playbook check.** If the context repo has a learned playbook for this
    dashboard (`evals/playbooks/<dashboard-slug>.md`), replay its `replay:` steps

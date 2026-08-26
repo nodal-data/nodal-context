@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nodaldata.io/acf/entity.schema.json",
+  "title": "ACF Entity",
+  "type": "object",
+  "required": ["entities"],
+  "properties": {
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "description", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "status": { "enum": ["draft", "confirmed"] },
+          "mappings": { "type": "object" },
+          "important": { "type": "string" },
+          "analytical_notes": { "type": "string" },
+          "lineage": { "$ref": "lineage.schema.json" }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

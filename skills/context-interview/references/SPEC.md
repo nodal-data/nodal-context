@@ -1,0 +1,306 @@
+# Analytics Context Format (ACF) — v0.1
+
+The on-disk format the interview produces and the harness reads. It is plain
+Markdown + YAML in a git repo, so the review surface is a pull request and the
+change-trigger is a GitHub Action.
+
+ACF deliberately separates **three audiences**:
+
+| File kind | Written for | Optimized for |
+|---|---|---|
+| `context.md`, `overview.md`, `terminology.md` | humans | onboarding, narrative, "why" |
+| `reference.md` | the agent at query time | retrieval: routing triggers, gotchas, grain, query patterns |
+| `*.yaml` (entities, metrics, domain) | both + CI | machine-validatable structured facts |
+
+This split is the main upgrade over a single narrative doc. The `reference.md` is
+the file the agent actually reads to answer a question, and it is written for an
+LLM, not a person — explicit `IF … DO NOT …` routing, grain, exclusions, and
+wrong-answer modes, with no prose it has to wade through.
+
+## Design rules (these are load-bearing)
+
+1. **A human owns every definition.** The model may draft; a person confirms. Any
+   field marked `status: draft` is excluded from the "perfect" eval baseline until
+   confirmed.
+2. **No statistics in context.** Notes are qualitative business logic ("exclude
+   BHPN — different reimbursement cycle"), never "~37% of sessions." Numbers go
+   stale; business logic doesn't. 
+3. **Context is separate from lineage, but never *unlinked* from it.** Every
+   domain, entity, and metric carries a `lineage:` pointer (repo + path + ref) so
+   drift detection can fire when the upstream model changes. Separation is for
+   enterprises with many pipelines; the pointer is what keeps separation safe.
+4. **Every confirmed disambiguation emits an eval seed.** The interview writes
+   `evals/seeds/*.yaml` as a byproduct. These are the ground truth the delta is
+   measured against.
+5. **Everything is CI-checkable.** Each YAML kind has a JSON Schema in `schemas/`.
+   A PR that breaks the schema fails review.
+
+## Query patterns — the one narrow allowance for SQL in context
+
+Context files carry business logic, not a query library — but a domain's
+`reference.md` MAY include a small `## Common query patterns` section with fenced
+`sql` blocks, **only where the exact query form is the hard-won knowledge**: the
+join path, dedup, or mandatory clause that makes the obvious query silently wrong.
+(Distilled, curated patterns are the useful residue of query history; raw query
+retrieval, measured head-to-head, moves accuracy by less than a point. The pattern
+is curation, not history.)
+
+The line, precisely:
+
+- **Pattern, not paste.** Real model/column names are welcome — they are already
+  context. Literal parameter values are not: use `<placeholders>`. A pattern
+  encodes a *form*; it is never a complete runnable report.
+- **Each pattern names the failure it prevents** in one leading `Without this:`
+  line. If no wrong-answer mode can be named, it is an example, not a pattern —
+  leave it out.
+- **Human-confirmed, like everything else** (design rule 1). Unconfirmed patterns
+  carry `<!-- status: draft -->` and are excluded like any other draft.
+- **Bounded.** A handful per domain — this is not a query library. Runnable,
+  blessed SQL lives only in the gitignored `evals/verified/` sidecar (below),
+  never committed.
+- **Distilled, never mined.** Never copied from query logs or history; a pattern
+  earns its place through the interview or a Stage-5 verified match.
+- **Drift-covered.** A pattern references only models listed in the domain's
+  `lineage:`, so upstream drift re-flags it for re-confirmation with the rest of
+  the domain. A one-line dialect note (e.g. divide-by-zero handling) may
+  accompany a pattern when the trap is dialect-specific.
+
+When a pattern encodes a *metric's measure*, the structured sibling is the
+metric's `expression:` block in `metrics.yaml` (see "metric", below) — the
+preferred, schema-checked home for the measure, its mandatory filters, and its
+allowed dimensions. The `reference.md` pattern keeps the routing prose and the
+`Without this:` failure line; the expression carries the deterministic form.
+
+## Directory contract
+
+```
+<your-context-repo>/
+├── context.config.yaml          # repo metadata + domain↔lineage source map
+├── README.md                    # end-user getting-started (how a team uses this repo)
+├── AGENTS.md                    # machine orientation (navigate + answer a question)
+├── CLAUDE.md                    # consumption-first: how an agent answers from this repo
+├── AUTHORING.md                 # authoring rules for agents editing this repo
+├── .claude/skills/data-question/ # bundled skill: answer a question from this context
+├── company/
+│   ├── overview.md              # business model, what the company does
+│   ├── terminology.md           # cross-domain glossary
+│   └── org-structure.md         # domain ownership
+├── domains/<domain>/
+│   ├── domain.yaml              # structured metadata: tables, grain, lineage ptr
+│   ├── context.md               # narrative business context (humans)
+│   ├── reference.md             # retrieval doc (the agent reads THIS) ← key file
+│   ├── metrics.yaml             # metric defs: formula, params, caveats
+│   ├── entities.yaml            # domain-specific entity values (optional)
+│   └── known-issues.md          # data-quality gotchas
+├── entities/<group>.yaml        # cross-domain entities (payers, clients, geo…)
+└── evals/
+    ├── seeds/<name>.seed.yaml   # interview-harvested ground-truth pairs (committed)
+    ├── verified/<name>.sql      # blessed read-only SQL per seed (LOCAL ONLY; gitignored)
+    ├── runs/                    # live-verification traces (generated; gitignored)
+    ├── captures/                # dashboard-verify captures + reconciliation reports (generated; gitignored)
+    └── playbooks/<slug>.md      # learned per-dashboard playbooks (committed — recipes, not results)
+```
+
+Placement rule — decide by what the entity **is**, not by how many domains use
+it today:
+**subject entity** (a business noun — customer, provider, channel, geography —
+that lives in or belongs in a `dim_*` table, or would be shared the moment a
+second domain existed) → `entities/<group>.yaml`; **domain-specific status/type**
+(enumerated values of a column on one fact table, one owner — "active",
+"churned", a collection status) → `domains/<domain>/entities.yaml`.
+A single-domain repo still puts its subject entities in `entities/` — "spans
+domains today" is never the test, because it can't fire until a second domain
+exists. Consumers (including the Nodal platform index) discover `entities/`
+first, so subject entities buried per-domain are slower to retrieve.
+
+## Where a domain comes from
+
+A domain in ACF maps to **how the company already thinks about a slice of the
+business — usually a cluster of dashboards.** The interview discovers domains by
+asking which dashboards exist and who owns them, then treats each coherent cluster
+as a domain. This is why `domain.yaml` carries a `dashboards:` list: a dashboard
+cluster is the unit of "a line of business or function," and it's also the richest
+source of eval seeds (the questions those dashboards answer are real questions).
+
+## File: `context.config.yaml` (the drift seam)
+
+The one file that makes "context lives apart from lineage" safe. It maps each
+domain to its upstream lineage source(s), so a change there can flag stale context.
+See [`template/context.config.yaml`](./template/context.config.yaml).
+
+**When the dbt repo gitignores `target/` (the norm):** drift's clone fallback can't
+find a manifest on `main`. The recommended pattern is the sender workflow
+([`template/dbt-repo/notify-context-repo.yml`](./template/dbt-repo/notify-context-repo.yml)),
+which publishes the parsed `manifest.json` on a single-commit orphan `dbt-manifest`
+branch in the dbt repo; the source entry then reads `ref: dbt-manifest`,
+`manifest_path: manifest.json`. Inline dispatch payloads only work for manifests under
+GitHub's ~64 KB payload cap — real manifests need the branch.
+
+**Multiple warehouses / clouds.** The top-level `warehouse:` is the repo-wide
+*default*. Each `lineage_sources` entry may carry its own `warehouse:` (snowflake |
+bigquery | …) when a company's domains span platforms; an entry without one inherits
+the default. A source's effective platform is `source.warehouse ?? top-level
+warehouse`. There is **no per-domain warehouse field** — a domain's platform is
+derived from whichever sources its `lineage:` references. A single domain whose
+models live on two platforms simply lists one lineage entry per source (the array
+already supports this); don't invent a federated marker. Drift detection must resolve
+each source's platform by this rule and diff against that source's manifest/connection.
+
+```yaml
+version: 0.1
+warehouse: snowflake            # default platform; per-source `warehouse:` overrides it
+lineage_sources:
+  - id: dbt_snowflake
+    type: dbt                   # no `warehouse:` → inherits the default (snowflake)
+    repo: github.com/acme/acme-dbt
+    ref: main
+    manifest_path: target/manifest.json
+  - id: dbt_bq_marketing
+    type: dbt
+    warehouse: bigquery         # this source lives on BigQuery
+    repo: github.com/acme/marketing-dbt
+    ref: main
+    manifest_path: target/manifest.json
+domains:
+  session-financials:
+    lineage:
+      - source: dbt_snowflake
+        models: [fct_session_financials, dim_client, dim_provider]
+    # drift fires when any listed model's column set or test set changes
+  marketing-attribution:        # platform derived from the source → BigQuery
+    lineage:
+      - source: dbt_bq_marketing
+        models: [fct_touchpoints]
+```
+
+## YAML kinds (full field lists in `schemas/`)
+
+### entity (`entities/*.yaml`, `domains/*/entities.yaml`)
+`name`, `description`, `mappings` (column→value meaning), `analytical_notes`,
+`important` (disambiguation), `lineage`, `status` (draft|confirmed).
+
+### metric (`domains/*/metrics.yaml`)
+`name`, `definition` (prose, human-owned), `grain`, `parameters` (what the user
+must specify), `caveats`, `common_filters`, `expression` (optional deterministic
+anchor, below), `lineage`, `status`.
+
+**Deterministic anchor: `expression:`.** An optional per-metric block that makes
+the "generic form" rule precise and schema-checkable — the compile target for
+eval templates, reconciliation, and verification. It is *not* SQL and *not* a
+dialect; it is the structured envelope around a generic-form measure:
+
+- `measure` (required) — the aggregation expression over columns of the metric's
+  `lineage:` models, e.g. `SUM(collected_amount) / SUM(allowed_amount)`. The
+  pattern-not-paste rules ("Query patterns", above) apply verbatim:
+  `<placeholders>` for parameter values, business-constant literals welcome, no
+  statistics, never a runnable query. The FROM is the metric's `lineage:`, the
+  WHERE is `mandatory_filters`, the GROUP BY is a subset of `allowed_dimensions`.
+- `mandatory_filters` — filters without which the metric is *wrong* (vs.
+  `common_filters`, which stays advisory prose). Structured objects
+  `{field, op, value?, reason?}`; `reason` names the failure the filter prevents.
+  `op` is an open string, not an enum — the working vocabulary is `=`, `!=`, `<`,
+  `<=`, `>`, `>=`, `in`, `not_in`, `like`/`not_like`, `ilike`/`not_ilike`,
+  `is_null`, `is_not_null`, `between`; `value` may carry generic-form expressions
+  (e.g. `<as_of_date> - 45 days`).
+- `allowed_dimensions` — column names (dotted `model.column` when ambiguous) the
+  metric may be sliced by. Omitted = not yet enumerated; present = exhaustive for
+  verified slicing.
+
+A metric carrying an `expression:` MUST also state its `grain` and pin its
+`lineage` (schema-enforced) — that is what keeps the anchor drift-covered. By
+convention its lineage models are a subset of the domain's lineage in
+`context.config.yaml`, so an upstream model change re-flags `metrics.yaml` for
+re-confirmation. Like everything else, the expression is analyst-confirmed
+(design rule 1): adding or editing one on a confirmed metric flips the metric
+back to `status: draft` until re-confirmed.
+
+### domain (`domains/*/domain.yaml`)
+`name`, `summary`, `tables`, `grain`, `dashboards`, `owner`, `lineage`.
+
+Each `dashboards[]` entry carries `name`, `owner`, `canonical_question`, and
+optionally `url` and `tool` (the BI platform, e.g. `plotly`, `tableau`,
+`metabase`). `url` + `tool` are what let Stage 5 verify against the dashboard
+*itself* (the `dashboard-verify` skill reads it in the analyst's browser)
+instead of asking the analyst to read numbers aloud — and they declare the
+trusted surface precisely, so a redesigned or retired dashboard is detectable
+drift rather than a silent mismatch against a prose description.
+
+### eval seed (`evals/seeds/*.seed.yaml`)
+`question`, `intent` (the disambiguated meaning), `ir` (optional structured
+decomposition, below), `expected` (one of:
+`semantic_entity` | `sql_shape` | `value_at_snapshot`), `provenance`
+(`interview` | `dashboard` | `correction` | `generated`), `domain`, `status`, and
+the optional `verified_query_file` (below). See
+[`SPEC` of seeds](./schemas/evalseed.schema.json) and
+[harvesting reference](./skills/context-interview/references/eval-seed-harvesting.md).
+
+**The IR: seeds store structure, not just phrasing.** The optional `ir:` block
+([`schemas/ir.schema.json`](./schemas/ir.schema.json)) records the question's
+decomposition — `metric` (a name reference into that domain's `metrics.yaml`),
+`dimensions`, `filters` (same `{field, op, value?, reason?}` shape as a metric
+expression's `mandatory_filters`), `grain` (omitted = the metric's), and
+`time_window`. It *complements* the other fields, never replaces them: `intent`
+stays the human-readable disambiguation, `expected` stays the grading contract.
+What the IR buys: coverage becomes exactly computable (a question is covered iff
+its `ir.metric` resolves to an expression-bearing definition), eval templates
+derive mechanically from definitions, and the disambiguator's production output
+and the eval seed become the same object — one contract between routing and
+evaluation. Staleness rule: evergreen seeds (`sql_shape`, `semantic_entity`) use
+*relative* `time_window` tokens (`last_quarter`, `last_30_days`, `ytd`, …);
+absolute `{start, end}` windows belong only on `value_at_snapshot` seeds, whose
+`expected.as_of` already pins them to a date.
+
+**Seeds are the one place a number is allowed — but the SQL is never committed.**
+Design rule 2 ("no statistics in context") and the pattern-not-paste rule ("Query
+patterns", above) govern *context files* — the things the agent reads at query time
+(`reference.md`, `metrics.yaml`). A seed is the *ground-truth* layer, not context, so a
+`value_at_snapshot` number is allowed in the seed YAML, pinned to an `as_of` date so
+it can't masquerade as live truth. The blessed SQL, however, is **deliberately kept
+out of git**: SQL goes stale fast and must not be cloneable from a published context
+repo, so it lives in a local, gitignored sidecar (`evals/verified/<name>.sql`) and
+the committed seed carries only a `verified_query_file` pointer to it.
+
+`verified_query_file` is the relative path to that sidecar — the blessed read-only
+SQL whose result the analyst confirmed against a trusted source (a dashboard). It is
+written **only on a verified match** by Stage 5 live verification (below) and is the
+reusable "answer key" for the seed; the harness reads it locally where present and
+degrades to grading `value_at_snapshot` / `sql_shape` where it is absent.
+
+## Live verification (Stage 5) and `evals/runs/`
+
+The interview's [Stage 5](./skills/context-interview/references/live-verification.md)
+answers each candidate question twice — once with context off, once on — against the
+live warehouse, then has the analyst confirm the on-answer against their dashboard.
+The dashboard's numbers are read either by the analyst aloud or — when a browser MCP
+binding is available — by the
+[dashboard-verify skill](./skills/dashboard-verify/SKILL.md), which reads the
+dashboard in the analyst's own local browser and emits a tier-tagged capture
+(values + filter state) under `evals/captures/<timestamp>/`, alongside a
+`reconciliation.md` diffing capture against answers; the analyst still blesses
+every value, with its extraction tier visible. A confirmed match upgrades the seed
+to `provenance: dashboard`, `expected.kind: value_at_snapshot` (with `value` +
+`as_of`) and writes the blessed SQL to the gitignored sidecar
+`evals/verified/<name>.sql`, pointed to by the seed's `verified_query_file`. A
+mismatch is harvested back into the domain's `reference.md` / `known-issues.md`
+plus a `provenance: correction` seed. The per-answer agent traces under
+`evals/runs/<timestamp>/` and the captures under `evals/captures/` are generated
+output, not ACF, and are gitignored in a generated context repo; the durable
+outputs are the seeds and the updated context files. One dashboard-verify artifact
+IS committed: learned per-dashboard playbooks in `evals/playbooks/<slug>.md` —
+replay recipes (selectors, completion conditions; no data values), maintained like
+any other authored file.
+
+## Versioning
+
+ACF is versioned at the repo root (`context.config.yaml: version`). The harness
+declares which ACF versions it supports. Breaking changes bump the minor while
+v0.x, the major after 1.0.
+
+## Relationship to other formats
+
+ACF is **one** input to the measurement harness, not a prerequisite. The harness
+also reads Kaelio `ktx` (`semantic-layer/*.yaml` + `wiki/*.md`), dbt
+(`manifest.json` + `schema.yml` docs), raw markdown, and agent data-analysis
+skills (`SKILL.md` + `references/`). See
+[`eval_harness/INTERFACE.md`](./eval_harness/INTERFACE.md) for the normalized
+intermediate representation all of these map into.

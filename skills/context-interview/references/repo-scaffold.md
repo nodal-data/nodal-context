@@ -5,15 +5,17 @@ per project.
 
 ## Lay down the files
 
-1. **Run the scaffold script** from the cloned tool repo — do not copy files by hand:
+1. **Run the bundled scaffold script** — do not copy files by hand. Resolve the
+   script from the directory containing the loaded `context-interview/SKILL.md`:
 
    ```
-   python3 scripts/scaffold.py <target-dir>
+   python3 <resolved-skill-directory>/scripts/scaffold.py <target-dir>
    ```
 
-   (default target `../analytics-context/` — a sibling of the cloned tool repo, so
-   the tool repo is never authored into). The script is the single source of truth
-   for the file list. It copies two layers and then self-checks:
+   Resolve the default `../analytics-context/` from the user's project root,
+   display the absolute destination, and get confirmation before writing. The
+   bundled manifest is the single source of truth for the file list. It copies two
+   layers and then self-checks:
 
    - **The template** (the authorable content): empty `company/`, a
      `_domain-template/`, `entities/`, `evals/seeds/`, `AGENTS.md`, `CLAUDE.md`
@@ -29,12 +31,14 @@ per project.
      `scripts/dbt_extract.py` (which `drift.py` imports),
      `scripts/query_history_extract.py` (the Stage-0 query-history miner —
      re-mining and the upcoming reconciliation mode run from the context repo
-     root), and **`eval_harness/`** — vendored because `eval-delta.yml` runs
+     root), `scripts/compile_skill.py`, the format's `SPEC.md`, and
+     **`eval_harness/`** — vendored because `eval-delta.yml` runs
      `python -m eval_harness.run` from the context repo root and there is no pip
      package to install it from.
 
    **Hard gate: do not proceed to Stage 1 until the script's self-check passes**
-   (`python3 scripts/scaffold.py --check <target-dir>` exits 0). A repo that skips
+   (run the same resolved scaffold script with `--check <target-dir>`; it exits
+   0). A repo that skips
    part of the support set ships broken CI — this is exactly how a missing
    `schemas/` or `eval_harness/` turns into red workflows on the customer's first PR.
 
@@ -73,7 +77,7 @@ as each domain that uses them is reached. Don't enumerate every source now.
 **`repo:` is the durable CI identity — never a local path.** The analyst points you
 at a *local* dbt clone for extraction (Stage 0); that path is session state and must
 never be written to `context.config.yaml` — the drift workflow clones `repo:` in CI,
-and a filesystem path (`local:…`, `/Users/…`) can never work there. Don't ask the
+and an absolute machine-local filesystem path can never work there. Don't ask the
 analyst for the GitHub path either — derive it: run
 `git -C <local-dbt-path> remote get-url origin`, normalize to `github.com/org/repo`,
 and confirm in one line ("I'll record `github.com/acme/acme-dbt` as the source CI
@@ -145,7 +149,7 @@ A context repo is identified by `context.config.yaml` at its root. When Stage 0
 gathers candidates, search only the common places — **never a full-disk scan or an
 unbounded `find` over the whole home directory** (slow, intrusive,
 permission-heavy). This bounded loop covers everything within three levels down of
-the current directory and its 2–3 nearest ancestors, excludes the tool repo's own
+the current directory and its 2–3 nearest ancestors, excludes distribution
 `template/` and `examples/` copies (false positives), and dedupes overlapping
 anchors; it runs in well under a second:
 
@@ -182,7 +186,8 @@ asking.
 **A fresh clone (teammate handoff) is the same resume.** A teammate who clones the
 context repo on another machine already has everything committed — the authored
 content *and* the full CI support set — so there is nothing to scaffold. Run
-`python3 scripts/scaffold.py --check <target-dir>` once to confirm the clone is
+run the installed skill's scaffold script with `--check <target-dir>` once to
+confirm the clone is
 intact, then resume as above. Two things deliberately do **not** travel with the
 clone:
 
@@ -199,11 +204,12 @@ clone:
   `python .ci/drift.py --update-baseline --manifest <source_id>=<path>`.
 
 To refresh an existing repo's CI support set (workflows, `.ci/`, `schemas/`,
-`scripts/dbt_extract.py`, `eval_harness/`) — e.g. after the tool repo ships fixes,
+repo-local scripts, `SPEC.md`, and `eval_harness/`) — e.g. after an installed
+Nodal update ships fixes,
 or to repair a repo scaffolded before the support set existed — run:
 
 ```
-python3 scripts/scaffold.py --upgrade <target-dir>
+python3 <resolved-skill-directory>/scripts/scaffold.py --upgrade <target-dir>
 ```
 
 Upgrade mode never touches authored content (`company/`, `domains/`, `entities/`,

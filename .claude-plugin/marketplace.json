@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "nodal",
+  "description": "Nodal analytics skills",
+  "owner": {
+    "name": "Nodal Data"
+  },
+  "plugins": [
+    {
+      "name": "nodal-analytics",
+      "description": "Build analytics context through interviews and verify it against live dashboards.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Nodal Data"
+      },
+      "source": "./",
+      "category": "data"
+    }
+  ]
+}
+

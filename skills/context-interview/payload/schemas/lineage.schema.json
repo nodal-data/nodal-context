@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nodaldata.io/acf/lineage.schema.json",
+  "title": "ACF Lineage Pointer",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["source"],
+    "properties": {
+      "source": { "type": "string" },
+      "models": { "type": "array", "items": { "type": "string" } }
+    }
+  }
+}

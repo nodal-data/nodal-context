@@ -1,0 +1,10 @@
+# entities.yaml — DOMAIN-SPECIFIC entities only (status/type on a single fact
+# table, one owner). Cross-domain entities go in /entities/ instead. See SPEC.md.
+entities:
+  - name: <e.g. claim_status>
+    description: <what this attribute means>
+    status: draft
+    mappings:                    # column value -> business meaning
+      <value>: <meaning>
+    important: <disambiguation / common misunderstanding>
+    analytical_notes: <when this matters; when to clarify with the user>
