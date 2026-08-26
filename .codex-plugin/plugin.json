@@ -1,7 +1,7 @@
 {
   "name": "nodal-analytics",
-  "version": "1.0.0",
-  "description": "Build analytics context through interviews and verify it against live dashboards.",
+  "version": "1.1.0",
+  "description": "Plan and verify analytics with governed, multi-source context and interview-built ground truth.",
   "author": {
     "name": "Nodal Data",
     "url": "https://github.com/nodal-data"
@@ -13,8 +13,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Nodal Analytics",
-    "shortDescription": "Interview-built analytics context",
-    "longDescription": "Build a governed analytics context repository with an analyst, then verify answers against live dashboards.",
+    "shortDescription": "Governed analytics planning and context",
+    "longDescription": "Plan read-only analytics from ACF, KTX, dbt, and approved documentation; verify results; and build human-owned ground truth through interviews.",
     "developerName": "Nodal Data",
     "category": "Data & Analytics",
     "capabilities": ["Read", "Write"],
@@ -22,9 +22,10 @@
     "defaultPrompt": [
       "Set up Nodal for this analytics project.",
       "Build an analytics context layer with me.",
-      "Verify this answer against my dashboard."
+      "Plan this analytics question before querying the warehouse.",
+      "Verify whether this SQL and result match the approved plan.",
+      "Capture an analyst handoff into governed context."
     ],
     "brandColor": "#3B5CCC"
   }
 }
-

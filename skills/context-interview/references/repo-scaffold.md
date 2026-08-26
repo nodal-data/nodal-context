@@ -21,8 +21,9 @@ per project.
      `_domain-template/`, `entities/`, `evals/seeds/`, `AGENTS.md`, `CLAUDE.md`
      (consumption-first — how an agent answers questions from this repo),
      `AUTHORING.md` (how to edit it), `README.md` (the end-user getting-started
-     doc), `.claude/skills/data-question/` (the bundled "answer a question from
-     this context" skill), and `context.config.yaml`.
+     doc), and `context.config.yaml`. `AGENTS.md` and `CLAUDE.md` make the
+     generated repo directly usable by agents; the installable `analytics-plan`
+     skill adds plan approval, multi-source evidence, and uncertainty scoring.
    - **The CI support set**, so validation, drift, and the eval delta run on PRs
      from day one: `.github/workflows/`, `.ci/` (the workflow scripts —
      `validate.py`, `drift.py`, `collect_manifests.py`, `suggest.py`,

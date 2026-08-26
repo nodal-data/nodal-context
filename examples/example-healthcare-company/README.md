@@ -29,11 +29,9 @@ Then ask a real data question — `CLAUDE.md` auto-loads from this directory and
 the agent to route via the relevant `domains/<domain>/reference.md`, honor the
 caveats, and query read-only.
 
-Or make it a one-liner with the bundled skill:
-
-```
-/data-question "what was our collection rate by payer last quarter?"
-```
+With the Nodal plugin installed, ask the question normally and `analytics-plan`
+will plan it against this context before running read-only SQL. Without the
+plugin, `CLAUDE.md` still carries the complete ACF routing instructions.
 
 ## Use it with Codex / other agents
 

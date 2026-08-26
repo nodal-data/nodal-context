@@ -76,12 +76,13 @@ down the answers in a format an agent can query and a team can review.
 
 Before Stage 0, look for the nearest `.nodal.local.json` from the user's current
 directory upward, stopping at its git root. Accept only `version: 1`. Treat it as
-a hint, never as proof: re-probe live warehouse, metadata, query-history, and
-browser capabilities before relying on them, especially when `verified_at` is
-stale. If the file is absent, invalid, or a probe fails, report the degraded path
-and continue normally. Never write or repair this file; only the explicitly
-invoked `setup-nodal` skill may do that. Never expose raw authentication errors or
-secrets in context files or reports.
+a hint, never as proof: use enabled local `context_sources` to locate ACF, KTX,
+dbt, or documentation candidates, then re-probe live source, warehouse, metadata,
+query-history, and browser capabilities before relying on them, especially when
+`verified_at` is stale. If the file is absent, invalid, or a probe fails, report
+the degraded path and continue normally. Never write or repair this file; only
+the explicitly invoked `setup-nodal` skill may do that. Never expose raw
+authentication errors or secrets in context files or reports.
 
 ## The interview proceeds in six stages
 
@@ -174,8 +175,7 @@ you enter it.
      never into a directory that already contains a `context.config.yaml`:
      resolve `scripts/scaffold.py` from this loaded skill directory and run it
      with the confirmed target. The script copies the template (end-user
-     `README.md`, consumption-first `CLAUDE.md`, the bundled
-     `.claude/skills/data-question/` skill, …) **plus** the CI support set
+     `README.md`, consumption-first `CLAUDE.md`, and `AGENTS.md`) **plus** the CI support set
      (`.github/workflows/`, `.ci/`, `schemas/`, `SPEC.md`, context-repo-local
      scripts, and `eval_harness/`) and self-checks the result. **Confirm the self-check
      passes before continuing.** Then `git init -b main` + an initial commit — see

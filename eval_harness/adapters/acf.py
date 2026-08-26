@@ -1,10 +1,10 @@
 """ACF adapter: an Analytics Context Format repo (or example dir) -> NCR.
 
 Seeds come from evals/seeds/*.seed.yaml (each carries its own `domain`). The context-on
-payload per domain is assembled from exactly the material the `data-question` skill tells
-an agent to read: company terminology/overview, the domain's reference.md (routing
-IF/DO-NOT + caveats), metrics.yaml, and entity files. Missing pieces are simply skipped —
-the example repos don't all carry metrics/entities.
+payload per domain is assembled from the ACF consumption contract in AGENTS.md and
+CLAUDE.md: company terminology/overview, the domain's reference.md (routing IF/DO-NOT
++ caveats), metrics.yaml, and entity files. Missing pieces are simply skipped — the
+example repos don't all carry metrics/entities.
 """
 from pathlib import Path
 

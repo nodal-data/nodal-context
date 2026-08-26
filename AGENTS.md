@@ -1,7 +1,7 @@
 # Nodal Context Contributor Guide
 
 This repository is the installable Nodal Analytics package and the canonical
-source for Analytics Context Format (ACF), its three skills, generated context
+source for Analytics Context Format (ACF), its six skills, generated context
 repositories, and the evaluation harness. `FINDINGS.md` is ignored local scratch;
 do not edit or include it in package work.
 

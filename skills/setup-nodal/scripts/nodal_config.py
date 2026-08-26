@@ -22,7 +22,11 @@ CAPABILITY_STATUSES = {
     "metadata": {"ok", "unavailable", "denied"},
     "query_history": {"full", "limited", "unavailable", "denied", "unsupported"},
 }
-TOP_KEYS = {"version", "warehouse", "dbt", "context_repo", "browser"}
+CONTEXT_KINDS = {"acf", "ktx", "dbt", "markdown", "agent-skill", "documentation"}
+CONTEXT_ACCESS = {"local", "mcp"}
+CONTEXT_AUTHORITIES = {"confirmed", "governed", "documented", "behavioral", "inferred"}
+CONTEXT_STATUSES = {"ok", "unavailable", "denied", "unsupported"}
+TOP_KEYS = {"version", "warehouse", "context_sources", "browser"}
 
 
 class ConfigError(ValueError):
@@ -90,11 +94,59 @@ def validate_config(config):
             )
         _verified_at(capability.get("verified_at"), f"warehouse.capabilities.{name}.verified_at")
 
-    for name in ("dbt", "context_repo"):
-        section = _object(config.get(name), name)
-        _only_keys(section, {"local_path", "repo"}, name)
-        _string_or_null(section.get("local_path"), f"{name}.local_path")
-        _string_or_null(section.get("repo"), f"{name}.repo")
+    sources = config.get("context_sources")
+    if not isinstance(sources, list):
+        raise ConfigError("context_sources must be an array")
+    names = set()
+    for index, raw_source in enumerate(sources):
+        label = f"context_sources[{index}]"
+        source = _object(raw_source, label)
+        _only_keys(
+            source,
+            {
+                "name",
+                "kind",
+                "access",
+                "location",
+                "binding",
+                "repo",
+                "authority",
+                "status",
+                "verified_at",
+                "enabled",
+            },
+            label,
+        )
+        name = source.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ConfigError(f"{label}.name must be a non-empty string")
+        if name in names:
+            raise ConfigError(f"context source name must be unique: {name}")
+        names.add(name)
+        if source.get("kind") not in CONTEXT_KINDS:
+            raise ConfigError(f"{label}.kind must be one of {', '.join(sorted(CONTEXT_KINDS))}")
+        access = source.get("access")
+        if access not in CONTEXT_ACCESS:
+            raise ConfigError(f"{label}.access must be one of {', '.join(sorted(CONTEXT_ACCESS))}")
+        for field in ("location", "binding", "repo"):
+            _string_or_null(source.get(field), f"{label}.{field}")
+        if access == "local" and not source.get("location"):
+            raise ConfigError(f"{label}.location is required for local access")
+        if access == "local" and source.get("binding") is not None:
+            raise ConfigError(f"{label}.binding must be null for local access")
+        if access == "mcp" and not source.get("binding"):
+            raise ConfigError(f"{label}.binding is required for MCP access")
+        if access == "mcp" and source.get("location") is not None:
+            raise ConfigError(f"{label}.location must be null for MCP access")
+        if source.get("authority") not in CONTEXT_AUTHORITIES:
+            raise ConfigError(
+                f"{label}.authority must be one of {', '.join(sorted(CONTEXT_AUTHORITIES))}"
+            )
+        if source.get("status") not in CONTEXT_STATUSES:
+            raise ConfigError(f"{label}.status must be one of {', '.join(sorted(CONTEXT_STATUSES))}")
+        _verified_at(source.get("verified_at"), f"{label}.verified_at")
+        if not isinstance(source.get("enabled"), bool):
+            raise ConfigError(f"{label}.enabled must be a boolean")
 
     browser = _object(config.get("browser"), "browser")
     _only_keys(browser, {"binding"}, "browser")
@@ -216,4 +268,3 @@ def main(argv=None):
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -8,8 +8,8 @@
   "plugins": [
     {
       "name": "nodal-analytics",
-      "description": "Build analytics context through interviews and verify it against live dashboards.",
-      "version": "1.0.0",
+      "description": "Plan and verify analytics with governed, multi-source context and interview-built ground truth.",
+      "version": "1.1.0",
       "author": {
         "name": "Nodal Data"
       },
@@ -18,4 +18,3 @@
     }
   ]
 }
-
