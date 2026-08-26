@@ -67,5 +67,12 @@ Also validate `.codex-plugin/plugin.json` and the repo marketplace with the
 repository checks. Do not mark a packaging migration complete until repository
 and isolated installed-skill scaffold smoke tests pass.
 
+The tracked clean-room harness under `scripts/integration/` is an opt-in release
+test. Its offline preparation and assertion behavior is covered by the direct
+test runner; real Claude, Codex, skills.sh, warehouse, and dashboard runs remain
+maintainer-operated integration checks. Keep briefs, MCP configuration, browser
+profiles, credentials, and host-specific settings in ignored local files. The
+harness must never delete a caller-supplied directory.
+
 Commit, push, publish, and global agent configuration changes happen only when
 the user explicitly requests them.
