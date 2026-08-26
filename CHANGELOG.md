@@ -1,6 +1,20 @@
 # Changelog
 
-## 1.0.0 — Unreleased
+## 1.1.0 — Unreleased
+
+- Add `analytics-plan` as the single plan-before-query workflow across ACF, KTX,
+  dbt, local documentation, approved documentation MCPs, and warehouse evidence.
+- Add an auditable, explicitly uncalibrated uncertainty v0 with expert-escalation
+  gates before and after execution.
+- Add `verify-result` for plan-fidelity, grain/join, and plausibility review.
+- Add `analyst-handoff` as a transition-focused orchestrator over
+  `context-interview`.
+- Replace generated `data-question` with the universal `analytics-plan`; generated
+  context repos remain directly consumable through `AGENTS.md` and `CLAUDE.md`.
+- Extend `.nodal.local.json` with classified local and MCP context sources while
+  continuing to reject secrets and raw connection errors.
+
+## 1.0.0
 
 - Package `context-interview`, `dashboard-verify`, and explicit-only
   `setup-nodal` for Claude, Codex, and skills.sh installation.
@@ -13,16 +27,20 @@
 ## Release checklist
 
 - [ ] Run `python3 scripts/sync_skill_payload.py --check` and all tool CI locally.
-- [ ] Install from a temporary checkout with Claude; confirm all three namespaced
+- [ ] Install from a temporary checkout with Claude; confirm all six namespaced
       skills and bundled hidden files/scripts are present.
 - [ ] Install from a temporary checkout with Codex; list the available plugin and
-      confirm all three skills load.
+      confirm all six skills load.
 - [ ] Install into a temporary project with `npx skills@latest add`; confirm
       scripts, executable modes, `.claude`, `.gitignore`, and `.gitkeep` survive.
 - [ ] Invoke setup in each native host, confirm `.nodal.local.json`, and consent to
       a test `.mcp.json` merge without overwriting an existing binding.
 - [ ] With authenticated read-only connections, run all three capability probes.
 - [ ] Complete a `context-interview` test drive against a temporary context repo.
+- [ ] Exercise `analytics-plan` against ACF, KTX, and an approved documentation
+      MCP; verify an evidence conflict produces a clarification and escalation.
+- [ ] Run `verify-result` against a missing mandatory filter and a fanout fixture.
+- [ ] Complete an `analyst-handoff` domain and confirm it emits eval seeds.
 - [ ] Run the tracked clean-room harness against the source checkout, installed
       Claude and Codex plugins, and a temporary skills.sh installation; complete
       its resume check and generated-repository assertions.

@@ -80,7 +80,6 @@ allowed dimensions. The `reference.md` pattern keeps the routing prose and the
 ├── AGENTS.md                    # machine orientation (navigate + answer a question)
 ├── CLAUDE.md                    # consumption-first: how an agent answers from this repo
 ├── AUTHORING.md                 # authoring rules for agents editing this repo
-├── .claude/skills/data-question/ # bundled skill: answer a question from this context
 ├── company/
 │   ├── overview.md              # business model, what the company does
 │   ├── terminology.md           # cross-domain glossary

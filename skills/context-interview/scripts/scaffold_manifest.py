@@ -37,7 +37,6 @@ ARTIFACTS = (
 
     # Fresh-only authoring scaffold. These rows deliberately retain dot paths.
     Artifact("template/.gitignore", "payload/template/.gitignore", ".gitignore", upgrade=False),
-    Artifact("template/.claude", "payload/template/.claude", ".claude", upgrade=False),
     Artifact("template/AGENTS.md", "payload/template/AGENTS.md", "AGENTS.md", upgrade=False),
     Artifact("template/AUTHORING.md", "payload/template/AUTHORING.md", "AUTHORING.md", upgrade=False),
     Artifact("template/CLAUDE.md", "payload/template/CLAUDE.md", "CLAUDE.md", upgrade=False),
@@ -84,4 +83,3 @@ ARTIFACTS = (
 IGNORED_NAMES = frozenset({"__pycache__", ".DS_Store", ".pytest_cache"})
 IGNORED_SUFFIXES = (".pyc",)
 REQUIRED_CONTEXT_MARKER = "context.config.yaml"
-

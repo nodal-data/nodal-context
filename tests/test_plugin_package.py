@@ -15,7 +15,7 @@ def run():
     codex = load(".codex-plugin/plugin.json")
     for manifest in (claude, codex):
         assert manifest["name"] == "nodal-analytics"
-        assert manifest["version"] == "1.0.0"
+        assert manifest["version"] == "1.1.0"
         assert manifest["license"] == "Apache-2.0"
         assert manifest["skills"] == "./skills/"
         assert "mcpServers" not in manifest
@@ -26,6 +26,8 @@ def run():
         entry = market["plugins"][0]
         assert market["name"] == "nodal"
         assert entry["name"] == "nodal-analytics"
+        if "version" in entry:
+            assert entry["version"] == claude["version"] == codex["version"]
 
     codex_entry = load(".agents/plugins/marketplace.json")["plugins"][0]
     assert codex_entry["source"] == {"source": "local", "path": "./"}
@@ -34,7 +36,19 @@ def run():
         "authentication": "ON_USE",
     }
     assert (ROOT / ".claude/skills/setup-nodal").resolve() == ROOT / "skills/setup-nodal"
+    expected_skills = {
+        "analytics-plan",
+        "analyst-handoff",
+        "context-interview",
+        "dashboard-verify",
+        "setup-nodal",
+        "verify-result",
+    }
+    assert {path.parent.name for path in (ROOT / "skills").glob("*/SKILL.md")} == expected_skills
+    for name in expected_skills:
+        assert (ROOT / ".claude/skills" / name).resolve() == ROOT / "skills" / name
     assert not (ROOT / ".agents/skills").exists()
+    assert not (ROOT / "template/.claude/skills/data-question").exists()
     setup = (ROOT / "skills/setup-nodal/SKILL.md").read_text()
     assert "disable-model-invocation: true" in setup.split("---", 2)[1]
     assert "allow_implicit_invocation: false" in (

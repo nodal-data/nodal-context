@@ -82,11 +82,13 @@ def run():
         for path in (
             "SPEC.md",
             "scripts/compile_skill.py",
-            ".claude/skills/data-question/SKILL.md",
             "evals/captures/.gitkeep",
             ".github/workflows/validate-context.yml",
         ):
             assert (target / path).exists(), path
+        assert not (target / ".claude/skills/data-question").exists()
+        assert "Answering a data question" in (target / "AGENTS.md").read_text()
+        assert "Answering a data question" in (target / "CLAUDE.md").read_text()
         compiled = subprocess.run(
             [sys.executable, str(target / "scripts/compile_skill.py"), "--help"],
             cwd=target,

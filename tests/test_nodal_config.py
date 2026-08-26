@@ -26,8 +26,32 @@ def sample():
                 "query_history": {"status": "full", "verified_at": timestamp},
             },
         },
-        "dbt": {"local_path": "../acme-dbt", "repo": "github.com/acme/acme-dbt"},
-        "context_repo": {"local_path": "../analytics-context", "repo": None},
+        "context_sources": [
+            {
+                "name": "analytics-context",
+                "kind": "acf",
+                "access": "local",
+                "location": "../analytics-context",
+                "binding": None,
+                "repo": None,
+                "authority": "confirmed",
+                "status": "ok",
+                "verified_at": timestamp,
+                "enabled": True,
+            },
+            {
+                "name": "business-wiki",
+                "kind": "documentation",
+                "access": "mcp",
+                "location": None,
+                "binding": "notion",
+                "repo": None,
+                "authority": "documented",
+                "status": "ok",
+                "verified_at": timestamp,
+                "enabled": True,
+            },
+        ],
         "browser": {"binding": "chrome-devtools"},
     }
 
@@ -72,6 +96,24 @@ def run():
             assert "secret-like field" in str(exc)
         else:
             raise AssertionError("secret-like field accepted")
+
+        duplicate = sample()
+        duplicate["context_sources"].append(dict(duplicate["context_sources"][0]))
+        try:
+            nodal_config.validate_config(duplicate)
+        except nodal_config.ConfigError as exc:
+            assert "must be unique" in str(exc)
+        else:
+            raise AssertionError("duplicate context source name accepted")
+
+        invalid_access = sample()
+        invalid_access["context_sources"][0]["binding"] = "notion"
+        try:
+            nodal_config.validate_config(invalid_access)
+        except nodal_config.ConfigError as exc:
+            assert "must be null for local access" in str(exc)
+        else:
+            raise AssertionError("local source with MCP binding accepted")
 
         mcp = root / ".mcp.json"
         try:

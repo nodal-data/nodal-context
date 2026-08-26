@@ -21,7 +21,14 @@ from assert_context_repo import check_context_repo
 
 ROOT = Path(__file__).resolve().parents[2]
 PLUGIN_ID = "nodal-analytics@nodal"
-SKILL_NAMES = ("context-interview", "dashboard-verify", "setup-nodal")
+SKILL_NAMES = (
+    "analytics-plan",
+    "analyst-handoff",
+    "context-interview",
+    "dashboard-verify",
+    "setup-nodal",
+    "verify-result",
+)
 ROOM_MARKER = ".nodal-clean-test.json"
 RESUME_MARKER = ".nodal-clean-test-resume-marker"
 

@@ -10,10 +10,11 @@ from pathlib import Path
 
 REQUIRED_FILES = (
     "SPEC.md",
+    "AGENTS.md",
+    "CLAUDE.md",
     "context.config.yaml",
     ".gitignore",
     ".ci/validate.py",
-    ".claude/skills/data-question/SKILL.md",
     ".github/workflows/validate-context.yml",
     "eval_harness/__init__.py",
     "eval_harness/run.py",
@@ -51,6 +52,13 @@ def check_context_repo(target, resume_marker=None):
         path = target / relative
         if path.is_file() and not os.access(path, os.X_OK):
             problems.append(f"not executable: {relative}")
+
+    if (target / ".claude/skills/data-question").exists():
+        problems.append("obsolete data-question skill is present")
+    for relative in ("AGENTS.md", "CLAUDE.md"):
+        path = target / relative
+        if path.is_file() and "Answering a data question" not in path.read_text():
+            problems.append(f"{relative} lacks question-answering guidance")
 
     if resume_marker:
         marker = target / resume_marker

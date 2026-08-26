@@ -50,6 +50,9 @@ def run():
         project = source_room / "project"
         assert (project / "SPEC.md").is_file()
         assert (project / ".agents/skills/context-interview/SKILL.md").is_file()
+        assert (project / ".agents/skills/analytics-plan/SKILL.md").is_file()
+        assert (project / ".agents/skills/verify-result/SKILL.md").is_file()
+        assert (project / ".agents/skills/analyst-handoff/SKILL.md").is_file()
         assert (project / ".git").is_dir()
         for private in (
             "FINDINGS.md",
@@ -100,6 +103,9 @@ def run():
         )
         assert result.returncode == 0, result.stderr + result.stdout
         assert (skills_room / "project/.claude/skills/setup-nodal/SKILL.md").is_file()
+        assert (skills_room / "project/.claude/skills/analytics-plan/SKILL.md").is_file()
+        assert (skills_room / "project/.claude/skills/verify-result/SKILL.md").is_file()
+        assert (skills_room / "project/.claude/skills/analyst-handoff/SKILL.md").is_file()
         assert not (skills_room / "project/.agents").exists()
 
         for mode in ("claude-plugin", "codex-plugin"):
