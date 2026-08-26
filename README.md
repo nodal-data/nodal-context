@@ -213,6 +213,20 @@ confirms the resolved destination before writing. The generated repository is th
 deliverable and contains its own `SPEC.md`, schemas, scripts, CI, and harness, so
 continuation does not require a Nodal source checkout.
 
+## Maintainer integration testing
+
+`scripts/integration/clean_test.sh` is the tracked, opt-in clean-room harness for
+source-checkout, installed Claude plugin, installed Codex plugin, and skills.sh
+test runs. It creates a unique temporary room without copying ignored local data,
+never deletes a supplied directory, and validates the generated context repo
+after the agent exits. Authenticated host, warehouse, and dashboard runs remain
+manual release checks rather than ordinary CI.
+
+Private simulated-analyst briefs, MCP configuration, browser profiles, and local
+permission settings stay ignored. See
+[`scripts/integration/README.md`](./scripts/integration/README.md) for usage,
+installed-package modes, automated runs, and the two-run resume check.
+
 ## Repo layout
 
 ```

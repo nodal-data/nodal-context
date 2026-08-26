@@ -12,8 +12,10 @@ shorelane.context.md
 # macOS
 .DS_Store
 
-# Local clean-room test launcher
+# Local clean-room operator wrappers (the reusable harness is tracked under
+# scripts/integration/).
 clean-test.sh
+clean-test.local.sh
 
 # Python
 __pycache__/

@@ -7,6 +7,8 @@
 - Add the manifest-driven, hash-checked context scaffold distribution mirror.
 - Add guarded project-local configuration and consent-based browser binding setup.
 - Preserve clone-and-run development and generated-repository workflows.
+- Add a tracked, non-destructive clean-room integration harness while keeping
+  operator briefs, connection configuration, and permissions local.
 
 ## Release checklist
 
@@ -21,6 +23,9 @@
       a test `.mcp.json` merge without overwriting an existing binding.
 - [ ] With authenticated read-only connections, run all three capability probes.
 - [ ] Complete a `context-interview` test drive against a temporary context repo.
+- [ ] Run the tracked clean-room harness against the source checkout, installed
+      Claude and Codex plugins, and a temporary skills.sh installation; complete
+      its resume check and generated-repository assertions.
 - [ ] Invoke `dashboard-verify` against an authenticated dashboard and reconcile
       at least one value and filter window.
 - [ ] Confirm repository and isolated installed-skill scaffold smoke tests pass.
