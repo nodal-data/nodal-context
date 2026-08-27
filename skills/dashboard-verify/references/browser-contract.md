@@ -47,6 +47,22 @@ When called from context-interview Stage 5, report "no binding" back to the
 interview instead of blocking: it falls back to the human read for this session
 and can offer the setup for next time.
 
+**Target-not-found recovery.** A stale saved URL, a landing page that does not
+contain the named dashboard, or one bounded catalog lookup with no match is not
+a reason to browse more widely. Ask once:
+
+> I couldn't find `<dashboard>` from the saved target. Please open that exact
+> dashboard in the connected browser, make sure you're signed in, and paste its
+> normal address-bar URL (not credentials or a tokenized share link). I'll retry
+> it directly.
+
+Navigate to the supplied URL and retry once. If it reaches a login wall, use the
+skill's login handoff and one of the concrete completion conditions below; the
+URL is not a substitute for an authenticated browser session. If the named
+dashboard is still not visible, report it as unavailable and return to the caller
+(Stage 5 falls back to a human read). Do not search other sites, ask for
+credentials, or loop on more URLs.
+
 chrome-devtools notes (learned live): `--user-data-dir` and `--isolated` are
 **mutually exclusive** — passing both (even `--isolated=false`) makes the server
 exit at startup, which the client reports as a cryptic `-32000` connect failure;

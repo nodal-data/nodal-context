@@ -45,9 +45,13 @@ A handful (≈3–6) per domain is plenty. Lead with the caveat-bearing ones.
   URL — from the domain's `domain.yaml` `dashboards:` entry, or ask — tell the
   analyst you'll read it yourself: *"I'll open the 'Collection Rate by Payer'
   dashboard in your browser and read the numbers — you just confirm them."* (If it
-  needs a login, they log in; the skill waits.) Otherwise fall back to the human
-  read: *"Have the 'Collection Rate by Payer' dashboard up — I'll ask you to read
-  a number off it in a moment."* — and mention the one-time fix for next session:
+  needs a login, they log in; the skill waits.) If the saved target does not lead
+  to the named dashboard, `dashboard-verify` asks the analyst once to open that
+  exact dashboard in the connected, already signed-in browser and paste its normal
+  address-bar URL, then retries directly. If that retry fails, or no URL is
+  available, fall back to the human read: *"Have the 'Collection Rate by Payer'
+  dashboard up — I'll ask you to read a number off it in a moment."* — and mention
+  the one-time fix for next session:
   browser setup is optional and consent-based through `setup-nodal`, so a missing
   binding means it has not been configured or is not loaded in this session. An unapproved
   project server (offer to set it up per

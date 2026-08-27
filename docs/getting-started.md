@@ -4,6 +4,8 @@ This guide covers the durable technical setup for the Nodal Analytics skills.
 It is deliberately more detailed than the root README so prerequisites,
 permissions, and degraded modes remain explicit without burying installation.
 
+![From draft warehouse evidence to human-confirmed, dashboard-validated analytics context](./assets/context-validation-loop.svg)
+
 ## What setup can and cannot do
 
 Nodal uses agent-provided tools to inspect approved sources. It does not bundle a
@@ -335,7 +337,9 @@ executed.
 `dashboard-verify` uses a named dashboard in the user's local authenticated
 browser. It captures visible values together with active filters and extraction
 confidence. It does not handle credentials or use the browser for general
-browsing.
+browsing. If a saved target does not find the named dashboard, it asks once for
+the dashboard's normal address-bar URL from the already signed-in local browser
+and retries directly; it never asks for credentials or a tokenized share link.
 
 ## Maintainer testing
 

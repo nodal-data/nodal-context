@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="780" viewBox="0 0 1440 780" role="img" aria-labelledby="title desc">
+  <title id="title">From evidence to validated analytics context</title>
+  <desc id="desc">Query history and a dbt project provide draft evidence to a human-owned context interview. The AI writes local context, creates evaluation questions, and verifies answers against an existing dashboard. Matches validate the context; mismatches return to the analyst as caveats to resolve.</desc>
+
+  <defs>
+    <style>
+      .title { font: 700 34px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #172033; }
+      .subtitle { font: 500 18px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #526079; }
+      .band-title { font: 700 20px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #172033; }
+      .band-copy { font: 500 16px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #526079; }
+      .step-number { font: 700 30px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .step-title { font: 700 23px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #172033; }
+      .step-actor { font: 700 16px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #2C3850; }
+      .step-copy { font: 500 16px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #526079; }
+      .feed-label { font: 700 15px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #526079; letter-spacing: 0.04em; }
+      .loop-copy { font: 600 17px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #7A4300; }
+      .icon { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.4; }
+    </style>
+    <marker id="arrow-neutral" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8390A6"/>
+    </marker>
+  </defs>
+
+  <rect width="1440" height="780" rx="28" fill="#F8FAFE"/>
+
+  <text class="title" x="720" y="52" text-anchor="middle">From evidence to validated context</text>
+  <text class="subtitle" x="720" y="82" text-anchor="middle">Evidence informs. People confirm. Dashboards validate.</text>
+
+  <!-- Stage 0 evidence band -->
+  <rect x="50" y="110" width="1340" height="122" rx="22" fill="#EAF0FF"/>
+  <rect x="50" y="110" width="9" height="122" rx="5" fill="#3B5CCC"/>
+
+  <text class="band-title" x="85" y="153">Stage 0 · Draft evidence</text>
+  <text class="band-copy" x="85" y="181">Useful signals—not ground truth</text>
+
+  <!-- Query-history icon -->
+  <g transform="translate(480 139)" class="icon" stroke="#3B5CCC">
+    <ellipse cx="24" cy="7" rx="20" ry="7"/>
+    <path d="M4 7v25c0 4 9 7 20 7s20-3 20-7V7"/>
+    <path d="M4 19c0 4 9 7 20 7s20-3 20-7"/>
+  </g>
+  <text class="band-title" x="545" y="153">Query history</text>
+  <text class="band-copy" x="545" y="181">Recurring SQL and competing definitions</text>
+
+  <!-- dbt/lineage icon -->
+  <g transform="translate(965 137)" class="icon" stroke="#3B5CCC">
+    <circle cx="10" cy="10" r="6"/>
+    <circle cx="43" cy="10" r="6"/>
+    <circle cx="26" cy="40" r="6"/>
+    <path d="M16 10h21M13 15l10 20M40 15L29 35"/>
+  </g>
+  <text class="band-title" x="1030" y="153">dbt project</text>
+  <text class="band-copy" x="1030" y="181">Models, tests, metrics, and lineage</text>
+
+  <text class="feed-label" x="720" y="258" text-anchor="middle">DRAFTS BETTER QUESTIONS</text>
+  <path d="M720 266v25" fill="none" stroke="#8390A6" stroke-width="2.5" marker-end="url(#arrow-neutral)"/>
+
+  <!-- Step 1 -->
+  <rect x="50" y="310" width="240" height="300" rx="22" fill="#E8F0FF"/>
+  <text class="step-number" x="76" y="354" fill="#3156C6">1</text>
+  <g transform="translate(228 329)" class="icon" stroke="#3156C6">
+    <circle cx="11" cy="9" r="6"/>
+    <path d="M1 28c1-7 5-10 10-10s9 3 10 10"/>
+    <rect x="29" y="2" width="31" height="22" rx="5"/>
+    <path d="M37 10h15M37 16h9M43 24v6"/>
+  </g>
+  <text class="step-title" x="76" y="404">Context interview</text>
+  <text class="step-actor" x="76" y="437">Domain expert ↔ AI</text>
+  <text class="step-copy" x="76" y="476">
+    <tspan x="76" dy="0">AI asks one question at</tspan>
+    <tspan x="76" dy="24">a time. The person chooses</tspan>
+    <tspan x="76" dy="24">and confirms each definition.</tspan>
+  </text>
+
+  <!-- Arrow 1 → 2 -->
+  <path d="M300 460h14" fill="none" stroke="#8390A6" stroke-width="2.5" marker-end="url(#arrow-neutral)"/>
+
+  <!-- Step 2 -->
+  <rect x="325" y="310" width="240" height="300" rx="22" fill="#F0EAFF"/>
+  <text class="step-number" x="351" y="354" fill="#6E4FD6">2</text>
+  <g transform="translate(503 327)" class="icon" stroke="#6E4FD6">
+    <path d="M10 3h25l10 10v35H10z"/>
+    <path d="M35 3v11h10M18 24h19M18 32h19M18 40h12"/>
+    <path d="M4 10v44h35"/>
+  </g>
+  <text class="step-title" x="351" y="404">Write context</text>
+  <text class="step-actor" x="351" y="437">Local Markdown + YAML</text>
+  <text class="step-copy" x="351" y="476">
+    <tspan x="351" dy="0">AI records confirmed meaning.</tspan>
+    <tspan x="351" dy="24">Anything unanswered remains</tspan>
+    <tspan x="351" dy="24">visibly marked as draft.</tspan>
+  </text>
+
+  <!-- Arrow 2 → 3 -->
+  <path d="M575 460h14" fill="none" stroke="#8390A6" stroke-width="2.5" marker-end="url(#arrow-neutral)"/>
+
+  <!-- Step 3 -->
+  <rect x="600" y="310" width="240" height="300" rx="22" fill="#FFF0DD"/>
+  <text class="step-number" x="626" y="354" fill="#C56A00">3</text>
+  <g transform="translate(778 329)" class="icon" stroke="#C56A00">
+    <path d="M18 3v15L7 38a8 8 0 0 0 7 12h26a8 8 0 0 0 7-12L36 18V3"/>
+    <path d="M14 34h26M14 3h26"/>
+    <path d="M22 41l4 4 8-10"/>
+  </g>
+  <text class="step-title" x="626" y="404">Create evaluations</text>
+  <text class="step-actor" x="626" y="437">Context off ↔ context on</text>
+  <text class="step-copy" x="626" y="476">
+    <tspan x="626" dy="0">AI writes real questions and</tspan>
+    <tspan x="626" dy="24">compares how answers change</tspan>
+    <tspan x="626" dy="24">when context is available.</tspan>
+  </text>
+
+  <!-- Arrow 3 → 4 -->
+  <path d="M850 460h14" fill="none" stroke="#8390A6" stroke-width="2.5" marker-end="url(#arrow-neutral)"/>
+
+  <!-- Step 4 -->
+  <rect x="875" y="310" width="240" height="300" rx="22" fill="#FFF7D6"/>
+  <text class="step-number" x="901" y="354" fill="#A87800">4</text>
+  <g transform="translate(1053 330)" class="icon" stroke="#A87800">
+    <rect x="2" y="3" width="58" height="42" rx="5"/>
+    <path d="M2 14h58M10 9h1M17 9h1M24 9h1"/>
+    <path d="M12 36l10-10 8 7 13-13 7 6"/>
+  </g>
+  <text class="step-title" x="901" y="404">Verify dashboard</text>
+  <text class="step-actor" x="901" y="437">Signed-in local browser</text>
+  <text class="step-copy" x="901" y="476">
+    <tspan x="901" dy="0">AI reads trusted values with</tspan>
+    <tspan x="901" dy="24">their active filters and the</tspan>
+    <tspan x="901" dy="24">dashboard’s date window.</tspan>
+  </text>
+
+  <!-- Arrow 4 → 5 -->
+  <path d="M1125 460h14" fill="none" stroke="#8390A6" stroke-width="2.5" marker-end="url(#arrow-neutral)"/>
+
+  <!-- Step 5 -->
+  <rect x="1150" y="310" width="240" height="300" rx="22" fill="#DFF6EC"/>
+  <text class="step-number" x="1176" y="354" fill="#128064">5</text>
+  <g transform="translate(1328 329)" class="icon" stroke="#128064">
+    <path d="M30 3l7 5 9 1 2 9 5 7-5 7-2 9-9 1-7 5-7-5-9-1-2-9-5-7 5-7 2-9 9-1z"/>
+    <path d="M20 25l7 7 14-15"/>
+  </g>
+  <text class="step-title" x="1176" y="404">Validate context</text>
+  <text class="step-actor" x="1176" y="437">Definitions + eval seeds</text>
+  <text class="step-copy" x="1176" y="476">
+    <tspan x="1176" dy="0">A match proves the context</tspan>
+    <tspan x="1176" dy="24">produces the trusted answer</tspan>
+    <tspan x="1176" dy="24">and is ready for team review.</tspan>
+  </text>
+
+  <!-- Learning loop -->
+  <rect x="250" y="650" width="940" height="84" rx="20" fill="#FFF0DD"/>
+  <g transform="translate(282 669)" class="icon" stroke="#C56A00">
+    <path d="M42 11A22 22 0 1 0 46 34"/>
+    <path d="M42 2v9h-9"/>
+  </g>
+  <text class="loop-copy" x="350" y="687">
+    <tspan font-weight="700">Mismatch?</tspan>
+    <tspan> Capture the caveat → return it to the analyst → update context and evaluations.</tspan>
+  </text>
+  <text class="band-copy" x="350" y="714">Validation is a learning loop, not a pass/fail dead end.</text>
+</svg>
