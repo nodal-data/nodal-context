@@ -1,7 +1,7 @@
 {
   "name": "nodal-analytics",
-  "version": "1.1.0",
-  "description": "Plan and verify analytics with governed, multi-source context and interview-built ground truth.",
+  "version": "1.2.0",
+  "description": "Plan, verify, and challenge analytics with governed, multi-source context and interview-built ground truth.",
   "author": {
     "name": "Nodal Data",
     "url": "https://github.com/nodal-data"

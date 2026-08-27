@@ -15,7 +15,7 @@ def run():
     codex = load(".codex-plugin/plugin.json")
     for manifest in (claude, codex):
         assert manifest["name"] == "nodal-analytics"
-        assert manifest["version"] == "1.1.0"
+        assert manifest["version"] == "1.2.0"
         assert manifest["license"] == "Apache-2.0"
         assert manifest["skills"] == "./skills/"
         assert "mcpServers" not in manifest
@@ -39,6 +39,7 @@ def run():
     expected_skills = {
         "analytics-plan",
         "analyst-handoff",
+        "challenge-result",
         "context-interview",
         "dashboard-verify",
         "setup-nodal",
