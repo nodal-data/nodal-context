@@ -78,17 +78,67 @@ For the best initial context build, prepare:
   query history across the relevant people, BI service accounts, and workloads.
   A connection that can see only its own queries can produce a misleadingly
   thin sample. If access is unavailable, the interview continues but records
-  history mining as deferred or privilege-limited.
+  history mining as deferred or privilege-limited. Query-history permissions
+  vary by warehouse: Snowflake usually needs
+  `SNOWFLAKE.GOVERNANCE_VIEWER`, BigQuery needs project job-list visibility,
+  and Redshift needs unrestricted system-log visibility. See
+  [Getting started: historical query access](./docs/getting-started.md#historical-query-access)
+  for the exact read-only grants, retention windows, fallbacks, and privacy
+  caveats.
+
+  Before the interview, run the probe for your warehouse (replace the bracketed
+  BigQuery identifiers):
+
+  <details>
+  <summary><strong>Snowflake</strong></summary>
+
+  ```sql
+  SELECT
+    CURRENT_USER() AS connected_user,
+    CURRENT_ROLE() AS active_role,
+    COUNT(*) AS visible_queries,
+    COUNT(DISTINCT user_name) AS visible_users
+  FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+  WHERE start_time >= DATEADD(day, -1, CURRENT_TIMESTAMP());
+  ```
+
+  </details>
+
+  <details>
+  <summary><strong>BigQuery</strong></summary>
+
+  ```sql
+  SELECT
+    SESSION_USER() AS connected_user,
+    COUNT(*) AS visible_queries,
+    COUNT(DISTINCT user_email) AS visible_users
+  FROM `<PROJECT>`.`region-<LOCATION>`.INFORMATION_SCHEMA.JOBS
+  WHERE creation_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 DAY);
+  ```
+
+  </details>
+
+  <details>
+  <summary><strong>Redshift</strong></summary>
+
+  ```sql
+  SELECT
+    CURRENT_USER AS connected_user,
+    COUNT(*) AS visible_queries,
+    COUNT(DISTINCT user_id) AS visible_users
+  FROM SYS_QUERY_HISTORY
+  WHERE start_time >= DATEADD(day, -1, GETDATE());
+  ```
+
+  </details>
+
+  A successful query confirms that the identity can read the history source.
+  More than one `visible_users` is evidence of cross-user visibility; zero or
+  one is inconclusive and should be treated as potentially privilege-limited.
 - **Your dbt project, if you use dbt.** A local sibling checkout is recommended
   so the interview can draft from real models, tests, and metric definitions.
 - **A dashboard in a local browser, if you want dashboard verification.** This is
   optional and is configured only with your consent.
-
-Query-history permissions vary by warehouse. Snowflake usually needs
-`SNOWFLAKE.GOVERNANCE_VIEWER`, BigQuery needs project job-list visibility, and
-Redshift needs unrestricted system-log visibility. The exact read-only grants,
-retention windows, fallbacks, and privacy caveats are in
-[Getting started: historical query access](./docs/getting-started.md#historical-query-access).
 
 ## Set up a project
 
