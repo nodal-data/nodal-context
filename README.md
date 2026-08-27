@@ -1,348 +1,239 @@
-# nodal-context
+# Nodal Analytics
 
-> The open-source, **interview-built** context layer for analytics agents — plus a
-> format-agnostic harness that measures whether your context actually makes the
-> agent more accurate.
+> Agent skills for building governed analytics context, planning data questions,
+> and verifying the answers.
 
-📖 **Docs:** [docs.nodaldata.io](https://docs.nodaldata.io) · 🌐 **Website:** [nodaldata.io](https://nodaldata.io)
+[Documentation](https://docs.nodaldata.io) ·
+[Website](https://nodaldata.io) ·
+[Analytics Context Format](./SPEC.md) ·
+[Getting started](./docs/getting-started.md)
 
----
+Analytics agents can write valid SQL and still give the wrong answer. They need
+the definitions an experienced analyst carries around: what a metric means,
+which table is canonical, which filters are mandatory, where joins fan out, and
+when a result should be escalated instead of trusted.
 
-## What this is
+Nodal turns that knowledge into reviewable context and reusable agent workflows.
+An analyst remains the authority: the agent drafts, verifies, and records; the
+analyst confirms.
 
-Pointing an AI Agent (Claude, Codex, Gemini, or any other) at a warehouse and letting it write SQL feels like
-self-service analytics until you notice the answers are confidently wrong. The fix
-isn't a better model — it's **context**: what your terms mean, which table is
-canonical, what the standard filters are, and where the landmines are.
+## Installation (about a minute)
 
-`nodal-context` is three things, in the order teams adopt them:
-
-1. **Build it — the context format + the interview skill.**
-   *Free, open source (Apache-2.0).*
-   The skill builds context *with* your analyst, one domain at a time, and writes
-   it to a git repo your team reviews by PR. Two depths, one flow: the full
-   multi-stage interview, or a **~30-minute test drive** that shows the whole
-   loop working on one domain — five highest-leverage answers confirmed live,
-   the rest drafted. Take it, fork it,
-   never talk to us.
-
-2. **Share it — the hosted MCP endpoint.**
-   *Self-serve, low-cost: subscribe and launch in minutes.*
-   Connect your analytics context — and optionally your dbt repo — to an MCP
-   endpoint the whole team shares: any agent gets governed answers from the repo.
-   Merge a PR and every consumer is current — no redistributing files. The Nodal
-   admin also lets **non-technical users edit the context** and open pull
-   requests into the repo, so your team can evaluate proposed changes both
-   quantitatively and qualitatively. Self-hosting a read-only server on the raw
-   files is always free; the hosted endpoint adds auth, usage logging, and the
-   admin editing flow. See "Sharing it across your team" below. We can also
-   build an MCP server in your cloud environment if you prefer.
-
-3. **Keep it correct — the learning loop.**
-   *Enterprise: [contact us](mailto:info@nodaldata.io).*
-   This is where the learning loop gets built. **Observability:** what data
-   questions are your business team, marketing team, and analysts actually
-   asking? **Coverage evaluations:** sophisticated evals with coverage metrics
-   that highlight when questions are being asked with minimal context coverage,
-   so you evolve the context over time in a safe manner. **Regression tests:**
-   confidence that questions answered correctly yesterday are still answered
-   correctly today, as you add and change context while the business evolves.
-   Plus **dbt-repo sync** (an upstream model change re-drafts the affected
-   definitions for the analyst to confirm). The seed format and a one-shot
-   local runner stay open and free.
-
-## Why interview-built, not auto-built
-
-The obvious approach — and what most tools do — is to ingest your warehouse, dbt,
-BI layer, and query history and *auto-generate* the context. We deliberately don't
-lead with that, because the teams who've measured it found it doesn't work as a
-source of truth:
-
-- Anthropic's data team reported that auto-generating metric definitions from
-  raw tables and query logs "encoded the very ambiguities we were trying to
-  eliminate" and was **net-negative on evals** vs a smaller human-curated layer.
-- They also gave an agent grep access to thousands of prior queries and accuracy
-  moved **less than a point** — the information was present, the agent saw it, and
-  it still didn't resolve the question to the right entity.
-- [Reference work from Anthropic](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude)
-- Other data agents find similar conclusions: [Meta](https://medium.com/@AnalyticsAtMeta/inside-metas-home-grown-ai-analytics-agent-4ea6779acfb3) and [Ramp](https://engineering.ramp.com/post/meet-ramp-research)
-
-Their conclusion: **generate the documentation with the model, but have a human own
-the definition.** That's exactly what the interview does. We *do* auto-extract
-schema and dbt as a **draft to correct** (so the analyst isn't staring at a blank
-page) — but the analyst's confirmations, not the extraction, are what we trust.
-(Reading a *value* off a dashboard the analyst has blessed — Stage 5's
-`dashboard-verify` — is not auto-extraction of a definition; it's ground-truth
-harvesting: the robot reads the number the analyst would have read aloud, with
-its extraction confidence visible, and the analyst still owns every definition
-and blesses every capture.)
-
-The bonus: every disambiguation the analyst makes in the interview ("active client
-means X, not Y") is simultaneously a context entry **and** a labeled eval pair. The
-act of building context is the act of harvesting ground truth.
-
-## Two depths: the full interview, or a 30-minute test drive
-
-Skill-based extractors (e.g. Anthropic's `data-context-extractor` for Claude
-desktop) set a fair market expectation: an analyst should get useful context in
-about half an hour. The interview meets that budget without giving up governance.
-Say **"take it for a test drive"** (or "I only have 30 minutes") and the same interview runs on a
-five-question budget for one domain — the grain of the canonical table, the one
-ambiguous entity, the top 2–3 metrics, the standard hygiene filter, and the one
-silent failure — verifies a few answers live against your warehouse, and leaves
-everything unasked as reviewable `status: draft` stubs.
-
-The difference from a quick skill builder is what you keep: every confirmed answer
-is still **human-owned**, still emits an **eval seed**, and the domain is
-**depth-stamped** ("five questions deep, N drafts open") so speed never
-masquerades as coverage. The full interview is the same flow without the budget —
-and the test drive's punch list (what the agent still gets wrong with context on)
-tells you exactly which domains deserve it. Already built a data skill with a
-quick extractor? The harness grades it as-is (`--adapter skill`), and the test
-drive is the cheapest way to mint the seeds that grade it.
-
-## The format is readable and open-source (Markdown + YAML)
-
-This repo defines a context format (ACF — see [`SPEC.md`](./SPEC.md)). But you are
-**not required to use it** to use the measurement seam. The harness
-([`eval_harness/INTERFACE.md`](./eval_harness/INTERFACE.md)) reads ACF, Kaelio
-`ktx` YAML, dbt models/docs, raw markdown, or an agent data-analysis skill (e.g.
-one generated by Anthropic's `data-context-extractor` — folder or packaged zip),
-normalizes them, and measures the delta the same way. Bring whatever context you
-already have.
-
-## Install
-
-Choose exactly one distribution channel per host. Installing both a native plugin
-and skills.sh copies makes the same skills appear twice and can produce ambiguous
+Choose one installation method per host. Installing both a native plugin and
+skills.sh copies makes every skill appear twice and can cause ambiguous
 invocation.
 
-Claude Code native plugin:
+<details open>
+<summary><strong>Claude Code</strong></summary>
 
 ```bash
 claude plugin marketplace add nodal-data/nodal-context
 claude plugin install nodal-analytics@nodal
 ```
 
-Codex native plugin:
+To update an existing installation:
+
+```bash
+claude plugin marketplace update nodal
+claude plugin update --scope user nodal-analytics@nodal
+```
+
+</details>
+
+<details>
+<summary><strong>Codex</strong></summary>
 
 ```bash
 codex plugin marketplace add nodal-data/nodal-context
 codex plugin add nodal-analytics@nodal
 ```
 
-Project-local skills for Codex IDE, Cursor, and other skill-compatible agents:
+</details>
+
+<details>
+<summary><strong>Codex IDE, Cursor, and other skill-compatible agents</strong></summary>
 
 ```bash
 npx skills@latest add nodal-data/nodal-context
 ```
 
-No optional MCP server is enabled by installation. Configure the project
-explicitly with `/nodal-analytics:setup-nodal` in Claude Code or `$setup-nodal`
-in Codex. Setup probes read-query, metadata, and query-history access, discovers
-nearby dbt/context repos, and can merge a local browser binding only after consent.
+This copies editable skills into your project. Select `setup-nodal` along with
+the workflows you want to use.
 
-Setup writes a gitignored `.nodal.local.json` containing only versioned paths and
-sanitized capability classifications, for example:
+</details>
 
-```json
-{
-  "version": 1,
-  "warehouse": {
-    "platform": "snowflake",
-    "mcp_server": "snowflake",
-    "capabilities": {
-      "read_query": {"status": "ok", "verified_at": "2026-08-25T12:00:00Z"},
-      "metadata": {"status": "ok", "verified_at": "2026-08-25T12:00:00Z"},
-      "query_history": {"status": "full", "verified_at": "2026-08-25T12:00:00Z"}
-    }
-  },
-  "dbt": {"local_path": "../acme-dbt", "repo": "github.com/acme/acme-dbt"},
-  "context_repo": {"local_path": "../analytics-context", "repo": null},
-  "browser": {"binding": "chrome-devtools"}
-}
+## What you need before the first interview
+
+> [!IMPORTANT]
+> Nodal never handles warehouse credentials. Connect your agent to the warehouse
+> through an approved MCP server using a read-only identity.
+
+For the best initial context build, prepare:
+
+- **A domain expert.** An analyst or other owner must confirm definitions. Nodal
+  does not silently promote generated documentation to truth.
+- **Read-only warehouse access.** The connection must support `SELECT` and
+  metadata inspection. Nodal does not run DDL, DML, grants, or procedures.
+- **Historical query-log visibility.** Full Stage 0 discovery needs access to
+  query history across the relevant people, BI service accounts, and workloads.
+  A connection that can see only its own queries can produce a misleadingly
+  thin sample. If access is unavailable, the interview continues but records
+  history mining as deferred or privilege-limited.
+- **Your dbt project, if you use dbt.** A local sibling checkout is recommended
+  so the interview can draft from real models, tests, and metric definitions.
+- **A dashboard in a local browser, if you want dashboard verification.** This is
+  optional and is configured only with your consent.
+
+Query-history permissions vary by warehouse. Snowflake usually needs
+`SNOWFLAKE.GOVERNANCE_VIEWER`, BigQuery needs project job-list visibility, and
+Redshift needs unrestricted system-log visibility. The exact read-only grants,
+retention windows, fallbacks, and privacy caveats are in
+[Getting started: historical query access](./docs/getting-started.md#historical-query-access).
+
+## Set up a project
+
+Run setup once from the project where you will use Nodal:
+
+```text
+# Claude Code
+/nodal-analytics:setup-nodal
+
+# Codex
+$setup-nodal
 ```
 
-Raw authentication failures, credentials, and secrets are never stored. Other
-skills read the nearest supported config up to the git root, re-probe live
-capabilities, and degrade normally when it is absent or stale.
+Setup probes read-query, metadata, and query-history capabilities; discovers
+nearby dbt and context sources; and can configure an optional local browser
+binding after asking permission. It writes only sanitized capability
+classifications and paths to a gitignored `.nodal.local.json`—never credentials,
+tokens, or raw authentication errors.
 
-## Quickstart
+Then ask the agent:
 
-Before the interview, set up the two things it works from. Neither needs to be
-perfect, but both make the interview **faster and more accurate**: the agent verifies
-definitions against live data and reads your existing transformations instead of
-guessing.
-
-**1. Connect a warehouse over MCP (required).** Invoke `setup-nodal` as described
-above, or configure a server manually. The interview verifies answers against
-your live warehouse, and the generated repo's `data-question` skill queries it — both need
-**read-only** warehouse access. Pick the MCP server for your warehouse and add it to your
-agent:
-
-| Warehouse | MCP server |
-|---|---|
-| Snowflake | [Snowflake MCP](https://github.com/Snowflake-Labs/mcp) |
-| BigQuery | [MCP Toolbox for Databases](https://github.com/googleapis/genai-toolbox) (Google) |
-| Redshift | [AWS Labs MCP servers](https://github.com/awslabs/mcp) (Redshift) |
-| Databricks | [Databricks MCP](https://github.com/databricks/databricks-mcp) |
-| Other / general | [Model Context Protocol servers](https://github.com/modelcontextprotocol/servers) |
-
-Use a **read-only role/credential** — the interview and the data-question skill only ever
-`SELECT`. See your agent's MCP docs (e.g. Claude Code: `claude mcp add`) for wiring it in.
-
-One capability note: Stage 0's **query-history mining** reads your warehouse's query
-history, which the MCP user may not see by default — on Snowflake, the 365-day
-`ACCOUNT_USAGE.QUERY_HISTORY` needs a one-time grant to the MCP user (the
-least-privilege `SNOWFLAKE.GOVERNANCE_VIEWER` database role); on Redshift,
-`SYS_QUERY_HISTORY` shows a regular user only their own queries until a superuser
-runs `ALTER USER <mcp_user> SYSLOG ACCESS UNRESTRICTED` (exact SQL for both in the
-generated repo's README and `skills/context-interview/references/query-history-extraction.md`).
-Without it, mining degrades to a privilege-limited sample and the interview says so.
-
-**2. Clone your dbt repo locally (recommended).** If you use dbt, `git clone` your dbt
-project into a sibling directory and start the interview with both repos visible to the
-agent. The interview reads your `models/`, `schema.yml`, and metric definitions as a
-**draft to confirm** — so the analyst corrects real definitions instead of describing them
-from scratch, and the generated `lineage:` pointers reference actual dbt models.
-
-Then invoke `context-interview` from your project: ask the agent to “build my
-analytics context,” or say “take it for a test drive” for the five-question path.
-The skill proposes `../analytics-context` relative to your project root and always
-confirms the resolved destination before writing. The generated repository is the
-deliverable and contains its own `SPEC.md`, schemas, scripts, CI, and harness, so
-continuation does not require a Nodal source checkout.
-
-## Maintainer integration testing
-
-`scripts/integration/clean_test.sh` is the tracked, opt-in clean-room harness for
-source-checkout, installed Claude plugin, installed Codex plugin, and skills.sh
-test runs. It creates a unique temporary room without copying ignored local data,
-never deletes a supplied directory, and validates the generated context repo
-after the agent exits. Authenticated host, warehouse, and dashboard runs remain
-manual release checks rather than ordinary CI.
-
-Private simulated-analyst briefs, MCP configuration, browser profiles, and local
-permission settings stay ignored. See
-[`scripts/integration/README.md`](./scripts/integration/README.md) for usage,
-installed-package modes, automated runs, and the two-run resume check.
-
-## Repo layout
-
+```text
+Take Nodal for a test drive on one analytics domain.
 ```
+
+The test drive uses five high-leverage questions and usually takes about 30
+minutes. Use “build my analytics context” when you want the complete interview.
+Both paths produce a reviewable context repository and eval seeds; unanswered
+material remains visibly marked as draft.
+
+See the [full setup and local exercise guide](./docs/getting-started.md) for MCP
+options, permissions, configuration, and an end-to-end walkthrough.
+
+## The workflows
+
+The skills are small and composable. Use one directly, or let the agent route to
+the appropriate workflow.
+
+### Build and maintain context
+
+- [`setup-nodal`](./skills/setup-nodal/SKILL.md) configures project-local context
+  sources, read-only warehouse capabilities, and optional browser access. It
+  runs only when explicitly requested.
+- [`context-interview`](./skills/context-interview/SKILL.md) interviews an
+  analyst to build or improve an Analytics Context Format (ACF) repository. Each
+  confirmed disambiguation also becomes an eval seed.
+- [`analyst-handoff`](./skills/analyst-handoff/SKILL.md) captures critical domain
+  knowledge when an analyst changes roles or transfers ownership. It orchestrates
+  the governed interview rather than producing an unstructured transcript.
+
+### Ask and verify
+
+- [`analytics-plan`](./skills/analytics-plan/SKILL.md) translates a business
+  question into a reviewable plan before any SQL runs. It can ground the plan in
+  ACF, Kaelio KTX, dbt, local documentation, approved documentation MCPs, and
+  warehouse evidence.
+- [`verify-result`](./skills/verify-result/SKILL.md) checks executed SQL and
+  results against the approved plan for metric, filter, grain, join, and time
+  fidelity, then reports plausibility and escalation needs.
+- [`dashboard-verify`](./skills/dashboard-verify/SKILL.md) reads a named BI
+  dashboard in the user's local browser, capturing both values and active
+  filters for reconciliation.
+
+The question-answering path is deliberately reviewable:
+
+```text
+business question → analytics plan → read-only query → result verification → answer
+```
+
+Plans and verified results include an explicitly uncalibrated uncertainty v0.
+It records unresolved semantics and evidence gaps and recommends expert
+escalation when a reliable answer cannot be supported. It is a decision aid, not
+a statistical confidence score.
+
+## Why these skills exist
+
+### 1. The agent knows the schema but not the business
+
+Warehouses encode what can be queried, not what the company means by “active
+customer,” “revenue,” or “conversion.” Nodal interviews the people who own those
+definitions and stores the result in files the team can review by pull request.
+
+### 2. Auto-generated context repeats existing ambiguity
+
+Raw schemas, prior SQL, and BI metadata are useful evidence, but they are not
+authority. Anthropic's data team reported that automatically generated metric
+definitions encoded the ambiguities they were trying to remove and performed
+worse than a smaller human-curated layer. Their agent also gained less than one
+point of accuracy from access to thousands of prior queries.
+[Read Anthropic's case study](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude).
+
+Nodal uses schema, dbt, dashboards, and query history to create drafts and
+surface conflicts. A human decides which interpretation is correct.
+
+### 3. A successful query is not a verified answer
+
+SQL can execute successfully at the wrong grain, omit a mandatory filter, use a
+noncanonical metric, or fan out through a join. `analytics-plan` makes intent
+explicit before execution; `verify-result` checks whether the query and result
+actually satisfy that intent afterward.
+
+## Bring the context you already have
+
+ACF is readable Markdown and YAML, defined by [`SPEC.md`](./SPEC.md). It is the
+native authoring format, but it is not a lock-in boundary. The format-agnostic
+[evaluation harness](./eval_harness/INTERFACE.md) can normalize ACF, Kaelio KTX,
+dbt models and docs, raw Markdown, or an agent data-analysis skill and measure
+the accuracy delta with context on versus off.
+
+The five-question test drive is also a practical way to create the labeled seeds
+needed to evaluate context you already maintain in another format.
+
+## Open source and hosted paths
+
+The context format, six skills, local one-shot evaluation, dashboard
+verification, generated context repositories, and self-hosted use are Apache-2.0
+open source. Nodal also offers a hosted MCP endpoint for team-wide context
+delivery and an enterprise learning loop for observability, coverage,
+regression testing, and dbt synchronization.
+
+The longer product, deployment, and free/paid narrative from the previous README
+has been preserved in [`docs/website-content-draft.md`](./docs/website-content-draft.md)
+for migration to the Nodal website.
+
+## Repository reference
+
+```text
 nodal-context/
-├── SPEC.md                     # the Analytics Context Format (ACF) — the standard
-├── skills/context-interview/   # the interview skill (the free wedge)
-│   ├── SKILL.md
-│   ├── references/             # the interview state machine + skeletons + harvesting
-│   └── payload/                # generated distribution mirror; do not hand-edit
-├── skills/dashboard-verify/    # local-browser dashboard verification
-├── skills/setup-nodal/         # explicit-only local setup and guarded config writer
-├── .claude-plugin/             # Claude native plugin + marketplace metadata
-├── .codex-plugin/              # Codex native plugin metadata
-├── schemas/                    # JSON Schemas that make the YAML CI-checkable
-├── template/                   # the empty scaffold the interview fills in
-├── examples/example-healthcare-company/         # a worked example in the ACF format
-├── eval_harness/               # OSS eval runner + its contract (INTERFACE.md, README.md)
-└── .github/workflows/          # validate context, detect drift, run eval delta on PR
+├── skills/                    # the six installable agent workflows
+├── SPEC.md                    # Analytics Context Format specification
+├── schemas/                   # machine-validatable ACF schemas
+├── template/                  # generated context-repository scaffold
+├── examples/                  # worked ACF examples
+├── eval_harness/              # format-agnostic evaluation runner
+├── scripts/integration/       # opt-in clean-room release harness
+├── .claude-plugin/            # Claude plugin and marketplace metadata
+└── .codex-plugin/             # Codex plugin metadata
 ```
 
-## Sharing it across your team (MCP)
-
-This is product #2 above — the self-serve one. A context repo is just Markdown +
-YAML, so a single analyst can point their own agent at the files and get governed
-answers **for free**: clone it, read it locally, done. That works great for one
-person on one machine.
-
-To put the same context in front of the *whole team* — a non-technical business
-user asks a question in their own agent and gets the answer the analyst would
-give — connect over **MCP**. A hosted endpoint serves the context layer,
-retrieving the right definitions and canonical queries to ground every answer.
-An optional second connector exposes your
-**dbt/warehouse lineage**, so the agent can check *how* a metric is computed,
-not just what it means.
-
-Three ways to serve it:
-
-- **Launch on Nodal (hosted)** — the self-serve path: subscribe, paste a
-  read-only GitHub token into the admin, share the endpoint. Three steps, minutes,
-  low-cost. **No database connection needed** — Nodal serves the context repo,
-  not your data.
-- **Build your own** — self-host a small read-only MCP server against the raw
-  repo. Always free, no lock-in.
-- **Run it in your own cloud/VPC** — for data-residency or security requirements;
-  **contact sales**.
-
-Auth, usage logging, and the admin editing flow (non-technical users propose
-context changes as pull requests your team evaluates) are the managed
-product — a convenience for team-scale distribution, not a lock on the format:
-the files stay open and self-hosting is always free. The generated repo ships a
-`SHARING.md` with the tool surface and the 3-step hosted setup.
-
-**Claude-desktop and skill.md shop instead?** Compile the repo into a distributable skill snapshot:
-
-```bash
-python3 scripts/compile_skill.py path/to/analytics-context --zip
-```
-
-That emits a `<company>-data-analyst/` skill (SKILL.md + references/) an admin can
-upload to claude.ai / Claude desktop — org-provisioned skills update centrally. The
-output is a **stamped snapshot** (`compiled from repo@sha`), not a second source of
-truth: regenerate it after every merge. It round-trips through the eval harness's
-`skill` adapter with the same domain names, so the same seeds grade both the repo and
-the compiled skill. MCP remains the live, always-current path; the skill is a cache
-for reach.
-
-## Keep context in sync with your dbt repo
-
-Context goes stale the moment a dbt model changes underneath it — a renamed column, a
-redefined metric, a dropped table — and stale context is worse than none, because the
-agent trusts it. The free CI contract catches this: the bundled `context-drift` workflow
-flags when an upstream dbt model a domain depends on has changed (on dispatch from the
-dbt repo, weekly cron, or manual run), so a human re-confirms the definition.
-
-**Wiring it up:** copy `dbt-repo/notify-context-repo.yml` (shipped into every scaffolded
-context repo; source [`template/dbt-repo/`](./template/dbt-repo/)) into your dbt repo's
-`.github/workflows/`. On every model change it runs `dbt parse` credential-free,
-publishes `manifest.json` on a single-commit orphan `dbt-manifest` branch, and fires a
-`lineage-changed` dispatch at the context repo — whose `context-drift` workflow clones
-that branch and diffs it. One secret in the dbt repo (`CONTEXT_DISPATCH_TOKEN`, a
-fine-grained PAT scoped to the context repo); `DBT_REPO_TOKEN` in the context repo only
-if the dbt repo is private. Sources the workflow cannot acquire fail the run loudly
-("lineage sources unchecked") instead of passing silently. Setup details:
-[`template/dbt-repo/README.md`](./template/dbt-repo/README.md).
-
-Nodal offers the **managed version of that loop**: connect your dbt repo and changes
-there propagate into the business context automatically — the affected definitions are
-re-drafted from the new dbt source and routed to the analyst to confirm (still
-interview-built: a human owns every definition, the sync just keeps the draft current).
-This rides on the same `lineage:` pointer ACF already keeps per domain. It's part of
-the **enterprise tier** (product #3), deployable in your cloud/VPC or ours —
-[contact us](mailto:info@nodaldata.io).
-
-## The free / paid line, explicitly
-
-| Capability | Where | Cost |
-|---|---|---|
-| Context format (ACF) | `SPEC.md`, `schemas/` | Free, Apache-2.0 |
-| Interview skill (full or test drive) | `skills/context-interview/` | Free |
-| Eval-seed harvesting (interview → labeled pairs) | the skill | Free |
-| One-shot eval delta (on/off, run locally) | the harness, self-run | Free |
-| Dashboard self-verification (one-shot, your own local browser) | `skills/dashboard-verify/` | Free |
-| Compiled skill snapshot for Claude desktop | `scripts/compile_skill.py` | Free |
-| Self-hosted agent against the raw context files | your agent | Free |
-| **Team-shared MCP endpoint (governed answers, auth, usage logging, non-technical editing via PRs)** | Nodal (hosted) | **Paid — self-serve** |
-| **dbt-repo sync (dbt changes re-drafted into context, analyst-confirmed)** | Nodal (hosted) | **Paid — enterprise** |
-| **The learning loop: observability into who's asking what, coverage evaluations, regression tests, drift detection, scheduled dashboard re-verification** | Nodal (hosted) | **Paid — enterprise** |
-
-The **hosted MCP endpoint is the self-serve entry point**: subscribe, connect the
-repo, share the endpoint — minutes, no sales call. The **learning loop
-(observability, coverage evaluations, regression tests) and dbt-repo sync are
-enterprise** — they're how data teams keep context correct, and see who's asking
-what, as self-service analytics scales; for a demo,
-requirements, or pricing, **contact us** at info@nodaldata.io. Learn more at
-[nodaldata.io](https://nodaldata.io) or [docs.nodaldata.io](https://docs.nodaldata.io).
+Maintainers should use the
+[clean-room integration guide](./scripts/integration/README.md) for source,
+installed-plugin, skills.sh, warehouse, dashboard, and resume testing. Private
+briefs, MCP configuration, browser profiles, credentials, and host-specific
+settings must remain local and ignored.
 
 ## License
 
-Apache-2.0 (see `LICENSE`). The format and the interview are yours to keep.
+Apache-2.0. The format and the interview-built context are yours to keep.
