@@ -148,6 +148,11 @@ the appropriate workflow.
 - [`verify-result`](./skills/verify-result/SKILL.md) checks executed SQL and
   results against the approved plan for metric, filter, grain, join, and time
   fidelity, then reports plausibility and escalation needs.
+- [`challenge-result`](./skills/challenge-result/SKILL.md) gives a completed
+  answer a skeptical second review when the user questions it or asks for
+  another take. It either upholds the answer within the tested evidence,
+  recommends escalation, or returns a corrected brief to `analytics-plan` for
+  fresh approval.
 - [`dashboard-verify`](./skills/dashboard-verify/SKILL.md) reads a named BI
   dashboard in the user's local browser, capturing both values and active
   filters for reconciliation.
@@ -156,6 +161,8 @@ The question-answering path is deliberately reviewable:
 
 ```text
 business question → analytics plan → read-only query → result verification → answer
+                                                                     ↓ if challenged
+                                              independent challenge → uphold or replan
 ```
 
 Plans and verified results include an explicitly uncalibrated uncertainty v0.
@@ -203,21 +210,17 @@ needed to evaluate context you already maintain in another format.
 
 ## Open source and hosted paths
 
-The context format, six skills, local one-shot evaluation, dashboard
+The context format, seven skills, local one-shot evaluation, dashboard
 verification, generated context repositories, and self-hosted use are Apache-2.0
 open source. Nodal also offers a hosted MCP endpoint for team-wide context
 delivery and an enterprise learning loop for observability, coverage,
 regression testing, and dbt synchronization.
 
-The longer product, deployment, and free/paid narrative from the previous README
-has been preserved in [`docs/website-content-draft.md`](./docs/website-content-draft.md)
-for migration to the Nodal website.
-
 ## Repository reference
 
 ```text
 nodal-context/
-├── skills/                    # the six installable agent workflows
+├── skills/                    # the seven installable agent workflows
 ├── SPEC.md                    # Analytics Context Format specification
 ├── schemas/                   # machine-validatable ACF schemas
 ├── template/                  # generated context-repository scaffold

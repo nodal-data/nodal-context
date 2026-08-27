@@ -24,6 +24,7 @@ PLUGIN_ID = "nodal-analytics@nodal"
 SKILL_NAMES = (
     "analytics-plan",
     "analyst-handoff",
+    "challenge-result",
     "context-interview",
     "dashboard-verify",
     "setup-nodal",

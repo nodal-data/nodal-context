@@ -1,7 +1,7 @@
 {
   "name": "nodal-analytics",
-  "version": "1.1.0",
-  "description": "Plan and verify analytics with governed, multi-source context and interview-built ground truth.",
+  "version": "1.2.0",
+  "description": "Plan, verify, and challenge analytics with governed, multi-source context and interview-built ground truth.",
   "author": {
     "name": "Nodal Data",
     "url": "https://github.com/nodal-data"
@@ -14,7 +14,7 @@
   "interface": {
     "displayName": "Nodal Analytics",
     "shortDescription": "Governed analytics planning and context",
-    "longDescription": "Plan read-only analytics from ACF, KTX, dbt, and approved documentation; verify results; and build human-owned ground truth through interviews.",
+    "longDescription": "Plan read-only analytics from ACF, KTX, dbt, and approved documentation; verify and challenge results; and build human-owned ground truth through interviews.",
     "developerName": "Nodal Data",
     "category": "Data & Analytics",
     "capabilities": ["Read", "Write"],
@@ -24,6 +24,7 @@
       "Build an analytics context layer with me.",
       "Plan this analytics question before querying the warehouse.",
       "Verify whether this SQL and result match the approved plan.",
+      "Challenge this analytics answer with an independent second review.",
       "Capture an analyst handoff into governed context."
     ],
     "brandColor": "#3B5CCC"

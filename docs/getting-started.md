@@ -260,6 +260,19 @@ plausibility. Missing definitions, conflicting evidence, mandatory-filter
 failures, or unsafe joins produce a clarification or expert-escalation
 recommendation rather than a falsely confident answer.
 
+If the returned answer still looks wrong—or you simply want another take—ask:
+
+```text
+Challenge this result with an independent second review.
+```
+
+`challenge-result` first distinguishes a specific concern from a general second
+opinion. It reconstructs the intended analysis, tests plausible alternative
+interpretations and failure modes, and audits both the reported number and the
+user's expectation. It returns `UPHELD`, `INCONCLUSIVE`, or `REPLAN`. A replan
+goes back through `analytics-plan` and requires fresh approval before any SQL is
+executed.
+
 ## Optional dashboard verification
 
 `dashboard-verify` uses a named dashboard in the user's local authenticated

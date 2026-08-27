@@ -1,6 +1,18 @@
 # Changelog
 
-## 1.1.0 — Unreleased
+## 1.2.0 — Unreleased
+
+- Add `challenge-result` for user-requested skeptical second reviews of completed
+  analytics answers.
+- Add context-isolated and structured same-context challenge modes that test both
+  the reported number and the user's expectation without treating either as
+  ground truth.
+- Add `UPHELD`, `REPLAN`, and `INCONCLUSIVE` outcomes with assumption and
+  hypothesis ledgers, bounded read-only diagnostics, and escalation gates.
+- Route material corrections back through `analytics-plan` so a revised plan
+  receives fresh approval before any new execution.
+
+## 1.1.0 — 2026-08-27
 
 - Add `analytics-plan` as the single plan-before-query workflow across ACF, KTX,
   dbt, local documentation, approved documentation MCPs, and warehouse evidence.
@@ -27,10 +39,10 @@
 ## Release checklist
 
 - [ ] Run `python3 scripts/sync_skill_payload.py --check` and all tool CI locally.
-- [ ] Install from a temporary checkout with Claude; confirm all six namespaced
+- [ ] Install from a temporary checkout with Claude; confirm all seven namespaced
       skills and bundled hidden files/scripts are present.
 - [ ] Install from a temporary checkout with Codex; list the available plugin and
-      confirm all six skills load.
+      confirm all seven skills load.
 - [ ] Install into a temporary project with `npx skills@latest add`; confirm
       scripts, executable modes, `.claude`, `.gitignore`, and `.gitkeep` survive.
 - [ ] Invoke setup in each native host, confirm `.nodal.local.json`, and consent to
@@ -40,6 +52,9 @@
 - [ ] Exercise `analytics-plan` against ACF, KTX, and an approved documentation
       MCP; verify an evidence conflict produces a clarification and escalation.
 - [ ] Run `verify-result` against a missing mandatory filter and a fanout fixture.
+- [ ] Run `challenge-result` against an upheld answer, a material time/filter
+      defect that produces `REPLAN`, and a missing-evidence case that produces
+      `INCONCLUSIVE`; confirm no revised SQL runs before approval.
 - [ ] Complete an `analyst-handoff` domain and confirm it emits eval seeds.
 - [ ] Run the tracked clean-room harness against the source checkout, installed
       Claude and Codex plugins, and a temporary skills.sh installation; complete
