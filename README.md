@@ -171,6 +171,13 @@ minutes. Use “build my analytics context” when you want the complete intervi
 Both paths produce a reviewable context repository and eval seeds; unanswered
 material remains visibly marked as draft.
 
+For a concrete example, explore [Shorelane Commerce](https://github.com/shorelane-data/shorelane),
+a fictional company with a public warehouse and deliberately ambiguous revenue
+definitions, alongside its corresponding
+[analytics context repository](https://github.com/shorelane-data/shorelane-analytics-context).
+Together they show the evidence Nodal starts from and the reviewable context and
+eval seeds produced by the interview.
+
 See the [full setup and local exercise guide](./docs/getting-started.md) for MCP
 options, permissions, configuration, and an end-to-end walkthrough.
 
@@ -178,6 +185,11 @@ options, permissions, configuration, and an end-to-end walkthrough.
 
 The skills are small and composable. Use one directly, or let the agent route to
 the appropriate workflow.
+
+Nodal is designed to coexist with general engineering skill packs, including
+[Matt Pocock’s skills](https://github.com/mattpocock/skills): those govern how
+software is planned and built, while Nodal governs how business analytics
+definitions and answers are established and verified.
 
 ### Build and maintain context
 
@@ -223,6 +235,12 @@ escalation when a reliable answer cannot be supported. It is a decision aid, not
 a statistical confidence score.
 
 ## Why these skills exist
+
+Engineering agents can often inspect the artifact they are changing to answer
+factual questions about the system. Analytics agents can inspect the warehouse,
+but the warehouse cannot tell them which interpretation the business intended.
+That is why engineering grilling commonly begins with a proposed change, while
+analytics context building begins with the people who hold the definitions.
 
 ### 1. The agent knows the schema but not the business
 
