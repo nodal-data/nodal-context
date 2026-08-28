@@ -126,6 +126,32 @@ out — especially when time ran out.
 5. **Commit** per the "Pausing a session" rules in `SKILL.md` — drafts included,
    message naming where work stopped (e.g. `wip: billing test drive — 5 confirmed,
    7 drafts open`).
+6. **Offer to use the context now.** After the punch list and repo next steps,
+   finish with this choice — do not make the analyst infer how to get value from
+   what they just built:
+
+   > **Try it now — ask your first question.**
+   >
+   > - **Ask directly (fastest):** in Claude Code or Codex, ask a business
+   >   question in plain English. From the context repo, the `CLAUDE.md` or
+   >   `AGENTS.md` instructions route the answer through the confirmed context
+   >   and read-only warehouse connection.
+   > - **Use self-service analytics (reviewable):** invoke `analytics-plan`
+   >   (`/nodal-analytics:analytics-plan` in Claude Code; `$analytics-plan` in
+   >   Codex) for an explicit interpretation and plan, approval before read-only
+   >   SQL, and post-query verification.
+   >
+   > Other available workflows: `verify-result` audits SQL and results against
+   > the approved plan; `challenge-result` gives a completed answer an independent
+   > second review; `dashboard-verify` reconciles an answer with a trusted
+   > dashboard; and `context-interview` records a newly resolved definition or
+   > caveat back into context.
+   >
+   > **Which path do you want, and what's your first question?**
+
+   Keep the skill list this short and action-oriented. `setup-nodal` and
+   `analyst-handoff` remain available, but they are setup/transition workflows,
+   not ways to answer the analyst's next business question.
 
 ## Guardrails
 

@@ -17,6 +17,8 @@ Nodal turns that knowledge into reviewable context and reusable agent workflows.
 An analyst remains the authority: the agent drafts, verifies, and records; the
 analyst confirms.
 
+![From analyst knowledge to trusted answers: build context through an active interview, deploy it anywhere, answer questions with governed workflows, and improve it through the enterprise learning loop.](./docs/assets/nodal-product-loop.svg)
+
 ## Installation (about a minute)
 
 Choose one installation method per host. Installing both a native plugin and
