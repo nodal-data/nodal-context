@@ -4,6 +4,8 @@ This guide covers the durable technical setup for the Nodal Analytics skills.
 It is deliberately more detailed than the root README so prerequisites,
 permissions, and degraded modes remain explicit without burying installation.
 
+![From draft warehouse evidence to human-confirmed, dashboard-validated analytics context](./assets/context-validation-loop.svg)
+
 ## What setup can and cannot do
 
 Nodal uses agent-provided tools to inspect approved sources. It does not bundle a
@@ -111,6 +113,63 @@ gitignored local files and should be discarded after Stage 0.
 
 The grants below must be applied by the customer's warehouse administrator—not
 by Nodal or the agent running the interview.
+
+### Preflight visibility probes
+
+Run the probe for the connected warehouse before the first interview. These
+queries read query metadata only; they do not read application-table data.
+Replace `<PROJECT>` and `<LOCATION>` with the BigQuery project and the dataset's
+region (for example, `us` or `eu`).
+
+<details>
+<summary><strong>Snowflake</strong></summary>
+
+```sql
+SELECT
+  CURRENT_USER() AS connected_user,
+  CURRENT_ROLE() AS active_role,
+  COUNT(*) AS visible_queries,
+  COUNT(DISTINCT user_name) AS visible_users
+FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+WHERE start_time >= DATEADD(day, -1, CURRENT_TIMESTAMP());
+```
+
+</details>
+
+<details>
+<summary><strong>BigQuery</strong></summary>
+
+```sql
+SELECT
+  SESSION_USER() AS connected_user,
+  COUNT(*) AS visible_queries,
+  COUNT(DISTINCT user_email) AS visible_users
+FROM `<PROJECT>`.`region-<LOCATION>`.INFORMATION_SCHEMA.JOBS
+WHERE creation_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 DAY);
+```
+
+</details>
+
+<details>
+<summary><strong>Redshift</strong></summary>
+
+```sql
+SELECT
+  CURRENT_USER AS connected_user,
+  COUNT(*) AS visible_queries,
+  COUNT(DISTINCT user_id) AS visible_users
+FROM SYS_QUERY_HISTORY
+WHERE start_time >= DATEADD(day, -1, GETDATE());
+```
+
+</details>
+
+If a query succeeds, the connected identity can read that history source. A
+`visible_users` value greater than one shows cross-user visibility in the
+one-day sample. A value of zero or one is not proof that access is restricted—
+the warehouse may simply have little recent activity—but Nodal treats it as a
+visibility warning rather than assuming the history is complete. A permission
+error means the applicable administrator grant below is still needed.
 
 ### Snowflake
 
@@ -278,7 +337,9 @@ executed.
 `dashboard-verify` uses a named dashboard in the user's local authenticated
 browser. It captures visible values together with active filters and extraction
 confidence. It does not handle credentials or use the browser for general
-browsing.
+browsing. If a saved target does not find the named dashboard, it asks once for
+the dashboard's normal address-bar URL from the already signed-in local browser
+and retries directly; it never asks for credentials or a tokenized share link.
 
 ## Maintainer testing
 

@@ -59,11 +59,19 @@ when nobody asked.
 
 1. **Resolve the target.** A dashboard name + URL from the caller, from the context
    repo's `domains/*/domain.yaml` `dashboards:` entry, or by asking the user for
-   the URL. One dashboard per run.
+   the URL. One dashboard per run. If a saved URL, landing page, or bounded
+   dashboard-catalog lookup does not reveal the named dashboard, stop searching
+   and use the target-not-found recovery in `references/browser-contract.md`:
+   ask the user to open that exact dashboard in the connected, already signed-in
+   local browser and paste its normal address-bar URL, then navigate directly to
+   it and retry once. Never ask for credentials or a tokenized share link.
 2. **Attach the browser** per `references/browser-contract.md`. If no browser
    binding is discoverable, run that doc's no-binding preflight (offer explicit
    `setup-nodal` configuration + restart) instead of failing. If the page lands
-   on a login wall, do the credential handoff (fences above).
+   on a login wall, do the credential handoff (fences above). If the direct-URL
+   retry still cannot reach the named dashboard, report it as unavailable and,
+   when called from context-interview Stage 5, return control for a human read;
+   do not resume exploratory browsing or repeat the URL request.
 3. **Playbook check.** If the context repo has a learned playbook for this
    dashboard (`evals/playbooks/<dashboard-slug>.md`), replay its `replay:` steps
    deterministically. Only when there is no playbook — or a replay step's `expect`

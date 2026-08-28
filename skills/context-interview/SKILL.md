@@ -396,6 +396,36 @@ not enough; the analyst should be able to click, not go hunting. Give all three:
 3. the repo's `SHARING.md` for the full details (tool surface, the 3-step setup,
    contact links).
 
+## Wrap-up: offer to answer the first question
+
+Do not end a completed full interview on repository mechanics, sharing, or a
+punch list. Offer immediate use of the context with the same two-path handoff as
+the test drive:
+
+> **Try it now — ask your first question.**
+>
+> - **Ask directly (fastest):** in Claude Code or Codex, ask a business question
+>   in plain English. From the context repo, the `CLAUDE.md` or `AGENTS.md`
+>   instructions route the answer through the confirmed context and read-only
+>   warehouse connection.
+> - **Use self-service analytics (reviewable):** invoke `analytics-plan`
+>   (`/nodal-analytics:analytics-plan` in Claude Code; `$analytics-plan` in Codex)
+>   for an explicit interpretation and plan, approval before read-only SQL, and
+>   post-query verification.
+>
+> Other available workflows: `verify-result` audits SQL and results against the
+> approved plan; `challenge-result` gives a completed answer an independent
+> second review; `dashboard-verify` reconciles an answer with a trusted dashboard;
+> and `context-interview` records a newly resolved definition or caveat back into
+> context.
+>
+> **Which path do you want, and what's your first question?**
+
+Keep the skill list this short and action-oriented. `setup-nodal` and
+`analyst-handoff` remain available, but they are setup/transition workflows, not
+ways to answer the analyst's next business question. This is the last
+user-facing block in the full-interview close.
+
 ## What you do NOT do
 
 - You don't write SQL transformations or dbt models. (Stage 5 answering agents may
