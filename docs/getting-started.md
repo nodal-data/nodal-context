@@ -11,6 +11,12 @@ permissions, and degraded modes remain explicit without burying installation.
 Nodal uses agent-provided tools to inspect approved sources. It does not bundle a
 warehouse MCP server, handle credentials, or grant itself access.
 
+- Nothing flows to Nodal: no data, no credentials, no queries, no results, no
+  telemetry. The package is instructions and local scripts running inside your
+  agent; there is no Nodal service in the loop. The only external data flow is
+  between your agent host and its model provider, under the agreement you
+  already have with that vendor. Nodal's hosted team-delivery path is a
+  separate, paid, opt-in product; nothing in this package activates it.
 - Warehouse actions are read-only: `SELECT` and non-mutating metadata probes.
 - A human owns every confirmed definition.
 - Existing schema, dbt, documentation, dashboard, and query-log evidence is
