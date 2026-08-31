@@ -64,11 +64,35 @@ the workflows you want to use.
 
 </details>
 
+## Where your data flows: nowhere new
+
+Nodal's open-source package is a set of skills—instructions and local scripts
+that run inside your own agent, on your own machine. There is no Nodal service
+in the loop:
+
+- **No data reaches Nodal.** Schema, query results, query history, dashboard
+  captures, and the generated context all stay on your machine and in
+  repositories you control. The package makes no network calls to Nodal and
+  contains no telemetry.
+- **No credentials reach Nodal.** Warehouse access happens through an MCP
+  server you configure and authenticate yourself, using a read-only identity.
+- **Your existing agent agreement is the only data flow.** Whatever your agent
+  reads while answering a question is processed by the model provider behind
+  your agent host—for example, Anthropic when you run on Claude Code—exactly as
+  in any other use of that agent. Nodal adds no new data recipient.
+
+Nodal's separate [hosted offering](#open-source-and-hosted-paths) is a paid
+product that activates only when you opt in. Nothing in this package turns it
+on, and no data reaches Nodal unless you become a hosted customer and connect
+your context repository yourself.
+
 ## What you need before the first interview
 
 > [!IMPORTANT]
-> Nodal never handles warehouse credentials. Connect your agent to the warehouse
-> through an approved MCP server using a read-only identity.
+> Nodal never handles warehouse credentials or sees your data—see
+> [where your data flows](#where-your-data-flows-nowhere-new). Connect your
+> agent to the warehouse through an approved MCP server using a read-only
+> identity.
 
 For the best initial context build, prepare:
 
@@ -280,11 +304,17 @@ needed to evaluate context you already maintain in another format.
 
 ## Open source and hosted paths
 
-The context format, seven skills, local one-shot evaluation, dashboard
-verification, generated context repositories, and self-hosted use are Apache-2.0
-open source. Nodal also offers a hosted MCP endpoint for team-wide context
-delivery and an enterprise learning loop for observability, coverage,
-regression testing, and dbt synchronization.
+Everything that runs on your machine is Apache-2.0 open source: the context
+format, the seven skills, local one-shot evaluation, dashboard verification,
+generated context repositories, and self-hosted use. Your context repository is
+ordinary git—share it with your team the way you already share code, at no
+cost.
+
+The hosted path is a separate, paid product that activates only when you opt in
+and connect your context repository to it: a hosted MCP endpoint that delivers
+your context team-wide, and an enterprise learning loop for observability,
+coverage, regression testing, and dbt synchronization. That connection is also
+the first and only point at which any data reaches Nodal.
 
 ## Repository reference
 
