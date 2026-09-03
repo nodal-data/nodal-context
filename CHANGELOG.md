@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.0 — 2026-09-03
+
+- Add opt-in isolated host-state testing with a fresh Codex home or Claude bare
+  mode while preserving the existing clean-project default.
+- Install local or Git-ref Codex marketplace snapshots inside the isolated home
+  and support authenticate-then-launch prepared rooms without copying secrets.
+- Capture non-interactive transcripts and add a browser-install lifecycle
+  scenario that checks configured state, restart and approval guidance, and
+  suppression of repeated installation offers.
+- Add a public agent onboarding guide and an isolated pre-install scenario that
+  verifies one-distribution installation, consent boundaries, and the new-task
+  handoff to `setup-nodal`.
+- Document the separate macOS-account or VM smoke test required for faithful
+  Codex Desktop, browser, approval, and restart coverage.
+
 ## 1.4.0 — 2026-09-02
 
 - Clarify the current technical operator and domain-expert audiences, including
@@ -83,6 +98,14 @@
 - [ ] Run the tracked clean-room harness against the source checkout, installed
       Claude and Codex plugins, and a temporary skills.sh installation; complete
       its resume check and generated-repository assertions.
+- [ ] Install the Codex plugin in a fresh isolated host home and run the
+      `browser-install-lifecycle` scenario against both the local release
+      candidate and its Git release ref.
+- [ ] Run `agent-guided-onboarding` from an empty isolated Codex home, then paste
+      the public agent-guide prompt into the clean Desktop smoke-test account.
+- [ ] From a separate macOS user or restored VM snapshot, smoke-test Codex
+      Desktop installation, project-server approval, browser launch, and the
+      post-install restart path.
 - [ ] Invoke `dashboard-verify` against an authenticated dashboard and reconcile
       at least one value and filter window.
 - [ ] Confirm repository and isolated installed-skill scaffold smoke tests pass.

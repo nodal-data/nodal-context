@@ -12,6 +12,11 @@ tracked edits and non-ignored new files are tested while `responses.md`, `.env`,
 `.nodal.local.json`, `.mcp.json`, browser profiles, local Claude settings, and
 other ignored operator files remain private.
 
+By default this is clean-project isolation: the launched host can still see its
+normal user authentication, plugins, and configuration. Add `--isolated-host`
+for release-candidate testing when user-level customization must not influence
+the result.
+
 ## Package sources and hosts
 
 Package source and host are separate dimensions. Source-checkout and skills.sh
@@ -44,6 +49,116 @@ Use `--prepare-only --host none` to inspect the clean room without invoking an
 agent. Use `--work-dir` only with an absent or empty path beneath the operating
 system's temporary directory; the harness refuses a non-empty or non-temporary
 directory.
+
+## Isolated host state and native installation
+
+For Codex, `--isolated-host` creates a fresh `CODEX_HOME` inside the preserved
+room. In `codex-plugin` mode it adds a marketplace snapshot, installs
+`nodal-analytics@nodal` into that home, and discovers the installed cache payload
+there. It does not copy authentication from the maintainer's normal profile.
+
+Prepare a local-worktree release candidate first:
+
+```bash
+scripts/integration/clean_test.sh \
+  --package-source codex-plugin \
+  --host codex \
+  --isolated-host \
+  --prepare-only
+```
+
+The command prints the preserved room, an exact isolated-home authentication
+command using `codex login --device-auth`, and the matching `--launch-prepared`
+command. Authenticate that isolated home, then launch the prepared room. This
+two-step flow keeps credentials out of the harness and ensures plugin
+installation happened before the host session began.
+
+To test what users receive from Git rather than the current worktree, provide a
+marketplace source and release ref:
+
+```bash
+scripts/integration/clean_test.sh \
+  --package-source codex-plugin \
+  --host codex \
+  --isolated-host \
+  --marketplace-source nodal-data/nodal-context \
+  --marketplace-ref v1.5.0 \
+  --prepare-only
+```
+
+For Claude, `--isolated-host` launches `claude --bare`. A native-plugin test
+loads the selected package root explicitly with `--plugin-dir`; it does not use
+or modify the maintainer's installed-plugin state. Bare mode requires an
+explicit Anthropic API key or supported third-party-provider credentials and
+does not use OAuth or the keychain. Use a separate operating-system account or
+VM for an ordinary OAuth and Desktop installation test.
+
+Host-state isolation covers CLI configuration and plugin discovery. It is not a
+GUI sandbox. Before a public release, use a separate macOS account or a restored
+VM snapshot to smoke-test Codex Desktop, the Plugins Directory, browser launch,
+project-server approval, and application restart behavior.
+
+## Agent-guided onboarding scenario
+
+The pre-install scenario starts with an empty consumer project and an isolated
+Codex home. It copies only `docs/agent-guide.md` into the project—none of Nodal's
+skills or contributor instructions—then asks the unconfigured agent to follow
+the guide and install exactly one local release-candidate distribution:
+
+```bash
+scripts/integration/clean_test.sh \
+  --package-source source-checkout \
+  --host codex \
+  --isolated-host \
+  --scenario agent-guided-onboarding \
+  --prepare-only
+```
+
+Authenticate the printed isolated Codex home, then run the printed
+`--launch-prepared ... --non-interactive` command. The scenario confirms that:
+
+- the agent explains Nodal and selects only the Codex native plugin;
+- the isolated home contains the `nodal` marketplace and enabled plugin;
+- no project-local skills, `.nodal.local.json`, or `.mcp.json` are written;
+- the transcript establishes the new-task boundary and hands off to
+  `$setup-nodal`; and
+- no credentials are requested.
+
+This test uses the local checkout so it can evaluate uncommitted release work
+without network access. Before publishing, separately paste the public README
+prompt into a clean Desktop account or VM to confirm that the public GitHub
+guide is reachable and the Git marketplace installation succeeds.
+
+## Browser-install lifecycle scenario
+
+The tracked release scenario exercises the setup messaging that distinguishes a
+missing binding from one that was just configured but is not live yet:
+
+```bash
+scripts/integration/clean_test.sh \
+  --package-source codex-plugin \
+  --host codex \
+  --isolated-host \
+  --scenario browser-install-lifecycle \
+  --prepare-only
+```
+
+After authenticating the printed isolated Codex home, run the printed
+`--launch-prepared ... --non-interactive` command. Non-interactive host output is
+streamed to the terminal and preserved as `<host>-transcript.log` in the room.
+The scenario asserts both state and user-facing concepts:
+
+- `.nodal.local.json` records automated `chrome-devtools` intent;
+- `.mcp.json` contains the project binding;
+- the browser is described as optional, visible, and dedicated, with credentials
+  remaining with the user;
+- the binding is reported as configured and the next action is a session restart
+  plus one-time project-server approval; and
+- the lifecycle receipt states that installation was not offered again.
+
+The agent invokes setup twice in one session so the second pass sees a configured
+but not-yet-live binding. A separate macOS-user or VM smoke test remains the
+release check for the next-session live-binding and Desktop approval experience.
 
 ## Private operator inputs
 

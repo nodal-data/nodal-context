@@ -80,6 +80,13 @@ rather than silently treating a thin sample as complete.
 Installing a native plugin and skills.sh on the same host creates duplicate
 skill discovery. Pick one.
 
+If you prefer guided installation, paste the agent-onboarding prompt from the
+[root README](../README.md#or-let-your-agent-guide-installation). The
+[agent guide](./agent-guide.md) teaches an unconfigured agent how to identify the
+host, explain one installation path, request consent, and stop at the required
+new-session boundary. Once the skill is live, this getting-started guide and
+`setup-nodal` remain the canonical setup procedure.
+
 ### Claude Code plugin
 
 ```bash
@@ -395,5 +402,6 @@ for the complete behavior and troubleshooting guide.
 
 Repository validation commands and the release checklist live in
 [`CHANGELOG.md`](../CHANGELOG.md). The opt-in clean-room workflow for source,
-native-plugin, skills.sh, warehouse, dashboard, and resume checks is documented
-in [`scripts/integration/README.md`](../scripts/integration/README.md).
+native-plugin, isolated-host, agent-guided onboarding, browser-install
+lifecycle, skills.sh, warehouse, dashboard, and resume checks is documented in
+[`scripts/integration/README.md`](../scripts/integration/README.md).

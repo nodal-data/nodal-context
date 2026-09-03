@@ -56,6 +56,24 @@ the current domain-by-domain validation model.
   definitions. The output of the analyst interview is here
   [completed context repository](https://github.com/shorelane-data/shorelane-analytics-context).
 
+## Or let your agent guide installation
+
+If you already use an AI coding agent, paste this prompt into a project where
+you want to evaluate Nodal:
+
+```text
+Help me understand and set up Nodal Analytics for this project. Read
+https://github.com/nodal-data/nodal-context/blob/main/docs/agent-guide.md
+first. Explain what will change, choose only one supported installation method,
+and ask before installing anything or editing configuration. Then walk me
+through it one step at a time.
+```
+
+The [agent guide](./docs/agent-guide.md) covers Nodal's purpose, data boundaries,
+host-specific installation, the required new-session handoff, setup, and common
+fixes. It lets the agent guide a non-command-line user without guessing or
+silently installing both plugin and skills distributions.
+
 ## CLI Installation (about a minute)
 
 Choose one installation method per host. Installing both a native plugin and
@@ -376,9 +394,10 @@ nodal-context/
 
 Maintainers should use the
 [clean-room integration guide](./scripts/integration/README.md) for source,
-installed-plugin, skills.sh, warehouse, dashboard, and resume testing. Private
-briefs, MCP configuration, browser profiles, credentials, and host-specific
-settings must remain local and ignored.
+installed-plugin, isolated-host, agent-guided onboarding, browser-install
+lifecycle, skills.sh, warehouse, dashboard, and resume testing. Private briefs,
+MCP configuration, browser profiles, credentials, and host-specific settings
+must remain local and ignored.
 
 ## License
 

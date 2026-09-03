@@ -15,7 +15,7 @@ def run():
     codex = load(".codex-plugin/plugin.json")
     for manifest in (claude, codex):
         assert manifest["name"] == "nodal-analytics"
-        assert manifest["version"] == "1.4.0"
+        assert manifest["version"] == "1.5.0"
         assert manifest["license"] == "Apache-2.0"
         assert manifest["skills"] == "./skills/"
         assert "mcpServers" not in manifest
@@ -57,6 +57,19 @@ def run():
     ).read_text()
     assert ".nodal.local.json" in (ROOT / ".gitignore").read_text()
     assert ".nodal.local.json" in (ROOT / "template/.gitignore").read_text()
+    agent_guide = (ROOT / "docs/agent-guide.md").read_text()
+    assert "codex plugin marketplace add nodal-data/nodal-context" in agent_guide
+    assert "codex plugin add nodal-analytics@nodal" in agent_guide
+    assert "claude plugin marketplace add nodal-data/nodal-context" in agent_guide
+    assert "claude plugin install nodal-analytics@nodal" in agent_guide
+    assert "npx skills@latest add nodal-data/nodal-context" in agent_guide
+    assert "Install exactly one distribution" in agent_guide
+    assert "start a new agent task" in agent_guide
+    readme = (ROOT / "README.md").read_text()
+    assert (
+        "https://github.com/nodal-data/nodal-context/"
+        "blob/main/docs/agent-guide.md"
+    ) in readme
     print("test_plugin_package: OK")
 
 
