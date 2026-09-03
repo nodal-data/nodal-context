@@ -52,12 +52,51 @@ def sample():
                 "enabled": True,
             },
         ],
-        "browser": {"binding": "chrome-devtools"},
+        "browser": {"mode": "automated", "binding": "chrome-devtools"},
     }
 
 
 def run():
     nodal_config.validate_config(sample())
+    legacy = sample()
+    legacy["browser"].pop("mode")
+    nodal_config.validate_config(legacy)
+
+    manual = sample()
+    manual["browser"] = {"mode": "manual", "binding": None}
+    nodal_config.validate_config(manual)
+
+    ask_when_needed = sample()
+    ask_when_needed["browser"] = {"mode": "ask_when_needed", "binding": None}
+    nodal_config.validate_config(ask_when_needed)
+
+    invalid_browser_mode = sample()
+    invalid_browser_mode["browser"] = {"mode": "sometimes", "binding": None}
+    try:
+        nodal_config.validate_config(invalid_browser_mode)
+    except nodal_config.ConfigError as exc:
+        assert "browser.mode" in str(exc)
+    else:
+        raise AssertionError("invalid browser mode accepted")
+
+    invalid_automated_browser = sample()
+    invalid_automated_browser["browser"] = {"mode": "automated", "binding": None}
+    try:
+        nodal_config.validate_config(invalid_automated_browser)
+    except nodal_config.ConfigError as exc:
+        assert "binding is required" in str(exc)
+    else:
+        raise AssertionError("automated browser without binding accepted")
+
+    invalid_manual_browser = sample()
+    invalid_manual_browser["browser"] = {"mode": "manual", "binding": "chrome-devtools"}
+    try:
+        nodal_config.validate_config(invalid_manual_browser)
+    except nodal_config.ConfigError as exc:
+        assert "must be null" in str(exc)
+    else:
+        raise AssertionError("manual browser with binding accepted")
+
     with tempfile.TemporaryDirectory() as td:
         root = Path(td) / "project"
         child = root / "a/b"
@@ -116,6 +155,7 @@ def run():
             raise AssertionError("local source with MCP binding accepted")
 
         mcp = root / ".mcp.json"
+        assert nodal_config.mcp_binding_status(root, "chrome-devtools") == "absent"
         try:
             nodal_config.merge_mcp(root, "chrome-devtools", consent=False)
         except nodal_config.ConfigError as exc:
@@ -123,6 +163,7 @@ def run():
         else:
             raise AssertionError("MCP merge without consent")
         nodal_config.merge_mcp(root, "chrome-devtools", consent=True)
+        assert nodal_config.mcp_binding_status(root, "chrome-devtools") == "configured"
         first = mcp.read_bytes()
         try:
             nodal_config.merge_mcp(root, "chrome-devtools", consent=True)
@@ -135,6 +176,12 @@ def run():
         malformed_root = Path(td) / "malformed-root"
         malformed_root.mkdir()
         (malformed_root / ".mcp.json").write_text("not-json")
+        try:
+            nodal_config.mcp_binding_status(malformed_root, "chrome-devtools")
+        except nodal_config.ConfigError as exc:
+            assert "malformed JSON" in str(exc)
+        else:
+            raise AssertionError("malformed .mcp.json status accepted")
         try:
             nodal_config.merge_mcp(malformed_root, "chrome-devtools", consent=True)
         except nodal_config.ConfigError as exc:

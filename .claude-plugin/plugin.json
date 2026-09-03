@@ -1,6 +1,6 @@
 {
   "name": "nodal-analytics",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "Plan, verify, and challenge analytics with governed, multi-source context and interview-built ground truth.",
   "author": {
     "name": "Nodal Data",

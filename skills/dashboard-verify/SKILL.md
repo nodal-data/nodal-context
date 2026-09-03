@@ -11,10 +11,13 @@ human) can reconcile against. The analyst's browser does the showing; you do the
 reading; the analyst stays the authority on what counts as truth.
 
 Look for the nearest `.nodal.local.json` upward to the current git root and accept
-only version 1. Treat its browser binding and capability timestamps as hints:
-discover the live tools again before use. Missing, invalid, or stale config
-degrades to binding discovery below. Never write configuration; only the
-explicitly invoked `setup-nodal` skill may do so.
+only version 1. Treat its browser binding and capability timestamps as hints, and
+respect its browser mode. Missing `browser.mode` is backward-compatible: infer
+`automated` when a binding is set and `ask_when_needed` otherwise. Discover the
+live tools again before use unless the saved mode is `manual`, which goes directly
+to the human-read fallback. Missing, invalid, or stale config degrades to binding
+discovery below. Never write configuration; only the explicitly invoked
+`setup-nodal` skill may do so.
 
 ## Hard fences (non-negotiable)
 
@@ -66,8 +69,8 @@ when nobody asked.
    local browser and paste its normal address-bar URL, then navigate directly to
    it and retry once. Never ask for credentials or a tokenized share link.
 2. **Attach the browser** per `references/browser-contract.md`. If no browser
-   binding is discoverable, run that doc's no-binding preflight (offer explicit
-   `setup-nodal` configuration + restart) instead of failing. If the page lands
+   binding is discoverable, run that doc's mode-aware no-binding preflight
+   instead of failing or repeatedly offering installation. If the page lands
    on a login wall, do the credential handoff (fences above). If the direct-URL
    retry still cannot reach the named dashboard, report it as unavailable and,
    when called from context-interview Stage 5, return control for a human read;

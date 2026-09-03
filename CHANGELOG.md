@@ -1,6 +1,30 @@
 # Changelog
 
-## 1.2.0 — Unreleased
+## 1.4.0 — 2026-09-02
+
+- Clarify the current technical operator and domain-expert audiences, including
+  enterprise adoption through verified domain-by-domain rollout.
+- Separate representative evaluation from production onboarding and document
+  optional automated dashboard verification before browser consent.
+- Persist browser intent as ask-when-needed, manual, or automated; suppress
+  repeated installation offers and distinguish a required restart from a
+  missing binding.
+- Clarify how Nodal's active interview, evidence, and human confirmation differ
+  from passive documentation generation.
+- State explicitly that the open-source package sends no data or credentials to
+  Nodal, and distinguish it from the separate paid, opt-in hosted path.
+
+## 1.3.0 — 2026-08-27
+
+- Add read-only query-history visibility probes and document permissions,
+  retention windows, degraded modes, and privacy caveats for Snowflake,
+  BigQuery, and Redshift.
+- Add product and context-validation diagrams covering the interview, governed
+  answer, dashboard verification, and enterprise learning loops.
+- Strengthen the five-question test drive and dashboard-validation handoff,
+  including filter-aware captures and human-read fallback behavior.
+
+## 1.2.0 — 2026-08-27
 
 - Add `challenge-result` for user-requested skeptical second reviews of completed
   analytics answers.

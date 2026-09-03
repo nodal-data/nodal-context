@@ -9,7 +9,7 @@
     {
       "name": "nodal-analytics",
       "description": "Plan, verify, and challenge analytics with governed, multi-source context and interview-built ground truth.",
-      "version": "1.2.0",
+      "version": "1.4.0",
       "author": {
         "name": "Nodal Data"
       },
