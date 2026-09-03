@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.4.0 — Unreleased
+## 1.4.0 — 2026-09-02
 
 - Clarify the current technical operator and domain-expert audiences, including
   enterprise adoption through verified domain-by-domain rollout.
