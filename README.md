@@ -14,8 +14,8 @@ which table is canonical, which filters are mandatory, where joins fan out, and
 when a result should be escalated instead of trusted.
 
 Nodal turns that knowledge into reviewable context and reusable agent workflows.
-An analyst remains the authority: the agent drafts, verifies, and records; the
-analyst confirms.
+An analyst remains the authority: the agent drafts choices where it finds uncertainty; the
+analyst chooses the correct interpretation, then the agent verifies, records, and evaluates the context.
 
 ![From analyst knowledge to trusted answers: build context through an active interview, deploy it anywhere, answer questions with governed workflows, and improve it through the enterprise learning loop.](./docs/assets/nodal-product-loop.svg)
 
