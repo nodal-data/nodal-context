@@ -26,6 +26,7 @@ CONTEXT_KINDS = {"acf", "ktx", "dbt", "markdown", "agent-skill", "documentation"
 CONTEXT_ACCESS = {"local", "mcp"}
 CONTEXT_AUTHORITIES = {"confirmed", "governed", "documented", "behavioral", "inferred"}
 CONTEXT_STATUSES = {"ok", "unavailable", "denied", "unsupported"}
+BROWSER_MODES = {"ask_when_needed", "manual", "automated"}
 TOP_KEYS = {"version", "warehouse", "context_sources", "browser"}
 
 
@@ -149,8 +150,16 @@ def validate_config(config):
             raise ConfigError(f"{label}.enabled must be a boolean")
 
     browser = _object(config.get("browser"), "browser")
-    _only_keys(browser, {"binding"}, "browser")
+    _only_keys(browser, {"mode", "binding"}, "browser")
     _string_or_null(browser.get("binding"), "browser.binding")
+    mode = browser.get("mode")
+    if mode is not None and mode not in BROWSER_MODES:
+        raise ConfigError(f"browser.mode must be one of {', '.join(sorted(BROWSER_MODES))}")
+    effective_mode = mode or ("automated" if browser.get("binding") else "ask_when_needed")
+    if effective_mode == "automated" and not browser.get("binding"):
+        raise ConfigError("browser.binding is required when browser.mode is automated")
+    if effective_mode != "automated" and browser.get("binding") is not None:
+        raise ConfigError("browser.binding must be null unless browser.mode is automated")
     return config
 
 
@@ -212,6 +221,17 @@ def write_config(project_root, input_path):
     return destination
 
 
+def mcp_binding_status(project_root, binding):
+    """Return a sanitized project binding status without exposing MCP configuration."""
+    destination = Path(project_root).expanduser().resolve() / ".mcp.json"
+    if not destination.exists():
+        return "absent"
+    current = _object(load_json(destination), ".mcp.json")
+    servers = current.get("mcpServers", {})
+    _object(servers, ".mcp.json.mcpServers")
+    return "configured" if binding in servers else "absent"
+
+
 def merge_mcp(project_root, binding, consent=False):
     if not consent:
         raise ConfigError("browser MCP merge requires explicit --consent")
@@ -244,6 +264,9 @@ def main(argv=None):
     write = subparsers.add_parser("write")
     write.add_argument("--project-root", required=True)
     write.add_argument("--input", required=True)
+    mcp_status = subparsers.add_parser("mcp-status")
+    mcp_status.add_argument("--project-root", required=True)
+    mcp_status.add_argument("--binding", required=True)
     merge = subparsers.add_parser("merge-mcp")
     merge.add_argument("--project-root", required=True)
     merge.add_argument("--binding", required=True)
@@ -258,6 +281,8 @@ def main(argv=None):
             print(f"nodal_config: OK — {args.path}")
         elif args.command == "write":
             print(f"nodal_config: wrote {write_config(args.project_root, args.input)}")
+        elif args.command == "mcp-status":
+            print(mcp_binding_status(args.project_root, args.binding))
         else:
             print(f"nodal_config: wrote {merge_mcp(args.project_root, args.binding, args.consent)}")
     except ConfigError as exc:

@@ -6,6 +6,28 @@ permissions, and degraded modes remain explicit without burying installation.
 
 ![From draft warehouse evidence to human-confirmed, dashboard-validated analytics context](./assets/context-validation-loop.svg)
 
+## Who this guide assumes
+
+The current open-source workflow assumes a queryable analytics warehouse or
+database, a domain expert who can confirm business definitions, and a supported
+local agent with an approved read-only connection. The operator should be
+comfortable working in a local agent project and coordinating access, but neither
+the operator nor the domain expert needs to write Python. dbt, query history, and
+a BI dashboard are useful evidence sources rather than universal requirements.
+
+For a large organization, do not begin by modeling the whole company. Choose one
+bounded analytics domain, build and verify its context and eval seeds, and expand
+only after the governed answers work. Each completed domain becomes a tested
+governance boundary, so enterprise adoption can proceed incrementally without a
+company-wide semantic migration.
+
+If you are evaluating Nodal rather than connecting a production environment, use
+[Shorelane Commerce](https://github.com/shorelane-data/shorelane) with its
+[completed context repository](https://github.com/shorelane-data/shorelane-analytics-context).
+A newly created database can exercise basic querying, but it will not demonstrate
+the value of historical query patterns, established transformations, conflicting
+definitions, or dashboard reconciliation.
+
 ## What setup can and cannot do
 
 Nodal uses agent-provided tools to inspect approved sources. It does not bundle a
@@ -258,8 +280,9 @@ Invoke setup explicitly:
 $setup-nodal
 ```
 
-Setup performs live capability probes, discovers nearby context and dbt sources,
-and optionally offers to merge a local browser binding. It writes a gitignored
+Setup performs live capability probes and discovers nearby context and dbt
+sources. General setup does not ask for browser access unless you have named a
+dashboard or requested automated dashboard verification. It writes a gitignored
 configuration like:
 
 ```json
@@ -274,9 +297,21 @@ configuration like:
       "query_history": {"status": "full", "verified_at": "2026-08-25T12:00:00Z"}
     }
   },
-  "dbt": {"local_path": "../acme-dbt", "repo": "github.com/acme/acme-dbt"},
-  "context_repo": {"local_path": "../analytics-context", "repo": null},
-  "browser": {"binding": "chrome-devtools"}
+  "context_sources": [
+    {
+      "name": "acme-dbt",
+      "kind": "dbt",
+      "access": "local",
+      "location": "../acme-dbt",
+      "binding": null,
+      "repo": "github.com/acme/acme-dbt",
+      "authority": "documented",
+      "status": "ok",
+      "verified_at": "2026-08-25T12:00:00Z",
+      "enabled": true
+    }
+  ],
+  "browser": {"mode": "ask_when_needed", "binding": null}
 }
 ```
 
@@ -346,6 +381,15 @@ confidence. It does not handle credentials or use the browser for general
 browsing. If a saved target does not find the named dashboard, it asks once for
 the dashboard's normal address-bar URL from the already signed-in local browser
 and retries directly; it never asks for credentials or a tokenized share link.
+
+Automated reading is optional. Without a browser connection, the workflow asks
+the analyst to read the comparison value and filter state. When automation would
+help, Nodal explains the benefit and local changes before requesting consent.
+Choosing manual verification is saved so setup does not repeatedly ask. If the
+connection has been added but is not live yet, Nodal asks for the required
+session restart instead of offering to install it again. See
+[Dashboard verification and the optional browser connection](./dashboard-verification.md)
+for the complete behavior and troubleshooting guide.
 
 ## Maintainer testing
 

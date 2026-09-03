@@ -32,16 +32,27 @@ passes `--user-data-dir` through unresolved, so a relative path lands wherever
 Chrome's cwd happens to be.
 
 **No-binding preflight.** If tool discovery finds *no* browser binding (none of
-the tools in the table above), do not fail and do not improvise with Bash:
+the tools in the table above), do not fail and do not improvise with Bash. Read
+the project browser mode first; for legacy version-1 configurations, infer
+`automated` when `binding` is set and `ask_when_needed` otherwise.
 
-1. Say what's missing: no browser MCP server is loaded in this session.
-2. Offer to invoke `setup-nodal`, which shows the destination and asks for consent
-   before safely merging the bundled binding into the project `.mcp.json`.
-3. Tell the user a **session restart** is required for a new `.mcp.json` to load,
-   and that they'll get a one-time approval prompt for the project server.
+1. For `manual`, do not offer browser setup again. Explain that automated reading
+   is disabled for this project and continue with the human-read fallback.
+2. For `automated`, use `setup-nodal`'s sanitized `mcp-status` check. If the
+   configured binding exists in `.mcp.json` but is not live, ask for the required
+   **session restart** and one-time project server approval; do not offer to
+   install it again. If the binding is absent or broken, offer to invoke
+   `setup-nodal` to repair it with explicit consent.
+3. For `ask_when_needed`, explain the value and boundaries once: Nodal can open a
+   visible, dedicated Chrome profile to read the named dashboard, capture values
+   and active filters, and compare them with warehouse answers; the user signs in
+   and Nodal never requests or handles credentials. Offer to invoke `setup-nodal`
+   for automated verification or save manual verification for the project. The
+   user's selection is an explicit invocation of targeted browser setup; preserve
+   the other valid project configuration and save the choice before continuing.
 4. Never overwrite an existing binding. If the user prefers Playwright MCP or
-   Claude in Chrome, use whichever binding
-   their session already has — the verbs table covers all three.
+   Claude in Chrome, use whichever binding their session already has — the verbs
+   table covers all three.
 
 When called from context-interview Stage 5, report "no binding" back to the
 interview instead of blocking: it falls back to the human read for this session

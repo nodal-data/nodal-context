@@ -19,6 +19,44 @@ analyst confirms.
 
 ![From analyst knowledge to trusted answers: build context through an active interview, deploy it anywhere, answer questions with governed workflows, and improve it through the enterprise learning loop.](./docs/assets/nodal-product-loop.svg)
 
+## Who Nodal is for today
+
+Nodal is currently best suited to teams that already have:
+
+- a queryable analytics warehouse or database;
+- an analyst or other domain expert who owns business definitions; and
+- a supported local agent that can receive approved, read-only access to the
+  warehouse.
+
+The person operating this open-source package should be comfortable working in a
+local agent project and coordinating data access. They do not need to write
+Python, and the domain expert who confirms definitions does not need to know dbt
+or use a command line. dbt, historical query access, and BI dashboards improve
+the evidence available to Nodal, but they are not all required.
+
+Large organizations are in scope. Nodal is designed to roll out **one analytics
+domain at a time**: establish the domain's definitions, failure cases, and eval
+seeds; verify that its governed answers work; then expand to the next domain.
+This creates a reviewable governance boundary at every step instead of requiring
+a company-wide semantic migration before the first result.
+
+Nodal is not yet optimized for organizations without a warehouse or technical
+data owner. We are interested in extending it both upstream to more complex
+enterprise environments and downstream to earlier-stage teams, while keeping
+the current domain-by-domain validation model.
+
+### Two ways to start
+
+- **Evaluate the workflow.** Use
+  [Shorelane Commerce](https://github.com/shorelane-data/shorelane), a fictional
+  company with a public warehouse and deliberately ambiguous revenue
+  definitions, together with its
+  [completed context repository](https://github.com/shorelane-data/shorelane-analytics-context).
+  This shows the evidence Nodal expects and the governed output it produces.
+- **Use your own stack.** Start with one bounded business domain where a domain
+  expert can confirm the definitions. Prove the workflow there before adding
+  another domain.
+
 ## Installation (about a minute)
 
 Choose one installation method per host. Installing both a native plugin and
@@ -163,8 +201,10 @@ For the best initial context build, prepare:
   one is inconclusive and should be treated as potentially privilege-limited.
 - **Your dbt project, if you use dbt.** A local sibling checkout is recommended
   so the interview can draft from real models, tests, and metric definitions.
-- **A dashboard in a local browser, if you want dashboard verification.** This is
-  optional and is configured only with your consent.
+- **A dashboard in a local browser, if you want automated dashboard
+  verification.** This is optional, is configured only with your consent, and is
+  not needed to build context or answer warehouse questions. See
+  [how dashboard verification works](./docs/dashboard-verification.md).
 
 ## Set up a project
 
@@ -179,8 +219,9 @@ $setup-nodal
 ```
 
 Setup probes read-query, metadata, and query-history capabilities; discovers
-nearby dbt and context sources; and can configure an optional local browser
-binding after asking permission. It writes only sanitized capability
+nearby dbt and context sources; and records whether dashboard verification should
+stay manual, be offered when needed, or use an approved local browser binding. It
+writes only sanitized capability
 classifications and paths to a gitignored `.nodal.local.json`—never credentials,
 tokens, or raw authentication errors.
 
@@ -194,13 +235,6 @@ The test drive uses five high-leverage questions and usually takes about 30
 minutes. Use “build my analytics context” when you want the complete interview.
 Both paths produce a reviewable context repository and eval seeds; unanswered
 material remains visibly marked as draft.
-
-For a concrete example, explore [Shorelane Commerce](https://github.com/shorelane-data/shorelane),
-a fictional company with a public warehouse and deliberately ambiguous revenue
-definitions, alongside its corresponding
-[analytics context repository](https://github.com/shorelane-data/shorelane-analytics-context).
-Together they show the evidence Nodal starts from and the reviewable context and
-eval seeds produced by the interview.
 
 See the [full setup and local exercise guide](./docs/getting-started.md) for MCP
 options, permissions, configuration, and an end-to-end walkthrough.
