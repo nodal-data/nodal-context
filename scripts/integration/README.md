@@ -39,6 +39,11 @@ scripts/integration/clean_test.sh \
   --host codex
 ```
 
+Codex runs use the `workspace-write` sandbox because the generated context
+repository is an intentional sibling of the clean project and is passed through
+`--add-dir`. Interactive runs retain normal approval prompts; non-interactive
+runs additionally use Codex's automated approval review.
+
 For a real skills.sh release check, first install into an otherwise empty
 temporary project with the canonical `npx skills@latest add` command, then pass
 that project as `--package-root`. The harness copies those installed artifacts

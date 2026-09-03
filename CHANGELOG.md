@@ -4,6 +4,8 @@
 
 - Add opt-in isolated host-state testing with a fresh Codex home or Claude bare
   mode while preserving the existing clean-project default.
+- Launch interactive Codex clean-room tests with the required `workspace-write`
+  sandbox so the sibling context repository is accepted as a writable root.
 - Install local or Git-ref Codex marketplace snapshots inside the isolated home
   and support authenticate-then-launch prepared rooms without copying secrets.
 - Capture non-interactive transcripts and add a browser-install lifecycle

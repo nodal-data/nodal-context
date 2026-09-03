@@ -88,6 +88,8 @@ elif args and args[0] == "exec":
         print("Binding status: configured")
         print("Next action: restart and approve the project server once")
         print("Repeat installation offer: no")
+elif "-C" in args:
+    print("interactive Codex test")
 else:
     print("unexpected fake Codex arguments", args, file=sys.stderr)
     raise SystemExit(2)
@@ -220,6 +222,24 @@ def run():
                 "FAKE_PLUGIN_ROOT": str(ROOT),
             }
         )
+        interactive_room = td / "interactive-codex-room"
+        result = run_harness(
+            "--package-source",
+            "source-checkout",
+            "--host",
+            "codex",
+            "--work-dir",
+            interactive_room,
+            "--skip-assert",
+            env=fake_env,
+        )
+        assert result.returncode == 0, result.stderr + result.stdout
+        interactive_record = json.loads(fake_log.read_text().splitlines()[-1])
+        assert "--sandbox" in interactive_record["args"]
+        sandbox_index = interactive_record["args"].index("--sandbox")
+        assert interactive_record["args"][sandbox_index + 1] == "workspace-write"
+        assert "--approve-for-me" not in interactive_record["args"]
+
         isolated_room = td / "isolated-codex-room"
         result = run_harness(
             "--package-source",
@@ -243,10 +263,14 @@ def run():
         assert marker["codex_home"] == "codex-home"
         assert marker["scenario"] == "browser-install-lifecycle"
         records = [json.loads(line) for line in fake_log.read_text().splitlines()]
-        assert records[0]["args"][:3] == ["plugin", "marketplace", "add"]
-        assert records[1]["args"][:2] == ["plugin", "add"]
-        assert records[2]["args"] == ["plugin", "list", "--json"]
-        assert all(record["codex_home"] == str(isolated_home.resolve()) for record in records)
+        isolated_records = [
+            record
+            for record in records
+            if record["codex_home"] == str(isolated_home.resolve())
+        ]
+        assert isolated_records[0]["args"][:3] == ["plugin", "marketplace", "add"]
+        assert isolated_records[1]["args"][:2] == ["plugin", "add"]
+        assert isolated_records[2]["args"] == ["plugin", "list", "--json"]
         assert "codex login --device-auth" in result.stdout
         assert "--launch-prepared" in result.stdout
 

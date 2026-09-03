@@ -471,8 +471,10 @@ def _launch(
             command.extend(["--add-dir", environment["CODEX_HOME"]])
         if args.unsafe_bypass:
             command.append("--dangerously-bypass-approvals-and-sandbox")
-        elif args.non_interactive:
-            command.extend(["--sandbox", "workspace-write", "--approve-for-me"])
+        else:
+            command.extend(["--sandbox", "workspace-write"])
+            if args.non_interactive:
+                command.append("--approve-for-me")
         command.append(prompt)
     else:
         return 0, None
