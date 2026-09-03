@@ -47,17 +47,16 @@ the current domain-by-domain validation model.
 
 ### Two ways to start
 
-- **Evaluate the workflow.** Use
-  [Shorelane Commerce](https://github.com/shorelane-data/shorelane), a fictional
-  company with a public warehouse and deliberately ambiguous revenue
-  definitions, together with its
-  [completed context repository](https://github.com/shorelane-data/shorelane-analytics-context).
-  This shows the evidence Nodal expects and the governed output it produces.
 - **Use your own stack.** Start with one bounded business domain where a domain
   expert can confirm the definitions. Prove the workflow there before adding
   another domain.
+- **Look at an example company.** See
+  [Shorelane Commerce](https://github.com/shorelane-data/shorelane), a fictional
+  company with a public warehouse and deliberately ambiguous revenue
+  definitions. The output of the analyst interview is here
+  [completed context repository](https://github.com/shorelane-data/shorelane-analytics-context).
 
-## Installation (about a minute)
+## CLI Installation (about a minute)
 
 Choose one installation method per host. Installing both a native plugin and
 skills.sh copies makes every skill appear twice and can cause ambiguous
@@ -206,9 +205,19 @@ For the best initial context build, prepare:
   not needed to build context or answer warehouse questions. See
   [how dashboard verification works](./docs/dashboard-verification.md).
 
-## Set up a project
+## Set up your first project
 
-Run setup once from the project where you will use Nodal:
+Run setup once from the folder where you want to create the context repo. Preferably this
+is where your data lineage, like a dbt repo, lives as well. Ideally:
+
+```text
+code/                        <-- start your Claude Code / Codex client here
+├── dbt-repo/                # your existing dbt project
+└── analytics-context/       # created by Nodal, sister repo to the dbt project
+```
+
+The analytics context repo Nodal builds sits alongside your dbt project as a
+sister repo, so the agent can see your data lineage while it interviews you.
 
 ```text
 # Claude Code
