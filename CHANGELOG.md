@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.1 — 2026-09-04
+
+- Add a shipped Sigma dashboard-verification playbook with explicit
+  organization, workbook, and page resolution for multi-workbook deployments.
+- Capture Sigma workbook/page identity, version, controls, resolved date state,
+  and partial-filter limitations alongside each page-scoped result.
+- Define safe tiered extraction for Sigma network payloads, visible elements, and
+  local on-demand exports without credentials, scheduled delivery, or writeback.
+
 ## 1.5.0 — 2026-09-03
 
 - Add opt-in isolated host-state testing with a fresh Codex home or Claude bare

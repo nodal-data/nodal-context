@@ -104,7 +104,8 @@ when nobody asked.
   conditions. Load at step 2.
 - `references/playbook-format.md` — playbook anatomy, replay semantics, drift
   protocol. Load at step 3.
-- `references/playbooks/<tool>.md` — per-BI-tool knowledge (currently: `plotly.md`).
+- `references/playbooks/<tool>.md` — per-BI-tool knowledge (currently:
+  `plotly.md` and `sigma.md`).
   Load when the tool is identified.
 - `references/capture-format.md` — the capture file shape. Load at step 5.
 - `references/reconcile.md` — the capture-vs-answers diff and report. Load only
