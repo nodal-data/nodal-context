@@ -87,7 +87,7 @@ scripts/integration/clean_test.sh \
   --host codex \
   --isolated-host \
   --marketplace-source nodal-data/nodal-context \
-  --marketplace-ref v1.5.0 \
+  --marketplace-ref v1.5.1 \
   --prepare-only
 ```
 
