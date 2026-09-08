@@ -19,6 +19,11 @@ is what "following evaluations" means here.
 
 ## 1. Assemble the question set
 
+Switch the session indicator to the verification format in `session-progress.md`:
+cases reviewed out of the chosen set, with extra user questions estimated separately.
+Count analyst-reviewed cases, not background off/on executions; report deferred
+verification explicitly.
+
 Prefer questions the analyst can read a number off a dashboard for — that's what
 makes the truth cheap and trustworthy:
 

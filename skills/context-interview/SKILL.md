@@ -72,6 +72,13 @@ down the answers in a format an agent can query and a team can review.
   codenames, acquisitions, or internal project names that differ from the company. If you 
   don't have the name from the analyst or a URL, **ask** — don't guess from what you queried.
 
+## Session progress
+
+In both the full interview and test drive, show a compact text indicator above
+each question: current domain/stage, answered count (or test-drive core topics
+complete), and estimated questions remaining. Read `references/session-progress.md`
+at session start for counting, scope changes, verification, and resume behavior.
+
 ## Local setup context
 
 Before Stage 0, look for the nearest `.nodal.local.json` from the user's current

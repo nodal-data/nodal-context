@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.2 — 2026-09-08
+
+- Show a combined text progress indicator during full interviews and test drives,
+  with the current stage, answered questions or completed core topics, and an
+  adaptive estimate of remaining questions.
+- Explain added follow-ups, keep deferred topics outside the quick-test budget,
+  and show live-verification progress separately from interview questions.
+
 ## 1.5.1 — 2026-09-04
 
 - Add a shipped Sigma dashboard-verification playbook with explicit
