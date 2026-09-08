@@ -43,6 +43,11 @@ but it never leaves one without a recorded outcome.
 
 ## The five questions (the analyst picks the domain)
 
+Use the combined indicator in `session-progress.md` throughout: five **core topics**
+as the fixed anchor, estimated interview questions left, and the live check shown
+separately. Include outstanding setup/company prompts and allowed follow-ups in
+the estimate; five core topics does not promise five total user interactions.
+
 Ask which domain (or dashboard) matters most right now; that's the one you do.
 No dashboard in mind? Anchor on tables instead: *"Which 3–5 tables do analysts
 query most often?"* — the most-queried table usually names the domain. (If

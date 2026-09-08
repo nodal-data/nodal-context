@@ -36,8 +36,10 @@ them all in one turn; that's a wall of line items no one can react to. Instead:
    moment of confirmation* — small batches don't defer seeds, they make it natural to
    capture each one immediately (this is the same "don't batch seeds to the end" rule
    above, not an exception to it).
-4. **Show progress every round.** One line: "Terminology: 3 of 8 confirmed, 5 to go.
-   Next: <item>." The count is just confirmed stubs vs remaining `draft` stubs.
+4. **Show progress every round.** Incorporate "Terminology: 3 of 8 terms confirmed"
+   into the combined indicator from `session-progress.md`. This local item count
+   is confirmed stubs vs remaining `draft` stubs, not questions remaining; keep
+   the session's question estimate visible too.
 5. **The list isn't frozen.** Let the analyst add or drop candidates as you go; delete
    a stub that turns out irrelevant.
 6. **Resume for free.** If the session is interrupted, the remaining `draft` stubs
