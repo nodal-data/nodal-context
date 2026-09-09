@@ -8,6 +8,13 @@ beats confirmation" ladder in SKILL.md: competing evidence-backed readings as a
 forced choice; a single reading via its most contested atom; a plain yes/no
 only for the genuinely settled.
 
+Before every next question, including a follow-up or confirmation, use the loop:
+**process answer → update agenda and counts → display progress → ask next question**.
+For a selection tool, emit the line in a visible assistant message immediately
+before the call, even if unchanged; use `session-progress.md` for the format and
+missing-count fallback. Keep remaining questions scoped to the domain round when
+changing stages.
+
 Throughout: when the analyst confirms a disambiguation, immediately write the eval
 seed (see `eval-seed-harvesting.md`). Don't batch them to the end — you'll lose the
 exact phrasing that makes a seed useful.

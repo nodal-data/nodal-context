@@ -93,6 +93,12 @@ moment of confirmation** — same rule as the full interview, no batching.
    `IF … DO NOT …` routing trigger in `reference.md`, and a seed — the
    highest-value one of the session.
 
+Before every next question, including the allowed follow-up, use the loop:
+**process answer → update agenda and counts → display progress → ask next question**.
+For a selection tool, send the line as a visible assistant message immediately
+before the call, even if unchanged. Use the missing-count fallback in
+`session-progress.md` instead of omitting the line; retain the five-topic budget.
+
 **Budget discipline:** one follow-up per question, then write and move on. When
 the analyst opens a rich vein (they will), capture the items as draft stubs with
 a one-line note and keep going — the stubs are the deep-pass agenda, and chasing

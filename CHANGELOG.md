@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.3 — 2026-09-09
+
+- Require a fresh progress line immediately before every interview question,
+  including selection-tool calls, follow-ups, and verification prompts.
+- Reinforce the question loop across full interviews and test drives, retain
+  visible progress when counts need rebuilding, and keep remaining estimates
+  scoped to the domain round across stage transitions.
+
 ## 1.5.2 — 2026-09-08
 
 - Show a combined text progress indicator during full interviews and test drives,

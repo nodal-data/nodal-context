@@ -17,6 +17,13 @@ Run it per domain at domain close (the "Closing each domain" step in `SKILL.md`)
 or across several domains once a few are built. Re-run it later the same way — that
 is what "following evaluations" means here.
 
+For every analyst prompt, including pre-flight, dashboard confirmations, and
+discrepancy follow-ups, use **process answer → update agenda and counts → display
+progress → ask next question**. For a question or selection tool, send the line
+in a visible assistant message immediately before the call, even if unchanged.
+Use the verification format or missing-count fallback in `session-progress.md`;
+background off/on execution does not require a new question or progress count.
+
 ## 1. Assemble the question set
 
 Switch the session indicator to the verification format in `session-progress.md`:
