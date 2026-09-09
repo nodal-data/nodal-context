@@ -20,6 +20,15 @@ Without automation, the workflow still works. Nodal asks the analyst to read the
 dashboard value and filter state, then uses that human-provided evidence for the
 same confirmation step.
 
+Per-tool playbooks ship for **Plotly** and **Sigma**
+(`skills/dashboard-verify/references/playbooks/`); other tools are handled
+agentically on first encounter, and the skill writes a learned replay playbook
+per dashboard into the context repo so later runs are deterministic. To see the
+full flow — sign-in handoff, filter capture, warehouse-versus-dashboard
+reconciliation, and the resulting eval seed — watch the
+[live verification demo](https://docs.nodaldata.io/open-source/evaluation#live-verification-against-your-dashboard)
+on the docs site.
+
 ## What the connection is
 
 The bundled option is Chrome DevTools MCP. Despite its technical name, this is

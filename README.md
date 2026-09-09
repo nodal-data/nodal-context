@@ -4,6 +4,7 @@
 > and verifying the answers.
 
 [Documentation](https://docs.nodaldata.io) ·
+[Quickstart](https://docs.nodaldata.io/quickstart) ·
 [Website](https://nodaldata.io) ·
 [Analytics Context Format](./SPEC.md) ·
 [Getting started](./docs/getting-started.md)
@@ -221,7 +222,8 @@ For the best initial context build, prepare:
 - **A dashboard in a local browser, if you want automated dashboard
   verification.** This is optional, is configured only with your consent, and is
   not needed to build context or answer warehouse questions. See
-  [how dashboard verification works](./docs/dashboard-verification.md).
+  [how dashboard verification works](./docs/dashboard-verification.md), or
+  [watch it run against a live Sigma dashboard](https://docs.nodaldata.io/open-source/evaluation#live-verification-against-your-dashboard).
 
 ## Set up your first project
 
@@ -264,7 +266,9 @@ Both paths produce a reviewable context repository and eval seeds; unanswered
 material remains visibly marked as draft.
 
 See the [full setup and local exercise guide](./docs/getting-started.md) for MCP
-options, permissions, configuration, and an end-to-end walkthrough.
+options, permissions, configuration, and an end-to-end walkthrough, or the
+[docs quickstart](https://docs.nodaldata.io/quickstart) for the same steps with
+the setup and demo videos.
 
 ## The workflows
 
@@ -361,7 +365,10 @@ dbt models and docs, raw Markdown, or an agent data-analysis skill and measure
 the accuracy delta with context on versus off.
 
 The five-question test drive is also a practical way to create the labeled seeds
-needed to evaluate context you already maintain in another format.
+needed to evaluate context you already maintain in another format. See
+[evaluation as you build it](https://docs.nodaldata.io/open-source/evaluation)
+for how the in-session verification, the local eval delta, and the hosted
+continuous evaluation relate.
 
 ## Open source and hosted paths
 
