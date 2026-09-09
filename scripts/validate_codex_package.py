@@ -8,6 +8,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
+PORTABLE_MANIFEST_PATH = ROOT / "plugin.json"
 MANIFEST_PATH = ROOT / ".codex-plugin/plugin.json"
 MARKETPLACE_PATH = ROOT / ".agents/plugins/marketplace.json"
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$")
@@ -25,6 +26,7 @@ def load(path):
 
 def validate():
     problems = []
+    portable = load(PORTABLE_MANIFEST_PATH)
     manifest = load(MANIFEST_PATH)
     for key in ("name", "version", "description", "author", "license", "skills", "interface"):
         if key not in manifest:
@@ -33,11 +35,45 @@ def validate():
         problems.append("manifest version is not strict semver")
     if manifest.get("license") != "Apache-2.0":
         problems.append("manifest license must be Apache-2.0")
+    if portable.get("$schema") != "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json":
+        problems.append("portable manifest has the wrong Agent Plugins schema")
+    for key in ("name", "version", "description", "author", "license"):
+        if key not in portable:
+            problems.append(f"portable manifest missing {key}")
+    if portable.get("name") != manifest.get("name"):
+        problems.append("portable/Codex manifest name mismatch")
+    if portable.get("version") != manifest.get("version"):
+        problems.append("portable/Codex manifest version mismatch")
+    if portable.get("license") != "Apache-2.0":
+        problems.append("portable manifest license must be Apache-2.0")
+    if "mcpServers" in portable or (ROOT / "mcp.json").exists():
+        problems.append("portable plugin must not bundle an MCP server")
     if "mcpServers" in manifest:
         problems.append("manifest must not bundle an MCP server")
     skill_path = (ROOT / str(manifest.get("skills", ""))).resolve()
     if skill_path != (ROOT / "skills").resolve() or not skill_path.is_dir():
         problems.append("manifest skills path must resolve to root skills/")
+
+    interface = portable.get("extensions", {}).get("com.openai", {}).get("interface", {})
+    for key in (
+        "displayName", "shortDescription", "longDescription", "developerName",
+        "category", "websiteURL", "privacyPolicyURL", "termsOfServiceURL",
+        "defaultPrompt", "brandColor", "composerIcon", "logo",
+    ):
+        if key not in interface:
+            problems.append(f"portable OpenAI interface missing {key}")
+    prompts = interface.get("defaultPrompt")
+    if not isinstance(prompts, list) or not prompts or len(prompts) > 3:
+        problems.append("portable OpenAI interface must have 1-3 starter prompts")
+    for key in ("websiteURL", "privacyPolicyURL", "termsOfServiceURL"):
+        if not str(interface.get(key, "")).startswith("https://"):
+            problems.append(f"portable OpenAI interface {key} must use https")
+    for key in ("composerIcon", "logo"):
+        raw_path = interface.get(key)
+        if not isinstance(raw_path, str) or not raw_path.startswith("./assets/"):
+            problems.append(f"portable OpenAI interface {key} must be under ./assets/")
+        elif not (ROOT / raw_path).is_file():
+            problems.append(f"portable OpenAI interface {key} does not exist")
 
     marketplace = load(MARKETPLACE_PATH)
     entries = marketplace.get("plugins")
@@ -103,4 +139,3 @@ def main(argv=None):
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

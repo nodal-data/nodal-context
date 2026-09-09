@@ -1,12 +1,13 @@
 {
   "name": "nodal-analytics",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Plan, verify, and challenge analytics with governed, multi-source context and interview-built ground truth.",
   "author": {
     "name": "Nodal Data",
-    "url": "https://github.com/nodal-data"
+    "email": "info@nodaldata.io",
+    "url": "https://nodaldata.io"
   },
-  "homepage": "https://github.com/nodal-data/nodal-context",
+  "homepage": "https://docs.nodaldata.io/quickstart",
   "repository": "https://github.com/nodal-data/nodal-context",
   "license": "Apache-2.0",
   "keywords": ["analytics", "context", "dashboard", "dbt"],
@@ -14,19 +15,20 @@
   "interface": {
     "displayName": "Nodal Analytics",
     "shortDescription": "Governed analytics planning and context",
-    "longDescription": "Plan read-only analytics from ACF, KTX, dbt, and approved documentation; verify and challenge results; and build human-owned ground truth through interviews.",
+    "longDescription": "Build human-owned analytics context through structured interviews, plan read-only data questions against approved definitions, verify SQL and results, and challenge disputed answers with an independent review.",
     "developerName": "Nodal Data",
     "category": "Data & Analytics",
     "capabilities": ["Read", "Write"],
-    "websiteURL": "https://github.com/nodal-data/nodal-context",
+    "websiteURL": "https://nodaldata.io",
+    "privacyPolicyURL": "https://github.com/nodal-data/nodal-context/blob/main/docs/privacy.md",
+    "termsOfServiceURL": "https://github.com/nodal-data/nodal-context/blob/main/docs/terms.md",
     "defaultPrompt": [
-      "Set up Nodal for this analytics project.",
-      "Build an analytics context layer with me.",
-      "Plan this analytics question before querying the warehouse.",
-      "Verify whether this SQL and result match the approved plan.",
-      "Challenge this analytics answer with an independent second review.",
-      "Capture an analyst handoff into governed context."
+      "Build a governed analytics context layer with me.",
+      "Plan and answer this analytics question using our approved context.",
+      "Verify this SQL and result against the approved plan."
     ],
-    "brandColor": "#3B5CCC"
+    "brandColor": "#479778",
+    "composerIcon": "./assets/nodal-logo.png",
+    "logo": "./assets/nodal-logo.png"
   }
 }
