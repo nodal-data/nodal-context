@@ -134,7 +134,10 @@ approved for your environment and authenticate it outside Nodal.
 | Other | [Model Context Protocol servers](https://github.com/modelcontextprotocol/servers) |
 
 Use a dedicated read-only role or identity. Nodal does not execute DDL, DML,
-grants, stored procedures, or exports.
+grants, stored procedures, or exports. Admin-facing grant scripts for each
+warehouse — including role activation pitfalls, the analyst's self-test, and the
+removal command for when the context repo is built — are on the docs site under
+[Connect your database](https://docs.nodaldata.io/open-source/connect-your-database).
 
 ## Historical query access
 
@@ -396,7 +399,9 @@ Choosing manual verification is saved so setup does not repeatedly ask. If the
 connection has been added but is not live yet, Nodal asks for the required
 session restart instead of offering to install it again. See
 [Dashboard verification and the optional browser connection](./dashboard-verification.md)
-for the complete behavior and troubleshooting guide.
+for the complete behavior and troubleshooting guide, or
+[watch a live verification](https://docs.nodaldata.io/open-source/evaluation#live-verification-against-your-dashboard)
+against a Sigma dashboard end to end.
 
 ## Maintainer testing
 
