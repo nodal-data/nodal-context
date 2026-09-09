@@ -5,6 +5,28 @@ Update it after each answer and at stage transitions; it is ordinary conversatio
 text, with no host-specific UI dependency. Keep the existing one-thing-at-a-time
 question style.
 
+## Before each question
+
+Use this loop for every analyst response: **process answer → update agenda and
+counts → display progress → ask next question**. On the first question, initialize
+the agenda and display progress before asking. This applies to setup, follow-ups,
+confirmations, selection dialogs, and verification prompts, even when the stage
+and estimate have not changed.
+
+For a question or selection tool, send the bold line in a separate visible
+assistant message immediately before invoking the tool. Do not put it only in
+internal reasoning, tool arguments, or an earlier status update. For a prose
+question, place it immediately above the question in the same message. Immediately
+before sending either kind of question, check that its progress line is present;
+if absent, emit it first. No extra analyst acknowledgment is needed.
+
+If the agenda or previous count is unavailable, still display the current scope
+and stage with `Re-estimating questions remaining`. Rebuild from the conversation
+and remaining drafts without inventing historical counts. Preserve any known
+counts and resume numeric estimates once grounded; uncertainty never means omit
+the line. After an interruption or conversation compaction, restore this loop
+before the next question.
+
 ## Count the user's remaining effort
 
 Maintain a session agenda in conversation state: current scope and stage, answered
@@ -37,6 +59,10 @@ in the company. When necessary discoveries increase the remaining estimate, add
 one short reason, for example: “The regional revenue rules add about three
 follow-ups.” Reflect resolved or deferred questions in the next estimate too.
 Keep new domains in the later agenda until the user chooses to continue to them.
+Moving between stages changes the stage label, not the estimate's scope: questions
+left always covers the current domain round, not just the current stage. Do not
+reset the answered count at stage boundaries. Before a domain is chosen, retain
+the setup/discovery fallback rather than inventing a stage-only total.
 
 For long lists, incorporate the local item count into the same line when useful,
 explicitly labeled (for example, `Terminology: 3/8 terms confirmed`). It does not

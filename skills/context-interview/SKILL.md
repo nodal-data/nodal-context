@@ -32,6 +32,13 @@ down the answers in a format an agent can query and a team can review.
   different reimbursement cycle" yes; "~37% of sessions" no.
 - **Ask one thing at a time.** These are working analysts. Short, specific
   questions — never a compound paragraph ending in "right?".
+- **Display progress before every question.** Before each question requiring an
+  analyst response, including setup, follow-ups, and confirmations, emit the bold
+  progress line even if the stage and estimate are unchanged. For a question or
+  selection tool, send it as a separate visible assistant message immediately
+  before invoking the tool. An earlier indicator does not cover the next question.
+  If counts are unavailable, show the current stage and `Re-estimating questions
+  remaining`; see `references/session-progress.md`.
 - **Selection beats confirmation.** Drafting stays cheap — but a draft is
   confirmed by making the analyst *choose*, not nod. Before any confirmation
   prompt, run the ladder:
