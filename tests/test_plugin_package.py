@@ -11,14 +11,33 @@ def load(relative):
 
 
 def run():
+    portable = load("plugin.json")
     claude = load(".claude-plugin/plugin.json")
     codex = load(".codex-plugin/plugin.json")
     for manifest in (claude, codex):
         assert manifest["name"] == "nodal-analytics"
-        assert manifest["version"] == "1.5.3"
+        assert manifest["version"] == "1.5.4"
         assert manifest["license"] == "Apache-2.0"
         assert manifest["skills"] == "./skills/"
         assert "mcpServers" not in manifest
+    assert portable["$schema"] == "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+    assert portable["name"] == claude["name"] == codex["name"]
+    assert portable["version"] == claude["version"] == codex["version"]
+    assert portable["license"] == "Apache-2.0"
+    assert "mcpServers" not in portable
+    openai = portable["extensions"]["com.openai"]["interface"]
+    assert openai == codex["interface"]
+    assert len(openai["defaultPrompt"]) <= 3
+    assert openai["privacyPolicyURL"].startswith("https://")
+    assert openai["termsOfServiceURL"].startswith("https://")
+    for key in ("composerIcon", "logo"):
+        assert openai[key].startswith("./assets/")
+        assert (ROOT / openai[key]).is_file()
+    for relative in ("docs/privacy.md", "docs/terms.md", "docs/support.md"):
+        assert (ROOT / relative).is_file()
+    reviewer_cases = (ROOT / "submission/openai/test-cases.md").read_text()
+    assert reviewer_cases.count("### ") == 8
+    assert (ROOT / "scripts/build_openai_submission.py").is_file()
     assert not (ROOT / ".mcp.json").exists()
 
     for relative in (".claude-plugin/marketplace.json", ".agents/plugins/marketplace.json"):

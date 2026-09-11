@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.4 — 2026-09-09
+
+- Add the portable Agent Plugins manifest and production-ready Nodal logo for
+  OpenAI's universal plugin directory while retaining Codex and Claude
+  compatibility manifests.
+- Add public privacy, terms, and support pages for the open-source plugin.
+- Add OpenAI listing copy, release notes, starter prompts, and reproducible
+  reviewer cases for a skills-only submission.
+
 ## 1.5.3 — 2026-09-09
 
 - Require a fresh progress line immediately before every interview question,

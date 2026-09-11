@@ -3,6 +3,7 @@ FINDINGS.md
 .nodal.local.json
 
 .venv/
+dist/
 
 # Simulated-analyst briefs — local only; may contain customer-confidential data.
 # (Inline comments are NOT allowed on gitignore pattern lines — keep them above.)

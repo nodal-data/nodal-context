@@ -9,6 +9,9 @@
 [Analytics Context Format](./SPEC.md) ·
 [Getting started](./docs/getting-started.md)
 
+[Support](./docs/support.md) · [Privacy](./docs/privacy.md) ·
+[Terms](./docs/terms.md)
+
 Analytics agents can write valid SQL and still give the wrong answer. They need
 the definitions an experienced analyst carries around: what a metric means,
 which table is canonical, which filters are mandatory, where joins fan out, and

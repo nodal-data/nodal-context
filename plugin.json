@@ -1,0 +1,38 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "nodal-analytics",
+  "version": "1.5.4",
+  "description": "Plan, verify, and challenge analytics with governed, multi-source context and interview-built ground truth.",
+  "author": {
+    "name": "Nodal Data",
+    "email": "info@nodaldata.io",
+    "url": "https://nodaldata.io"
+  },
+  "homepage": "https://docs.nodaldata.io/quickstart",
+  "repository": "https://github.com/nodal-data/nodal-context",
+  "license": "Apache-2.0",
+  "keywords": ["analytics", "context", "dashboard", "dbt"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Nodal Analytics",
+        "shortDescription": "Governed analytics planning and context",
+        "longDescription": "Build human-owned analytics context through structured interviews, plan read-only data questions against approved definitions, verify SQL and results, and challenge disputed answers with an independent review.",
+        "developerName": "Nodal Data",
+        "category": "Data & Analytics",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://nodaldata.io",
+        "privacyPolicyURL": "https://github.com/nodal-data/nodal-context/blob/main/docs/privacy.md",
+        "termsOfServiceURL": "https://github.com/nodal-data/nodal-context/blob/main/docs/terms.md",
+        "defaultPrompt": [
+          "Build a governed analytics context layer with me.",
+          "Plan and answer this analytics question using our approved context.",
+          "Verify this SQL and result against the approved plan."
+        ],
+        "brandColor": "#479778",
+        "composerIcon": "./assets/nodal-logo.png",
+        "logo": "./assets/nodal-logo.png"
+      }
+    }
+  }
+}
