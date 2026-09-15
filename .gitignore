@@ -47,3 +47,6 @@ evals/captures/*
 .nodal-dashboard-verify-profile/
 
 query-upgrade-2026-07-15.md
+
+# Plugin eval run output (regenerated on every `claude plugin eval` run; large HTML + JSON)
+quality/plugin-evals/results/

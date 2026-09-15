@@ -74,5 +74,17 @@ maintainer-operated integration checks. Keep briefs, MCP configuration, browser
 profiles, credentials, and host-specific settings in ignored local files. The
 harness must never delete a caller-supplied directory.
 
+The plugin eval suite under `quality/plugin-evals/` measures skill behavior
+rather than packaging. Run it from the repository root with
+`claude plugin eval . --eval-dir quality/plugin-evals --ablation with-without
+--judge-model sonnet`; add `--no-publish` to keep the report local. It runs
+every case with and without the plugin and reports the uplift Δ. Rules for
+editing the suite: keep at least one should-not-fire case, give every case at
+least one outcome grader (a `tool_used: Skill` check is display-only and never
+moves Δ), keep `runs: 3`, keep the ablation, and keep the sonnet judge the
+rubrics were calibrated against. Do not change a grader so that it always
+passes; re-pilot and read the outputs whenever a rubric changes. Results are
+gitignored and regenerated on every run. A full run costs roughly five dollars.
+
 Commit, push, publish, and global agent configuration changes happen only when
 the user explicitly requests them.

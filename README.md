@@ -397,10 +397,30 @@ nodal-context/
 ├── template/                  # generated context-repository scaffold
 ├── examples/                  # worked ACF examples
 ├── eval_harness/              # format-agnostic evaluation runner
+├── quality/plugin-evals/      # plugin eval suite for the skills (Claude Code `claude plugin eval`)
 ├── scripts/integration/       # opt-in clean-room release harness
 ├── .claude-plugin/            # Claude plugin and marketplace metadata
 └── .codex-plugin/             # Codex plugin metadata
 ```
+
+### Skill eval suite
+
+`quality/plugin-evals/` holds a Claude Code plugin eval suite for the skills.
+Each case is a `prompt.md` plus `graders/` that check the *answer* (verdict,
+named defect, impact, confidence or escalation guidance), not which tools ran.
+Every case runs twice, with and without the plugin, so the headline number is
+the uplift Δ rather than a raw pass rate. The current suite covers
+`verify-result` with Shorelane fixtures. Run it from the repository root:
+
+```bash
+claude plugin eval . --eval-dir quality/plugin-evals --ablation with-without --judge-model sonnet
+```
+
+Keep `--judge-model sonnet`; the graders were calibrated against that judge and
+the runner's default is smaller. Add `--no-publish` to keep the HTML report
+local and `-j 4` to shorten wall time. Results land in
+`quality/plugin-evals/results/`, which is gitignored. A full run costs roughly
+five dollars.
 
 Maintainers should use the
 [clean-room integration guide](./scripts/integration/README.md) for source,
