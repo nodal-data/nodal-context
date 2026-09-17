@@ -34,3 +34,56 @@ metrics:
     lineage:
       - source: dbt_core
         models: [fct_session_financials]
+
+  # ACF 0.2 syntax examples only; these additions await analyst confirmation.
+  - name: observed_notes
+    definition: Distinct notes represented in session financials.
+    grain: note_id
+    status: draft
+    expression:
+      measure: COUNT(DISTINCT note_id)
+      allowed_dimensions: [session_date]
+    lineage:
+      - source: dbt_core
+        models: [fct_session_financials]
+
+  - name: notes_missing_payer
+    definition: Notes with at least one session row whose payer is null or blank.
+    grain: note_id
+    status: draft
+    expression:
+      measure: COUNT(DISTINCT note_id)
+      mandatory_filters:
+        - any_of:
+            - {field: payer_name, op: is_null}
+            - {field: payer_name, op: '=', value: ''}
+          reason: Checking only SQL null misses blank payer names.
+      allowed_dimensions: [session_date]
+    lineage:
+      - source: dbt_core
+        models: [fct_session_financials]
+
+  - name: notes_with_multiple_services
+    definition: Notes with at least two distinct authorized services among surviving rows.
+    grain: note_id
+    status: draft
+    expression:
+      measure: COUNT(DISTINCT note_id)
+      entity_filters:
+        - entity: note_id
+          having:
+            - {measure: 'COUNT(DISTINCT authorized_service_id)', op: '>=', value: 2}
+          reason: Multiple-service eligibility belongs to the note, not one session row.
+      allowed_dimensions: [session_date]
+    lineage:
+      - source: dbt_core
+        models: [fct_session_financials]
+
+  - name: missing_payer_note_rate
+    definition: Share of observed notes with at least one missing payer.
+    grain: note_id
+    status: draft
+    expression:
+      measure: metric(notes_missing_payer) / metric(observed_notes)
+      allowed_dimensions: [session_date]
+    # Lineage is inherited from both referenced metrics.

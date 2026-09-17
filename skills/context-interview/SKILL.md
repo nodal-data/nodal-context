@@ -283,6 +283,13 @@ misunderstands. See `references/interview-flow.md` §1.
 A domain is *how the company already thinks about a slice of the business.* The
 best proxy is the dashboard catalog. Ask: "What are the dashboards your team
 maintains, and who owns each?" Cluster them. Each coherent cluster is a domain.
+When drafting metric expressions, use ACF 0.2 `any_of`/`all_of` for filter
+alternatives, `entity_filters` for conditions on entity groups, and `metric(name)`
+for same-file metric arithmetic. Read back and confirm every component; edits
+reset confirmed metrics to draft. Require grain, inherit lineage for reference-only
+arithmetic, and check dimension subsets and acyclic references. Keep placeholders
+under `parameters`; set `context.config.yaml: version` to 0.2 on adoption.
+
 For each domain capture `domain.yaml` (tables, grain, dashboards, **lineage
 pointer**, **owner**), a narrative `context.md`, and — the important one — a
 `reference.md` written for the agent using the skeleton in

@@ -12,14 +12,27 @@ metrics:
     common_filters:
       - <standard WHERE clauses>
     # expression: — OPTIONAL deterministic anchor (see SPEC.md). Generic form, not
-    # runnable SQL. If present, `grain` and `lineage` above become REQUIRED.
+    # runnable SQL. Requires `grain`; column/row measures also require `lineage`.
     # expression:
+    #   # Or reference same-file metrics: metric(numerator) / metric(denominator).
+    #   # Reference-only arithmetic inherits lineage; dimensions must be a subset
+    #   # of every reference. References must be acyclic.
     #   measure: <e.g. SUM(collected_amount) / SUM(allowed_amount)>
     #   mandatory_filters:          # without these the metric is WRONG
     #     - field: <column>
     #       op: <e.g. "<" | not_ilike | in>
     #       value: <literal or <placeholder> expression>
     #       reason: <the failure this filter prevents>
+    #     # Optional alternative group inside mandatory_filters:
+    #     - any_of:
+    #         - {field: payer_name, op: is_null}
+    #         - {field: payer_name, op: '=', value: ''}
+    #       reason: Null-only filtering misses blank payer names.
+    #   entity_filters:            # row filters run before entity grouping
+    #     - entity: note_id
+    #       having:
+    #         - {measure: 'COUNT(DISTINCT authorized_service_id)', op: '>=', value: 2}
+    #       reason: Eligibility belongs to the note group.
     #   allowed_dimensions: [<column>, <model.column when ambiguous>]
     lineage:
       - source: dbt_core

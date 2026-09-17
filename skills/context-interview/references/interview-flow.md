@@ -267,8 +267,15 @@ legitimate plain confirm (ladder rung 3) — *provided every load-bearing piece
 contested during drafting*. If any piece is entering the expression un-chosen,
 ask that piece's atom first; never introduce a new clause for the first time
 inside a read-back. The schema requires
-`grain` and `lineage` on any metric carrying an expression, so confirm those at the
-same moment (§2 steps 3–4 usually already captured them). Later edits to a
+`grain`; column/row measures require lineage, while reference-only arithmetic
+inherits the union of referenced lineage. Confirm the applicable pointers at the
+same moment (§2 steps 3–4 usually already captured them). Use `any_of`/`all_of`
+for nested alternatives, `entity_filters` for per-entity eligibility, and
+`metric(name)` for same-file governed components. Confirm each group, entity key,
+having condition, and reference individually before the assembled read-back.
+Referring dimensions must be supported by every component; references cannot be
+cyclic. Declare placeholders in `parameters` and keep them as query-time slots.
+Set the context version to 0.2 when adopting these constructs. Later edits to a
 confirmed metric's expression reset it to `status: draft` until re-confirmed.
 
 ---

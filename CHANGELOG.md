@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.0 — 2026-09-16
+
+- Add ACF 0.2 nested AND/OR filters, per-entity eligibility conditions, and
+  same-file metric references with inherited lineage.
+- Validate measure grammar, reference cycles and dimension subsets; optionally
+  check lineage columns against local dbt manifests.
+- Update authoring guidance, draft worked examples, and generated scaffolds.
+
 ## 1.5.4 — 2026-09-09
 
 - Add the portable Agent Plugins manifest and production-ready Nodal logo for

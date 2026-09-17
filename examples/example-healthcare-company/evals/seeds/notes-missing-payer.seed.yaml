@@ -1,0 +1,15 @@
+question: How many notes have a missing payer?
+domain: session-financials
+intent: Include both null and blank payer names, counting distinct notes.
+ir:
+  metric: notes_missing_payer
+  filters:
+    - any_of:
+        - {field: payer_name, op: is_null}
+        - {field: payer_name, op: '=', value: ''}
+      reason: Null-only filtering misses blank payer names.
+expected:
+  kind: sql_shape
+  must_include: [COUNT(DISTINCT note_id), OR]
+provenance: generated
+status: draft

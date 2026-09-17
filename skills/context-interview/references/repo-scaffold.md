@@ -92,7 +92,7 @@ values on every PR as a backstop.
 Then, as you discover each domain's tables (Stage 2, Q4), record the lineage pointer:
 
 ```yaml
-version: 0.1
+version: 0.2
 warehouse: snowflake                # default platform; per-source `warehouse:` overrides it
 lineage_sources:
   - id: dbt_core
