@@ -146,7 +146,7 @@ already supports this); don't invent a federated marker. Drift detection must re
 each source's platform by this rule and diff against that source's manifest/connection.
 
 ```yaml
-version: 0.1
+version: 0.2
 warehouse: snowflake            # default platform; per-source `warehouse:` overrides it
 lineage_sources:
   - id: dbt_snowflake
@@ -188,12 +188,16 @@ the "generic form" rule precise and schema-checkable — the compile target for
 eval templates, reconciliation, and verification. It is *not* SQL and *not* a
 dialect; it is the structured envelope around a generic-form measure:
 
-- `measure` (required) — the aggregation expression over columns of the metric's
-  `lineage:` models, e.g. `SUM(collected_amount) / SUM(allowed_amount)`. The
-  pattern-not-paste rules ("Query patterns", above) apply verbatim:
-  `<placeholders>` for parameter values, business-constant literals welcome, no
-  statistics, never a runnable query. The FROM is the metric's `lineage:`, the
-  WHERE is `mandatory_filters`, the GROUP BY is a subset of `allowed_dimensions`.
+- `measure` (required) — aggregates of lineage columns, `metric(name)` references
+  to another metric in the same `metrics.yaml`, or arithmetic combining them.
+  The grammar admits `SUM`, `COUNT`, `AVG`, `MIN`, `MAX` of one column (optionally
+  `DISTINCT`), `COUNT(*)`, numerals, unary signs, `+ - * /`, and parentheses.
+  Columns may be qualified as `model.column`; metric names are identifiers
+  (letters/underscore followed by letters, digits, underscores, dots or hyphens).
+  No bare columns, CASE, SQL clauses, joins, windows, arbitrary functions, or
+  subqueries. Business constants are welcome; observed statistics stay out.
+  The FROM is `lineage`, the WHERE is `mandatory_filters`, and slicing is a
+  subset of `allowed_dimensions`.
 - `mandatory_filters` — filters without which the metric is *wrong* (vs.
   `common_filters`, which stays advisory prose). Structured objects
   `{field, op, value?, reason?}`; `reason` names the failure the filter prevents.
@@ -201,17 +205,55 @@ dialect; it is the structured envelope around a generic-form measure:
   `<=`, `>`, `>=`, `in`, `not_in`, `like`/`not_like`, `ilike`/`not_ilike`,
   `is_null`, `is_not_null`, `between`; `value` may carry generic-form expressions
   (e.g. `<as_of_date> - 45 days`).
+  The top-level list combines with AND. Wrap alternatives in `any_of`, or use
+  `all_of` for nested conjunctions. A group contains a nonempty list of filters
+  or groups, with exactly one of `any_of` / `all_of` / a plain filter. Groups
+  carry their own optional `reason`, naming the failure they prevent. Render
+  each group with parentheses to preserve precedence.
+- `entity_filters` — conditions on groups of rows sharing an `entity` column,
+  e.g. customers with aliases in at least two source systems. Apply mandatory
+  row filters first; group surviving rows by `entity`; keep groups satisfying
+  every `having` condition; compute the outer measure over the original rows
+  of kept groups. Each entry has `entity`, a nonempty `having` list of
+  `{measure, op, value}`, and optional `reason`. The having measure uses the
+  same grammar as the outer measure; `op` has the filter vocabulary and `value`
+  is a literal or `<placeholder>`. Multiple entries are AND-ed, each evaluated
+  on the same row-filtered population before intersecting eligible rows.
+  This is a keyed grouped condition, not a join or an embedded query.
 - `allowed_dimensions` — column names (dotted `model.column` when ambiguous) the
   metric may be sliced by. Omitted = not yet enumerated; present = exhaustive for
   verified slicing.
 
-A metric carrying an `expression:` MUST also state its `grain` and pin its
-`lineage` (schema-enforced) — that is what keeps the anchor drift-covered. By
+`metric(name)` carries the referenced metric's own filters, entity conditions,
+and lineage. The referring metric's mandatory filters apply on top of every
+reference, before grouping. References resolve only within this `metrics.yaml`
+and must be acyclic; every referenced metric must have an expression. Use them
+for ratios and differences so components stay single-sourced. Enumerated
+`allowed_dimensions` must be a subset of every referenced metric's enumerated
+dimensions. Omitted dimensions remain unverified, not permission to slice by
+anything.
+
+A metric carrying an `expression:` MUST state its `grain` (schema-enforced).
+Column/row measures (including `COUNT(*)`) require explicit `lineage` models. A measure made only of references and arithmetic needs no own
+lineage: inherit the transitive union of referenced lineage. The validator checks
+this rule and the reference graph. Pass local dbt manifests as repeatable
+`--manifest SOURCE_ID=PATH` arguments to `.ci/validate.py` to check column names,
+including entity keys and having measures. Without a source's manifest, column
+membership for that source remains unchecked. By
 convention its lineage models are a subset of the domain's lineage in
 `context.config.yaml`, so an upstream model change re-flags `metrics.yaml` for
 re-confirmation. Like everything else, the expression is analyst-confirmed
 (design rule 1): adding or editing one on a confirmed metric flips the metric
 back to `status: draft` until re-confirmed.
+
+ACF 0.2 adds groups, entity conditions, and metric references; flat filters and
+existing column aggregates retain their meaning. Set `version: 0.2` in
+`context.config.yaml` when adopting these features. The validator warns on their use:
+older consumers may still read the file but degrade its meaning and must not
+claim a verified result without implementing every clause. Placeholders remain
+query-time parameter slots, declared under `parameters`, never constants. See
+`examples/example-healthcare-company/domains/session-financials/metrics.yaml`
+for draft examples of all three additions.
 
 ### domain (`domains/*/domain.yaml`)
 `name`, `summary`, `tables`, `grain`, `dashboards`, `owner`, `lineage`.

@@ -1,0 +1,10 @@
+version: 0.2
+warehouse: snowflake
+lineage_sources:
+  - id: dbt_core
+    type: dbt
+domains:
+  session-financials:
+    lineage:
+      - source: dbt_core
+        models: [fct_session_financials, dim_client, dim_provider]
