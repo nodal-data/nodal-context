@@ -54,10 +54,11 @@ def validate():
     if skill_path != (ROOT / "skills").resolve() or not skill_path.is_dir():
         problems.append("manifest skills path must resolve to root skills/")
 
-    interface = portable.get("extensions", {}).get("com.openai", {}).get("interface", {})
+    openai = portable.get("extensions", {}).get("com.openai", {})
+    interface = openai.get("interface", {})
     for key in (
         "displayName", "shortDescription", "longDescription", "developerName",
-        "category", "websiteURL", "privacyPolicyURL", "termsOfServiceURL",
+        "category", "websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL",
         "defaultPrompt", "brandColor", "composerIcon", "logo",
     ):
         if key not in interface:
@@ -65,7 +66,19 @@ def validate():
     prompts = interface.get("defaultPrompt")
     if not isinstance(prompts, list) or not prompts or len(prompts) > 3:
         problems.append("portable OpenAI interface must have 1-3 starter prompts")
-    for key in ("websiteURL", "privacyPolicyURL", "termsOfServiceURL"):
+    for key, limit in (("displayName", 30), ("shortDescription", 30),
+                       ("longDescription", 4000), ("developerName", 80)):
+        value = interface.get(key)
+        if not isinstance(value, str) or not value.strip() or len(value) > limit:
+            problems.append(f"portable OpenAI interface {key} must be nonempty and at most {limit} characters")
+    if interface != manifest.get("interface"):
+        problems.append("portable/Codex interface mismatch")
+    if openai.get("requires_local_executor") is not True or manifest.get("requires_local_executor") is not True:
+        problems.append("Nodal requires a local executor in portable and Codex manifests")
+    for label, settings in (("portable", openai), ("Codex", manifest.get("extensions", {}).get("com.openai", {}))):
+        if settings.get("onboardingSkill") != "./skills/setup-nodal/SKILL.md":
+            problems.append(f"{label} onboarding skill must be packaged setup-nodal")
+    for key in ("websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"):
         if not str(interface.get(key, "")).startswith("https://"):
             problems.append(f"portable OpenAI interface {key} must use https")
     for key in ("composerIcon", "logo"):

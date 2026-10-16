@@ -139,6 +139,17 @@ in the loop:
   reads while answering a question is processed by the model provider behind
   your agent host—for example, Anthropic when you run on Claude Code—exactly as
   in any other use of that agent. Nodal adds no new data recipient.
+- **Optional browser verification downloads one pinned package.** If you
+  consent during setup, `setup-nodal` merges a Chrome DevTools MCP entry into
+  your own configuration. Your agent then runs the pinned
+  `chrome-devtools-mcp@1.7.0` package through `npx`, using a dedicated local
+  browser profile. Nodal adds nothing to your configuration without that consent.
+- **Optional CI templates run in your GitHub Actions.** The workflows that
+  `context-interview` scaffolds into your context repository use the
+  repository's `github.token` to read manifests and dispatch drift checks
+  between your own GitHub repositories. If you add your own
+  `ANTHROPIC_API_KEY` as a repository secret, they also send drift reports and
+  eval cases to the Anthropic API. Without the key, those steps skip.
 
 Nodal's separate [hosted offering](#open-source-and-hosted-paths) is a paid
 product that activates only when you opt in. Nothing in this package turns it

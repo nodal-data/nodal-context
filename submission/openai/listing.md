@@ -2,7 +2,11 @@
 
 Use this document as the source of truth when completing the OpenAI plugin
 submission portal. Submit the package as **Skills only**. The open-source plugin
-does not bundle or operate an MCP server.
+does not bundle or operate an MCP server. It requires a local executor and should
+be listed as **Desktop only**. Installation provides the seven skills; it does
+not provision a warehouse connection. Users configure and authenticate their
+own approved read-only connection, and setup can proceed with unavailable
+connections recorded as such.
 
 Build the upload archive from the repository root:
 
@@ -15,13 +19,34 @@ preserves the canonical cross-host skills while normalizing the Claude-specific
 `disable-model-invocation` frontmatter in the upload copy. OpenAI's
 `agents/openai.yaml` continues to require explicit invocation of `setup-nodal`.
 
+## Release verification
+
+Run the repository's required checks before building the upload archive:
+
+```bash
+python3 scripts/run_tests.py
+python3 scripts/lint_skills.py
+python3 .ci/validate.py
+python3 scripts/sync_skill_payload.py --check
+python3 scripts/validate_codex_package.py --list-available
+claude plugin validate . --strict
+```
+
+The direct test runner covers repository and isolated installed-skill scaffold
+smoke tests. Also extract the built ZIP into a temporary directory and smoke-test
+the packaged scaffold there. Before publication, manually verify desktop setup
+both after installation in a fresh chat and when installing during an existing
+chat. Confirm setup asks before writing project configuration and explains
+missing connections without requesting credentials. These desktop checks are
+maintainer-operated; offline checks do not establish that they passed.
+
 ## Listing
 
 | Field | Value |
 | --- | --- |
 | Plugin name | Nodal Analytics |
 | Publisher | Nodal Data |
-| Short description | Governed analytics planning and context |
+| Short description | Governed analytics workflows |
 | Category | Data & Analytics |
 | Website | https://nodaldata.io |
 | Support | https://github.com/nodal-data/nodal-context/blob/main/docs/support.md |
@@ -55,7 +80,7 @@ above. The publisher must make the final selection in the portal.
 
 ## Initial release notes
 
-Initial public submission of Nodal Analytics 1.5.4. This skills-only plugin
+Initial public submission of Nodal Analytics 1.6.1. This skills-only plugin
 packages seven workflows for setup, analyst interviews and handoffs, governed
 analytics planning, dashboard verification, result verification, and independent
 challenge review. It does not bundle an MCP server, collect telemetry, transmit
@@ -67,4 +92,16 @@ data to Nodal Data, or handle credentials.
 - Confirm the submitter has **Apps Management: Write**.
 - Review the privacy notice and terms with counsel or another authorized owner.
 - Confirm country and region availability.
+- Upload the generated ZIP at https://platform.openai.com/plugins using
+  **Skills only**, then resolve required metadata and skill scan findings.
+- Confirm the listing is marked **Desktop only** and the setup action invokes
+  the packaged `setup-nodal` onboarding skill. If the portal rejects
+  `requires_local_executor`, contact OpenAI to confirm organization access.
 - Complete the policy attestations and submit the draft for review.
+- After approval, select **Publish plugin** when ready. GitHub releases and
+  marketplace updates do not automatically publish directory skill updates.
+
+Skills-only submissions do not require the MCP-specific review cases or demo
+recording. Keep `test-cases.md` for behavioral verification. See the official
+[submission guide](https://developers.openai.com/plugins/deploy/submission) and
+[desktop-only guidance](https://developers.openai.com/plugins/deploy/desktop-only).
