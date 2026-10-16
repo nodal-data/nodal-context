@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.3 — 2026-10-16
+
+- Add privacy policy and support links to the Claude plugin manifest for the
+  plugin directory listing.
+
 ## 1.6.2 — 2026-10-16
 
 - Declare the Nodal logo as the Claude plugin directory listing icon.
