@@ -57,11 +57,14 @@ source file and re-validate.
 | Field | Value | Source |
 | --- | --- | --- |
 | Name | `nodal-analytics` | `plugin.json` |
-| Version | `1.6.2` | `plugin.json` |
+| Version | `1.6.3` | `plugin.json` |
 | Description | Plan, verify, and challenge analytics with governed, multi-source context and interview-built ground truth. | `plugin.json` |
 | Author | Nodal Data | `plugin.json` |
 | License | Apache-2.0 | `plugin.json`, `LICENSE` |
 | Homepage | https://github.com/nodal-data/nodal-context | `plugin.json` |
+| Privacy policy | https://github.com/nodal-data/nodal-context/blob/main/docs/privacy.md | `plugin.json` |
+| Support | https://github.com/nodal-data/nodal-context/blob/main/docs/support.md | `plugin.json` |
+| Documentation | https://docs.nodaldata.io | `README.md` |
 | Listing body | Repository README | `README.md` |
 
 ## Data handling answers
