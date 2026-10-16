@@ -1,6 +1,6 @@
 {
   "name": "nodal-analytics",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Plan, verify, and challenge analytics with governed, multi-source context and interview-built ground truth.",
   "author": {
     "name": "Nodal Data",
@@ -10,5 +10,6 @@
   "repository": "https://github.com/nodal-data/nodal-context",
   "license": "Apache-2.0",
   "keywords": ["analytics", "context", "dashboard", "dbt"],
+  "icon": "./assets/nodal-logo.png",
   "skills": "./skills/"
 }

@@ -57,7 +57,7 @@ source file and re-validate.
 | Field | Value | Source |
 | --- | --- | --- |
 | Name | `nodal-analytics` | `plugin.json` |
-| Version | `1.6.1` | `plugin.json` |
+| Version | `1.6.2` | `plugin.json` |
 | Description | Plan, verify, and challenge analytics with governed, multi-source context and interview-built ground truth. | `plugin.json` |
 | Author | Nodal Data | `plugin.json` |
 | License | Apache-2.0 | `plugin.json`, `LICENSE` |
