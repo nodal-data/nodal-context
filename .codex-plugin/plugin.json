@@ -1,6 +1,6 @@
 {
   "name": "nodal-analytics",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Plan, verify, and challenge analytics with governed, multi-source context and interview-built ground truth.",
   "author": {
     "name": "Nodal Data",
@@ -14,7 +14,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Nodal Analytics",
-    "shortDescription": "Governed analytics planning and context",
+    "shortDescription": "Governed analytics workflows",
     "longDescription": "Build human-owned analytics context through structured interviews, plan read-only data questions against approved definitions, verify SQL and results, and challenge disputed answers with an independent review.",
     "developerName": "Nodal Data",
     "category": "Data & Analytics",
@@ -29,6 +29,13 @@
     ],
     "brandColor": "#479778",
     "composerIcon": "./assets/nodal-logo.png",
-    "logo": "./assets/nodal-logo.png"
+    "logo": "./assets/nodal-logo.png",
+    "supportURL": "https://github.com/nodal-data/nodal-context/blob/main/docs/support.md"
+  },
+  "requires_local_executor": true,
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/setup-nodal/SKILL.md"
+    }
   }
 }

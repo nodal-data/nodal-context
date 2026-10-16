@@ -16,7 +16,7 @@ def run():
     codex = load(".codex-plugin/plugin.json")
     for manifest in (claude, codex):
         assert manifest["name"] == "nodal-analytics"
-        assert manifest["version"] == "1.6.0"
+        assert manifest["version"] == "1.6.1"
         assert manifest["license"] == "Apache-2.0"
         assert manifest["skills"] == "./skills/"
         assert "mcpServers" not in manifest
@@ -28,6 +28,14 @@ def run():
     openai = portable["extensions"]["com.openai"]["interface"]
     assert openai == codex["interface"]
     assert len(openai["defaultPrompt"]) <= 3
+    assert len(openai["shortDescription"]) <= 30
+    assert openai["supportURL"].startswith("https://")
+    assert portable["extensions"]["com.openai"]["requires_local_executor"] is True
+    assert codex["requires_local_executor"] is True
+    for manifest in (portable, codex):
+        onboarding = manifest["extensions"]["com.openai"]["onboardingSkill"]
+        assert onboarding == "./skills/setup-nodal/SKILL.md"
+        assert (ROOT / onboarding).is_file()
     assert openai["privacyPolicyURL"].startswith("https://")
     assert openai["termsOfServiceURL"].startswith("https://")
     for key in ("composerIcon", "logo"):

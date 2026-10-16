@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.1 — 2026-10-16
+
+- Prepare OpenAI directory metadata with a compliant subtitle, support link,
+  desktop-only execution requirement, and guided setup after installation.
+- Refresh submission instructions and release notes, including clean-package
+  checks and the separate user-configured warehouse connection requirement.
+
 ## 1.6.0 — 2026-09-16
 
 - Add ACF 0.2 nested AND/OR filters, per-entity eligibility conditions, and
