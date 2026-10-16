@@ -6,6 +6,7 @@
   desktop-only execution requirement, and guided setup after installation.
 - Refresh submission instructions and release notes, including clean-package
   checks and the separate user-configured warehouse connection requirement.
+- Point the Launch subscription link at the Nodal-branded checkout domain.
 
 ## 1.6.0 — 2026-09-16
 
