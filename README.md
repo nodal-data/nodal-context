@@ -3,6 +3,7 @@
 > Agent skills for building governed analytics context, planning data questions,
 > and verifying the answers.
 
+[Watch the explainer (1:38)](https://youtu.be/hAdnq5KygvE) ·
 [Documentation](https://docs.nodaldata.io) ·
 [Quickstart](https://docs.nodaldata.io/quickstart) ·
 [Website](https://nodaldata.io) ·
@@ -20,6 +21,10 @@ when a result should be escalated instead of trusted.
 Nodal turns that knowledge into reviewable context and reusable agent workflows.
 An analyst remains the authority: the agent drafts choices where it finds uncertainty; the
 analyst chooses the correct interpretation, then the agent verifies, records, and evaluates the context.
+
+[![Watch the Nodal Context explainer: an analyst interview turns ambiguous revenue definitions into reviewable context files and eval seeds.](./docs/assets/nodal-explainer-thumbnail.jpg)](https://youtu.be/hAdnq5KygvE)
+
+*▶ [Watch the 1:38 explainer](https://youtu.be/hAdnq5KygvE) (AI-generated walkthrough of the fictional Shorelane Commerce example).*
 
 ![From analyst knowledge to trusted answers: build context through an active interview, deploy it anywhere, answer questions with governed workflows, and improve it through the enterprise learning loop.](./docs/assets/nodal-product-loop.svg)
 
