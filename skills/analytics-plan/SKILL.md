@@ -61,6 +61,32 @@ Never jump directly from a plausible interpretation to a query.
     evidence provenance, and preliminary confidence. If `verify-result` is
     available, use its review contract for the full post-execution assessment.
 
+## Optional Nodal query attribution
+
+When a SQL tool advertises `_nodal_user_question`, copy the original substantive
+business request verbatim. Carry it through clarification and plan approval;
+an acknowledgment such as "yes, continue" never replaces that request. Omit the
+field when the original wording is unavailable. Do not reconstruct it from SQL.
+
+When `_nodal_context` is advertised, use its versioned schema. Record the approved
+clarified interpretation separately as `analysis_context.effective_question` only
+when the schema permits question text. Use analysis, question, and plan IDs and
+revisions supplied by the context service or caller; never invent registered IDs
+or assert that a reference has been validated. If no IDs are available, omit them.
+Keep the plan revision fixed for its executions; a revised plan needs a new revision.
+Model/caller-reported approval is not independently attested human approval.
+
+Before delegation, give each child the original request, approved interpretation,
+plan revision, and its assigned question references. Multiple queries may serve
+one question; a shared query may reference several questions. Preserve separate
+assignments for separate questions. Do not use a global "last question" value.
+
+Copy native client session/turn/agent IDs only when supplied by the client
+integration in the current scope. Children retain parent lineage and their own
+native agent ID when available. Omit uncertain IDs. Never read, upload, or pass
+transcripts, transcript paths, working directories, or private reasoning for
+attribution. These IDs locate a conversation; they do not grant access to it.
+
 ## Degraded paths
 
 - **No context:** plan from warehouse metadata only, mark semantic claims inferred,
