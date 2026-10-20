@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.4 — 2026-10-19
+
+- Preserve the substantive business request through clarification and approval.
+- Carry explicit question/plan references and client lineage across delegation when supplied; never collect transcripts.
+
 ## 1.6.3 — 2026-10-16
 
 - Add privacy policy and support links to the Claude plugin manifest for the
