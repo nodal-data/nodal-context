@@ -6,6 +6,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from eval_harness.matching import normalize, relation, match_question
+from eval_harness.ncr import NCR
 
 
 def run():
@@ -51,6 +52,16 @@ def run():
     assert "ground_truth_conflict" in match_question(a, "sales", definitions, [seed, conflict])["blockers"]
     different = deepcopy(seed); different["ir"] = {"metric": "new_orders"}
     assert match_question(a, "sales", definitions, [different])["relation"] == "related_only"
+    # Without a comparable seed for this target, include orientation regardless
+    # of whether other metrics have seeds. Holdout seeds cannot supply a match.
+    context = NCR(context_components={"sales": {"orientation": "Business orientation"}})
+    for seeds, excluded in (([], []), ([different], []), ([seed], ["seed:one"]),
+                            ([{**seed, "ir": {"metric": "missing"}}], [])):
+        unmatched = match_question(a, "sales", definitions, seeds, exclude=excluded)
+        assert unmatched["relation"] == "related_only"
+        assert unmatched["seeds"] == []
+        assert "Business orientation" in context.context_for("sales", unmatched["relation"])
+    assert match_question(b, "sales", definitions, [seed])["relation"] == "same_metric_new_slice"
     definitions["metric:sales.orders"]["effective_status"] = "draft"
     assert "definition_not_confirmed" in match_question(a, "sales", definitions, [seed])["blockers"]
     # Time is excluded from identity, but unsupported vocabulary is not an
@@ -60,6 +71,7 @@ def run():
     result = match_question(bad_window, "sales", definitions, [seed])
     assert result["relation"] == "unresolved" and result["seeds"] == []
     assert "unknown_time_token" in result["unsupported"]
+    assert match_question(a, "sales", definitions, [{**seed, "ir": bad_window}])["relation"] == "related_only"
     assert norm(a).state == "resolved"
     definitions["method:retention"]["time_tokens"] = []
     assert norm({**m1, "time_window": "last_month"}).state == "unresolved"

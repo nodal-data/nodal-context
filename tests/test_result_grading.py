@@ -63,6 +63,13 @@ def run_tests():
     for change in ({"sql": "SELECT 1"}, {"python": "print(1)"}, {"explanation": ""},
                    {"reason": "lack_data"}, {"outcome": "answer"}):
         assert grade_answer(negative, {**decline, **change}, judge).status == FAIL
+    seen.clear()
+    for explanation in (None, 42, True, [], ["Choose an anchor"], {}, {"reason": "ambiguous"}, " \n\t"):
+        invalid = grade_answer(negative, {**decline, "explanation": explanation}, judge)
+        assert invalid.status == FAIL
+        assert "explain the reason" in invalid.reason
+    assert grade_answer(negative, {k: v for k, v in decline.items() if k != "explanation"}, judge).status == FAIL
+    assert not seen  # Malformed explanations fail before invoking the judge.
     report = render([{"domain": "test", "seeds": [
         {"question": "paired", "kind": "sql_shape", "off": FAIL, "on": PASS},
         {"question": "partial", "kind": "sql_shape", "off": PASS, "on": SKIPPED,

@@ -234,20 +234,19 @@ def match_question(ir, domain, definitions, seeds, *, candidates=None, exclude=(
     if query.state != "resolved":
         return result
     related = []
-    same_target, same_domain = False, False
+    same_target = False
     for seed in seeds:
         if seed.get("id") in exclude or seed.get("domain") != domain:
             continue
         normalized = normalize(seed.get("ir"), seed["domain"], definitions, question=False)
-        same_domain |= normalized.state == "resolved"
-        same_target |= normalized.target == query.target
+        same_target |= normalized.state == "resolved" and normalized.target == query.target
         rel = relation(query, normalized)
         if rel == "equivalent":
             result["seeds"].append(seed.get("id"))
             related.append(seed)
     result["relation"] = ("equivalent" if related else
-                          "related_only" if same_domain and not same_target else
-                          "same_metric_new_slice")
+                          "same_metric_new_slice" if same_target else
+                          "related_only")
     if related:
         expectations = {stable(s.get("expected", {})) for s in related
                         if s.get("expected", {}).get("kind") != "value_at_snapshot"}

@@ -169,7 +169,9 @@ def grade_answer(expected, answer, judge_fn, *, method=None, execution=None):
     if kind == "negative":
         if outcome not in ("decline", "escalate") or answer.get("reason") != expected.get("reason"):
             return Result(FAIL, "incorrect escalation outcome or reason")
-        if answer.get("sql") or answer.get("python") or not answer.get("explanation", "").strip():
+        explanation = answer.get("explanation")
+        if (answer.get("sql") or answer.get("python") or
+                not isinstance(explanation, str) or not explanation.strip()):
             return Result(FAIL, "decline/escalation must explain the reason without proposing executable analysis")
         return _judge(judge_fn, answer, {"kind": "negative", "reason": expected["reason"],
                       "obligation": "Explain the matching reason; do not invent a result or claim execution."})

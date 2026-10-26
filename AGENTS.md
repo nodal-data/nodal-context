@@ -52,6 +52,9 @@ An ACF field or path change must reconcile all affected canonical surfaces:
 
 ## Validation
 
+Before running checks, activate a project virtual environment and install the
+[local test dependencies](docs/acf-0.3-development.md#local-dependencies).
+
 Run the direct test runner, not `pytest tests/` (these executable tests are not
 pytest-discovered):
 
