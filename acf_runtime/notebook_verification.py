@@ -16,7 +16,7 @@ def method_context(registry, method_name):
     if not method or method.kind != "method":
         raise ValueError("method does not exist")
     if method.effective_status != "confirmed" or method.blocking_reasons:
-        raise ValueError("method and dependencies must be reviewed, confirmed and unblocked before verification")
+        raise ValueError("method and dependencies must be eligible and unblocked; use explicit branch-test mode for proposed context")
     selected, pending = {}, [method.id]
     while pending:
         key = pending.pop()
@@ -187,7 +187,7 @@ def confirm(root, report_path, *, seed_name, approver, confirmed_at, approved_sq
     if digest(context) != report["context_hash"] or content_hash(source.read_bytes()) != report["source_hash"]:
         raise ValueError("source or method/dependencies changed; rerun verification")
     seed = {"question": report["question"], "intent": method.data["description"], "domain": method.domain,
-            "status": "confirmed", "approver": approver, "confirmed_at": confirmed_at, "provenance": "notebook",
+            "approver": approver, "confirmed_at": confirmed_at, "provenance": "notebook",
             "ir": {"method": method.data["name"], "metrics": sorted(
                 registry.nodes[k].domain + "." + registry.nodes[k].data["name"]
                 for k in report["case"]["metrics"]), "parameters": report["case"]["parameters"]},

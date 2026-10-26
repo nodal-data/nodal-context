@@ -17,16 +17,16 @@ def seed_fingerprint(registry, seed):
         if key in selected:
             continue
         node = registry.nodes[key]
-        selected[key] = {"data": node.data, "body": node.body, "effective_status": node.effective_status}
+        selected[key] = {"data": node.data, "body": node.body}
         pending.extend(k for k in node.dependencies if k in registry.nodes)
     return digest({"definitions": selected, "config": registry.config})
 
 
 def run_regression(root, *, executor=None, judge=None, identity=None, seed_ids=None,
-                   parameters=None, timeout=600, executables=None):
+                   parameters=None, timeout=600, executables=None, branch_test=None):
     validate_command(executor); validate_command(judge)
     root = Path(root).resolve()
-    registry = load_context(root)
+    registry = load_context(root, branch_test=branch_test)
     if registry.errors:
         raise VerificationError("invalid_context")
     manager = VerifiedSQL(root, config=registry.config, identity=identity, executables=executables)
@@ -97,7 +97,7 @@ def run_regression(root, *, executor=None, judge=None, identity=None, seed_ids=N
                 entry["category"] = "execution_io_unavailable"
         public.append(entry)
     # Changes during the run invalidate result claims, even when the old rows matched.
-    current = load_context(root)
+    current = load_context(root, branch_test=branch_test)
     for entry in public:
         item = evidence.get(entry["seed_id"])
         current_seed = current.nodes.get(entry["seed_id"])
@@ -105,6 +105,6 @@ def run_regression(root, *, executor=None, judge=None, identity=None, seed_ids=N
             entry.update(status="skipped", category="context_changed_during_run")
             item["status"] = "skipped"
     private_json(directory / "evidence.json", evidence)
-    report = {"schema_version": 1, "results": public}
+    report = {"schema_version": 1, "results": public, "governance": registry.governance}
     private_json(directory / "public.json", report)
     return directory, report

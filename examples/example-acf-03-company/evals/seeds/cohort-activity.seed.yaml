@@ -1,9 +1,6 @@
 question: Customer retention for the activity cohort last year?
 intent: Customer retention for the activity cohort last year?
 domain: customers
-status: confirmed
-approver: fictional-example-reviewer
-confirmed_at: '2026-10-01'
 provenance: generated
 expected:
   kind: sql_shape
@@ -22,3 +19,7 @@ ir:
     followup_window: <followup_window>
     as_of_date: <as_of_date>
   time_window: last_year
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

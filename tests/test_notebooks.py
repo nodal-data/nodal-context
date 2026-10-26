@@ -150,7 +150,7 @@ def run_tests(kernel=False):
         data, body, report = draft_notebook(source, name="imported-orders", domain="sales", registry=registry)
         rendered = render_method(data, body)
         assert not marker.exists()
-        assert data["status"] == "draft" and "approver" not in data
+        assert "status" not in data and "approver" not in data
         assert all(d["without_this"] == "" for d in data["decisions"])
         assert [p["name"] for p in data["parameters"]] == ["window"]
         assert data["metrics"] == ["orders"], report
@@ -173,6 +173,9 @@ def run_tests(kernel=False):
         literal_draft, _, literal_report = draft_notebook(alternate, name="literal", domain="sales", registry=registry)
         assert literal_draft["metrics"] == ["orders"]
         assert "output" in literal_report["cells"][0]["classes"]
+        # CLI authoring requires a working branch; it still refuses overwrite.
+        subprocess.run(['git', '-C', str(root), 'init', '-q'], check=True)
+        subprocess.run(['git', '-C', str(root), 'checkout', '-qb', 'notebook-proposal'], check=True)
         # CLI refuses to replace the existing authored draft.
         command = [sys.executable, str(ROOT / "scripts/import_notebook.py"), str(source), "--root", str(root),
                    "--name", "imported-orders", "--domain", "sales"]

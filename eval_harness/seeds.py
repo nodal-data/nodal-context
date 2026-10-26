@@ -16,7 +16,9 @@ def seed_from_record(doc, path=""):
     keys = {f.name for f in fields(Seed)}
     values = {k: v for k, v in doc.items() if k in keys}
     values["path"] = path or doc.get("path", "")
-    for required in ("question", "domain", "intent", "expected", "provenance", "status"):
+    # Unattributed external seeds are proposed; only adapters supply eligibility.
+    values.setdefault("status", doc.get("effective_status", "draft"))
+    for required in ("question", "domain", "intent", "expected", "provenance"):
         if required not in values:
             raise ValueError(f"{path}: seed missing {required}")
     return Seed(**values)

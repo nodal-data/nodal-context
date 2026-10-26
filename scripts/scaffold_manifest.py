@@ -46,6 +46,10 @@ ARTIFACTS = (
     Artifact("scripts/match_question.py", "scripts/match_question.py", "scripts/match_question.py"),
     Artifact("scripts/simulated_analyst.py", "scripts/simulated_analyst.py", "scripts/simulated_analyst.py"),
 
+    Artifact("scripts/governance_github.py", "scripts/governance_github.py", "scripts/governance_github.py"),
+    Artifact("scripts/migrate_approval.py", "scripts/migrate_approval.py", "scripts/migrate_approval.py"),
+    Artifact(".github/workflows/context-approval.yml", "payload/.github/workflows/context-approval.yml", ".github/workflows/context-approval.yml"),
+    Artifact("template/GOVERNANCE.md", "payload/template/GOVERNANCE.md", "GOVERNANCE.md", upgrade=False),
     # Fresh-only authoring scaffold. These rows deliberately retain dot paths.
     Artifact("template/.gitignore", "payload/template/.gitignore", ".gitignore", upgrade=False),
     Artifact("template/AGENTS.md", "payload/template/AGENTS.md", "AGENTS.md", upgrade=False),

@@ -3,6 +3,15 @@ name: challenge-result
 description: Challenge a completed analytics answer when the user disputes it or requests a second opinion, testing alternative interpretations and failure hypotheses before upholding it, escalating uncertainty, or handing a correction to analytics-plan. Do not use for routine first-pass verification.
 ---
 
+Approval contract: new and changed context stays on a named working branch and
+has no authored approval status. Human-reviewed protected merge grants definition
+approval; consult the live authority through the runtime for the exact revision
+and freshness. Missing/expired evidence or stale dependencies blocks governed
+use. Explicit branch-test mode is proposed context only. Query/notebook result
+verification is separate from definition approval; retain source and review
+evidence. See the context-interview SPEC approval-through-merge contract.
+
+
 # Challenge Result
 
 Run a skeptical second-pass review after an analytics answer has already been

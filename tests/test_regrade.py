@@ -89,22 +89,23 @@ def run():
         assert len(provider.questions) == 4  # original + variant + entity + method
         assert any(o.get('entity_definitions') for o in provider.obligations)
         assert all(p.read_bytes() == raw for p,raw in before.items())
-        report = regrade.run_regrade(root, provider=Provider(), restore=True)
+        reject(lambda: regrade.run_regrade(root, provider=Provider(), restore=True))
+        report = regrade.run_regrade(root, provider=Provider())
         for name in ('orders', 'customer'):
-            assert result(report, name)['category'] == 'restored'
+            assert result(report, name)['category'] == 'eligible_for_restoration'
             doc = read_yaml(root / ('evals/seeds/'+name+'.seed.yaml'))
-            assert doc['status'] == 'confirmed'
+            assert doc['status'] == 'draft'
             assert doc['approver'] == APPROVAL['approver'] and doc['confirmed_at'] == APPROVAL['confirmed_at']
         assert 'SECRET_EXPECTATION' not in json.dumps(report)
         assert (root/report['evidence']).stat().st_mode & 0o777 == 0o600
         assert read_yaml(root/'evals/seeds/method.seed.yaml')['status'] == 'draft'
         assert (root/'methods/repeat.md').read_bytes() == before[root/'methods/repeat.md']
-        assert regrade.run_regrade(root, provider=Provider(), restore=True, seed_ids=['seed:orders.seed.yaml'])['results'][0]['category'] == 'already_confirmed'
+        assert regrade.run_regrade(root, provider=Provider(), seed_ids=['seed:orders.seed.yaml'])['results'][0]['category'] == 'eligible_for_restoration'
     for verdict, available, category in [(False,True,'fresh_grade_failed'), (True,False,'judge_unavailable'),
                                          ('true',True,'fresh_checks_incomplete')]:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); setup(root)
-            report = regrade.run_regrade(root, provider=Provider(verdict=verdict,available=available), restore=True)
+            report = regrade.run_regrade(root, provider=Provider(verdict=verdict,available=available))
             assert result(report)['category'] == category, report
             assert read_yaml(root/'evals/seeds/orders.seed.yaml')['status'] == 'draft'
     with tempfile.TemporaryDirectory() as directory:
@@ -112,20 +113,20 @@ def run():
         # A pass while the metric is draft cannot restore its seed. Reconfirming
         # that metric alone doesn't change seed status or reuse the earlier pass.
         write(root, 'domains/sales/metrics/orders.yaml', metric(status='draft'))
-        report = regrade.run_regrade(root, provider=Provider(), restore=True)
+        report = regrade.run_regrade(root, provider=Provider())
         assert result(report)['status'] == 'pass' and result(report)['category'] == 'dependency_review_pending'
         write(root, 'domains/sales/metrics/orders.yaml', metric())
-        report = regrade.run_regrade(root, provider=Provider(available=False), restore=True)
+        report = regrade.run_regrade(root, provider=Provider(available=False))
         assert result(report)['category'] == 'judge_unavailable'
         assert read_yaml(root/'evals/seeds/orders.seed.yaml')['status'] == 'draft'
-        report = regrade.run_regrade(root, provider=Provider(), restore=True)
-        assert result(report)['category'] == 'restored'
+        report = regrade.run_regrade(root, provider=Provider())
+        assert result(report)['category'] == 'eligible_for_restoration'
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory); setup(root)
         changed = read_yaml(root/'evals/seeds/orders.seed.yaml')
         changed['expected']['must_include'] = ['Changed business definition']
         write(root,'evals/seeds/orders.seed.yaml', changed)
-        assert result(regrade.run_regrade(root, provider=Provider(), restore=True))['category'] == 'authored_interpretation_changed'
+        assert result(regrade.run_regrade(root, provider=Provider()))['category'] == 'authored_interpretation_changed'
         changed = metric(); changed['expression']['allowed_dimensions'] = ['date']
         # Remove the unrelated method to keep its declared output dimensions valid.
         m = method(); m['output']['dimensions'] = []
@@ -134,13 +135,13 @@ def run():
         original = seed(status='draft',expected={'kind':'sql_shape','must_include':['SECRET_EXPECTATION']},
             variants=[{'text':'Eligible orders last month by channel?', 'provenance':'observed','observed_at':'2026-10-20'}])
         write(root,'evals/seeds/orders.seed.yaml',original)
-        report = regrade.run_regrade(root, provider=Provider(), restore=True)
+        report = regrade.run_regrade(root, provider=Provider())
         assert result(report)['category'] == 'definition_or_dimension_review_required'
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory); setup(root)
         path = root/'domains/sales/metrics/orders.yaml'
         provider = Provider(mutate=lambda: path.write_text(path.read_text()+'\n# concurrent human note\n'))
-        reject(lambda: regrade.run_regrade(root, provider=provider, restore=True))
+        reject(lambda: regrade.run_regrade(root, provider=provider))
         assert read_yaml(root/'evals/seeds/orders.seed.yaml')['status'] == 'draft'
         # Uncommitted new seeds cannot fabricate historical approval.
         write(root,'evals/seeds/new.seed.yaml',seed(status='draft'))
@@ -148,7 +149,7 @@ def run():
         # A malformed answer cannot be blessed by an overly permissive judge.
         provider = Provider()
         with patch.object(provider, 'generate', return_value={'outcome':'answer','sql':42}):
-            report = regrade.run_regrade(root,provider=provider,restore=True)
+            report = regrade.run_regrade(root,provider=provider)
         assert result(report)['category'] == 'fresh_checks_incomplete'
         assert not provider.obligations
     with tempfile.TemporaryDirectory() as directory:
@@ -157,7 +158,7 @@ def run():
         newer=deepcopy(original); newer.update(status='confirmed',intent='A different reviewed meaning')
         write(root,'evals/seeds/orders.seed.yaml',newer); save(root)
         write(root,'evals/seeds/orders.seed.yaml',original)
-        report=regrade.run_regrade(root,provider=Provider(),restore=True)
+        report=regrade.run_regrade(root,provider=Provider())
         assert result(report)['category']=='authored_interpretation_changed'
     with tempfile.TemporaryDirectory() as directory:
         root=Path(directory); setup(root)
@@ -166,40 +167,14 @@ def run():
             return {'passed':len(provider.questions)!=2,'reason':'synthetic variant mismatch'}
         provider.judge=fail_variant
         # Select one seed so the second independent answer is its variant.
-        report=regrade.run_regrade(root,provider=provider,restore=True,seed_ids=['seed:orders.seed.yaml'])
+        report=regrade.run_regrade(root,provider=provider,seed_ids=['seed:orders.seed.yaml'])
         assert result(report)['category']=='fresh_grade_failed'
         assert read_yaml(root/'evals/seeds/orders.seed.yaml')['status']=='draft'
     with tempfile.TemporaryDirectory() as directory:
         root=Path(directory); setup(root)
-        real_check=regrade.check_seeds
-        def late_edit(*args,**kwargs):
-            checked=real_check(*args,**kwargs)
-            path=root/'domains/sales/metrics/orders.yaml'
-            path.write_text(path.read_text()+'\n# edited after the model calls\n')
-            return checked
-        with patch.object(regrade,'check_seeds',side_effect=late_edit):
-            reject(lambda:regrade.run_regrade(root,provider=Provider(),restore=True))
-        assert read_yaml(root/'evals/seeds/orders.seed.yaml')['status']=='draft'
-    with tempfile.TemporaryDirectory() as directory:
-        root=Path(directory); setup(root)
-        real_write=regrade.atomic_private
-        def interrupted(path,raw,**kwargs):
-            if path.name=='orders.seed.yaml':
-                raise OSError('synthetic interruption')
-            return real_write(path,raw,**kwargs)
-        try:
-            with patch.object(regrade,'atomic_private',side_effect=interrupted):
-                regrade.run_regrade(root,provider=Provider(),restore=True)
-        except OSError: pass
-        else: raise AssertionError('interruption did not fire')
-        assert read_yaml(root/'evals/seeds/customer.seed.yaml')['status']=='confirmed'
-        assert read_yaml(root/'evals/seeds/orders.seed.yaml')['status']=='draft'
-        # Interrupted runs leave evidence, but remaining seeds need new checks.
-        report=regrade.run_regrade(root,provider=Provider(available=False),restore=True)
-        assert result(report)['category']=='judge_unavailable'
-        assert read_yaml(root/'evals/seeds/orders.seed.yaml')['status']=='draft'
-        report=regrade.run_regrade(root,provider=Provider(),restore=True)
-        assert result(report)['category']=='restored'
+        before={p:p.read_bytes() for p in root.rglob('*.yaml')}
+        reject(lambda:regrade.run_regrade(root,provider=Provider(),restore=True))
+        assert all(p.read_bytes()==raw for p,raw in before.items())
     # Fenced SQL/Python headings/anchors/status words never terminate or change a
     # real pattern's status. Both compiled and injected contexts omit drafts.
     with tempfile.TemporaryDirectory() as directory:

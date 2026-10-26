@@ -11,14 +11,14 @@
 #     Tiny manifests may instead ride inline as
 #     client_payload.manifests = {source_id: "<base64 manifest.json>"} — but note
 #     GitHub caps dispatch payloads at ~64 KB, which real manifests quickly exceed.
-#   - A weekly cron is the safety net if nothing dispatches.
+#   - A six-hour cron is the safety net if nothing dispatches.
 #   - workflow_dispatch lets you run it by hand.
 name: context-drift
 on:
   repository_dispatch:
     types: [lineage-changed]
   schedule:
-    - cron: '0 7 * * 1'          # weekly safety net (Mondays 07:00 UTC)
+    - cron: '0 */6 * * *'          # six-hour safety net; evidence expires after 24 hours
   workflow_dispatch: {}
 
 permissions:
@@ -27,17 +27,17 @@ permissions:
   issues: write
 
 concurrency:
-  group: context-drift-${{ github.repository }}
+  group: acf-governance-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
   drift:
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: github.ref == format('refs/heads/{0}', (vars.ACF_APPROVAL_BRANCH || 'main'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ (vars.ACF_APPROVAL_BRANCH || 'main') }}
           persist-credentials: false
           fetch-depth: 0  # prior human seed approval is data, never executed code
 
@@ -67,17 +67,27 @@ jobs:
           python .ci/drift.py --manifest-map .nodal/manifests/map.json --fail-on-unchecked --prepare-patch --json-out .nodal/drift-report.json --out .nodal/drift-report.md
           echo "rc=$?" >> "$GITHUB_OUTPUT"
 
+      # Publish revocation before any repair PR. Separate ref, no merge needed.
+      - name: Record immediate stale state and source check evidence
+        if: steps.drift.outputs.rc == '0' || steps.drift.outputs.rc == '1' || steps.drift.outputs.rc == '3'
+        env:
+          GH_TOKEN: ${{ secrets.ACF_GOVERNANCE_TOKEN }}
+          ACF_GOVERNANCE_REPOSITORY: ${{ github.repository }}
+          ACF_GOVERNANCE_WRITER: ${{ vars.ACF_GOVERNANCE_WRITER }}
+          APPROVAL_BRANCH: ${{ vars.ACF_APPROVAL_BRANCH || 'main' }}
+        run: python scripts/governance_github.py drift --branch "$APPROVAL_BRANCH" --report .nodal/drift-report.json
+
       - name: Prepare checked publication
         id: prepare
         if: steps.drift.outputs.rc == '0' || steps.drift.outputs.rc == '1' || steps.drift.outputs.rc == '3'
         env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          DEFAULT_BRANCH: ${{ (vars.ACF_APPROVAL_BRANCH || 'main') }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          python .ci/prepare_drift_publication.py --base-ref "$DEFAULT_BRANCH" --regrade \
+          python .ci/prepare_drift_publication.py --base-ref "$DEFAULT_BRANCH" \
             --github-output "$GITHUB_OUTPUT" --github-summary "$GITHUB_STEP_SUMMARY"
 
-      # Only authored status changes and the affected list are published. Never
+      # Legacy conversion patches and the affected list may be published. Never
       # upload .nodal wholesale: plans and executor evidence remain private.
       - name: Retain review patch
         id: patch

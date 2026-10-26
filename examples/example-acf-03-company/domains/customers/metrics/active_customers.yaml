@@ -1,7 +1,4 @@
 name: active_customers
-status: confirmed
-approver: fictional-example-reviewer
-confirmed_at: '2026-10-01'
 definition: Canonical real customers with an eligible order in the selected window.
 aliases:
 - active customers
@@ -41,3 +38,7 @@ expression:
   - customers.signup_year
 caveats:
 - Use the canonical customer join; never count source identities or order rows as customers.
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

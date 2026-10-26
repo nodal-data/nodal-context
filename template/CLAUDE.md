@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+Read [GOVERNANCE.md](GOVERNANCE.md) for protected merge approval, live stale-state
+checks, explicit branch testing and legacy conversion. New definitions omit
+authored approval status; interview confirmation is evidence for review.
+
+
 This is [company]'s ACF 0.3 business context repository. Read `AGENTS.md` for the
 complete answering and editing contract, and follow it from this directory.
 

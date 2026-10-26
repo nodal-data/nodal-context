@@ -1,7 +1,4 @@
 name: recognized_revenue
-status: confirmed
-approver: fictional-example-reviewer
-confirmed_at: '2026-10-01'
 definition: Signed earned fees on the service-recognition date; retail pass-through value is excluded.
 aliases:
 - revenue
@@ -42,3 +39,7 @@ open_decisions:
   question: Which date should a refund-impact counterfactual use?
   blocks:
   - methods/refund-impact
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

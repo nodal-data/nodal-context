@@ -67,7 +67,7 @@ For each question you would otherwise put to the human:
 3. Interpret the reply:
    - **`CONFIDENT: …`** → use the answer to continue drafting without surfacing
      each question to the human. Keep every simulator-only domain, entity, metric,
-     method, pattern and seed `status: draft`, with no `approver` or `confirmed_at`.
+     method, pattern and seed proposed working-branch content, with no `approver` or `confirmed_at`.
      Confidence advances the interview; it never confirms a definition.
    - **`NOT_CONFIDENT: …`** → **escalate**: ask the real human this question at the
      terminal in interactive mode, then continue with their answer. In

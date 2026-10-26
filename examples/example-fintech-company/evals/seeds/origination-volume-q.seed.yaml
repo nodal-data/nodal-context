@@ -15,12 +15,13 @@ expected:
   - "Partner Z originations"
   - "application_date / approval_date as the origination date"
 provenance: interview
-status: confirmed
 lineage:
 - source: dbt_core
   models: [fct_loan_performance]
-approver: fictional-example-owner
-confirmed_at: '2026-10-01'
 ir:
   metric: origination_volume
   time_window: last_quarter
+review_history:
+- status: confirmed
+  approver: fictional-example-owner
+  confirmed_at: '2026-10-01'

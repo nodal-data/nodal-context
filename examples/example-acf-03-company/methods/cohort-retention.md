@@ -1,15 +1,11 @@
 ---
 name: cohort-retention
 kind: method
-status: confirmed
-approver: fictional-example-reviewer
-confirmed_at: '2026-10-01'
 domain: customers
 aliases:
 - customer retention
 - repeat rate
-description: Share of a fixed canonical customer cohort with an eligible return order in the follow-up
-  window.
+description: Share of a fixed canonical customer cohort with an eligible return order in the follow-up window.
 metrics:
 - active_customers
 - new_customers
@@ -38,11 +34,9 @@ decisions:
   without_this: Activity and acquisition cohorts have different denominators.
 - id: fixed_membership
   rule: Freeze the base cohort before applying <followup_window>; count each member at most once.
-  without_this: Adding later acquisitions or counting repeat orders changes the denominator or overstates
-    returns.
+  without_this: Adding later acquisitions or counting repeat orders changes the denominator or overstates returns.
 - id: completeness
-  rule: Compare followup_window end with <as_of_date>; disclose partial follow-up rather than presenting
-    it as final.
+  rule: Compare followup_window end with <as_of_date>; disclose partial follow-up rather than presenting it as final.
   without_this: An unfinished follow-up window looks like excess churn.
 - id: empty_cohort
   rule: For an empty cohort, return a null retention_rate; preserve the requested <cohort_key> slice.
@@ -73,6 +67,10 @@ not_this:
   reason: Subscription terms renewing are not customers returning.
 provenance:
   kind: interview
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'
 ---
 
 # Cohort retention

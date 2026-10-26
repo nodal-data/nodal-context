@@ -3,6 +3,15 @@ name: analytics-plan
 description: Plan and answer business analytics questions against read-only data, grounding interpretations in available ACF, KTX, dbt, documentation, and warehouse evidence. Use for metrics, reports, trends, comparisons, or warehouse questions. Do not use to author context, modify data, or write dbt models.
 ---
 
+Approval contract: new and changed context stays on a named working branch and
+has no authored approval status. Human-reviewed protected merge grants definition
+approval; consult the live authority through the runtime for the exact revision
+and freshness. Missing/expired evidence or stale dependencies blocks governed
+use. Explicit branch-test mode is proposed context only. Query/notebook result
+verification is separate from definition approval; retain source and review
+evidence. See the context-interview SPEC approval-through-merge contract.
+
+
 # Analytics Plan
 
 Turn a business question into a reviewable analytical plan before executing SQL.
@@ -148,5 +157,5 @@ attribution. These IDs locate a conversation; they do not grant access to it.
 
 When the user selects among contested meanings, include a small candidate with the
 original question, selected intent, structured IR, rejected reading, provenance,
-and `status: draft`. Do not write it. `context-interview` owns human-confirmed
+and proposed working-branch content. Do not write it. `context-interview` owns human-confirmed
 context and seed persistence.

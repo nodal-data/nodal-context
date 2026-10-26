@@ -1,6 +1,5 @@
 entities:
 - name: canonical-customer
-  status: confirmed
   description: One real customer identified by customers.customer_id across all source systems.
   aliases:
   - customer
@@ -11,3 +10,5 @@ entities:
     models:
     - customers
     - orders
+  review_history:
+  - status: confirmed

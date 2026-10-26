@@ -56,6 +56,7 @@ class Node:
     local_blockers: set = field(default_factory=set)
     blocking_reasons: set = field(default_factory=set)
     effective_status: str = "draft"
+    approval_state: str = "unavailable"
 
     @property
     def dimensions(self):
@@ -72,6 +73,7 @@ class Registry:
         self.root, self.manifests = root, manifests or {}
         self.config, self.nodes, self.domains, self.aliases = {}, {}, {}, {}
         self.diagnostics = []
+        self.governance = {}
         self.dimension_checks = []
         self.fragment_origins = {}
 
@@ -460,7 +462,7 @@ class Registry:
                 "dimensions": sorted(node.dimensions), "parameters": node.data.get("parameters", []),
                 "metrics": sorted(d for d in node.dependencies if d.startswith("metric:")),
                 "defined": node.defined, "expressible": bool(node.data.get("expression")),
-                "effective_status": node.effective_status, "blockers": sorted(node.blocking_reasons),
+                "effective_status": node.effective_status, "approval_state": node.approval_state, "blockers": sorted(node.blocking_reasons),
                 "lineage": sorted(node.lineage), "family": node.data.get("family"),
                 "output": node.data.get("output", {}), "checks": node.data.get("checks", []),
                 "decisions": node.data.get("decisions", []), "path": node.path,
@@ -471,9 +473,9 @@ class Registry:
         return out
 
     def seed_records(self):
-        return [{**node.data, "id": node.id, "path": node.path,
-                 "effective_status": node.effective_status,
-                 "blockers": sorted(node.blocking_reasons)} for node in self.seeds]
+        return [{**node.data, "status": node.effective_status, "id": node.id, "path": node.path,
+                 "effective_status": node.effective_status, "approval_state": node.approval_state,
+                 "blockers": sorted(node.blocking_reasons), "governance": self.governance} for node in self.seeds]
 
     def build(self):
         from .methods import check_method

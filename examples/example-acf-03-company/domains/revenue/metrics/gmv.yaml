@@ -1,7 +1,4 @@
 name: gmv
-status: confirmed
-approver: fictional-example-reviewer
-confirmed_at: '2026-10-01'
 definition: Signed retail order value on order date, before the marketplace fee split.
 aliases:
 - revenue
@@ -37,3 +34,7 @@ expression:
   - revenue_stream
 caveats:
 - Choose one measure_name. Rows are already signed; do not subtract credits a second time.
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

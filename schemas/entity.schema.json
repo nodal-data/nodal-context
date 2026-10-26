@@ -13,8 +13,7 @@
         "type": "object",
         "required": [
           "name",
-          "description",
-          "status"
+          "description"
         ],
         "properties": {
           "name": {
@@ -27,7 +26,9 @@
             "enum": [
               "draft",
               "confirmed"
-            ]
+            ],
+            "deprecated": true,
+            "description": "Legacy migration evidence only; never grants approval. Drafts remain blocked until reviewed conversion."
           },
           "mappings": {
             "type": "object"
@@ -56,6 +57,29 @@
               "minLength": 1
             },
             "uniqueItems": true
+          },
+          "review_history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "draft",
+                    "confirmed"
+                  ]
+                },
+                "approver": {
+                  "type": "string"
+                },
+                "confirmed_at": {
+                  "type": "string",
+                  "format": "date"
+                }
+              },
+              "additionalProperties": false
+            },
+            "description": "Historical attribution only. Does not grant current approval."
           }
         },
         "additionalProperties": false

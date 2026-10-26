@@ -3,7 +3,7 @@
 
 Runs only when ANTHROPIC_API_KEY is set. Reads the markdown report produced by
 `.ci/drift.py`, loads the context files it flagged, and asks Claude to draft concrete
-edits — always `status: draft`, tagged `# dbt-derived`, for a human to confirm. This
+edits on a working branch, tagged `# dbt-derived`, for human review and merge. This
 preserves the repo's core invariant: the model drafts, the analyst owns every
 definition (see CLAUDE.md / README.md). It NEVER edits files; it only writes a
 suggestion block the reconciliation PR/issue can carry.
@@ -36,8 +36,8 @@ SYSTEM = (
     "feed the context changed, and the context may now be stale. Propose concrete, "
     "minimal edits to the named context files.\n\n"
     "Hard rules — the repo's reason to exist depends on these:\n"
-    "- A human owns every definition. You DRAFT; the analyst confirms. Mark changed "
-    "metric/entity/method objects `status: draft` and changed patterns with a draft marker. "
+    "- A human owns every definition. Propose working-branch edits without authored status. "
+    "Protected human-reviewed merge is the approval mechanism. "
     "Preserve old human attribution; never invent approver or confirmed_at.\n"
     "- Tag each dbt-derived suggestion with a `# dbt-derived` comment so its origin is "
     "auditable.\n"

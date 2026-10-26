@@ -1,6 +1,15 @@
 # Changelog
 
-## 1.7.0 — Unreleased
+## 1.7.1 — Unreleased
+
+- Replace authored definition approval with protected human-reviewed merge and
+  revision-bound live authority checks. Keep branch testing explicitly unapproved.
+- Persist stale blocks independently of repair PRs; propagate through dependencies
+  and require reviewed, checked, revision-specific clearance with retained history.
+- Migrate shipped legacy content with owner-authorized admission, preserve review
+  history, separate result verification, and verify exports against approved sources.
+
+## 1.7.0 — Unreleased (superseded before publication)
 
 - Adopt ACF 0.3 per-metric YAML, shared fragments, aliases and families, approval
   metadata, explicit blockers, ratio policies and cross-domain dependencies.

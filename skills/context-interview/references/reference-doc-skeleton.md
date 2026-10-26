@@ -69,7 +69,7 @@ SELECT ...
   form is the hard-won knowledge — pattern, not paste: real model/column names,
   `<placeholders>` for parameter values, each led by a `Without this:` line naming
   the failure it prevents, a handful per domain, analyst-confirmed (drafts marked
-  `<!-- status: draft -->`), and **never mined from query logs** — a pattern comes
+  a working-branch review note), and **never mined from query logs** — a pattern comes
   from the interview or a Stage-5 verified match. Full rule: `SPEC.md` "Query
   patterns". Runnable approved SQL stays in ignored plaintext sidecars; configured
   ciphertext travels separately as an answer key. Neither is answering context.

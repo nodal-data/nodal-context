@@ -1,7 +1,4 @@
 name: new_customers
-status: confirmed
-approver: fictional-example-reviewer
-confirmed_at: '2026-10-01'
 definition: Canonical real customers whose first-ever eligible order falls in the selected window.
 aliases:
 - new customers
@@ -37,3 +34,7 @@ expression:
   - customers.signup_year
 caveats:
 - Use the canonical customer join; never count source identities or order rows as customers.
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

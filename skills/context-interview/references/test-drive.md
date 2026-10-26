@@ -3,7 +3,7 @@
 One domain, five confirmed answers, 3–6 seeds, a live delta, and an **honest depth
 stamp**. The test drive is not a different product or a different artifact — it is
 the full interview's state machine traversed on a hard question budget, stopping
-early on purpose. Everything unasked becomes a `status: draft` stub, which is
+early on purpose. Everything unasked becomes a proposed working-branch content stub, which is
 already the resume queue: a deep pass later is just normal Stage-0 resume.
 
 Every operating principle still applies unchanged: the analyst owns every
@@ -44,7 +44,7 @@ but it never leaves one without a recorded outcome.
 - One sentence for `overview.md`: *"What does the business sell, and who pays?"*
   Mark the rest of the overview draft.
 - **Skip the terminology sweep.** Terms that surface incidentally while you work
-  become `status: draft` stubs in `terminology.md` — captured, not chased.
+  become proposed working-branch content stubs in `terminology.md` — captured, not chased.
 
 ## The five questions (the analyst picks the domain)
 
@@ -177,5 +177,5 @@ out — especially when time ran out.
 - **Never present a domain captured on a test drive as covered.** The depth stamp and draft
   count travel with every summary, resume message, and PR description.
 - **Don't invent to fill the gaps** the budget leaves — `_To be confirmed by
-  [owner]._` + `status: draft`, as always. A test drive changes how much you ask,
+  [owner]._` + proposed working-branch content, as always. A test drive changes how much you ask,
   never how much you assume.

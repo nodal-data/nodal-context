@@ -26,9 +26,6 @@ expected:
   # key_columns: [<key>]       # required when value contains multiple row objects
   # tolerance: {absolute: 0}   # agree before execution; default is exact comparison
 provenance: interview          # interview | dashboard | correction | generated | observed | notebook
-status: draft                 # draft | confirmed; draft is excluded from confirmed coverage
-# approver: <actual human>     # required with status: confirmed; never infer from owner
-# confirmed_at: "<YYYY-MM-DD>" # actual human confirmation date, not import/run time
 # verified_query_file: evals/verified/<name>.sql   # set ONLY on a Stage-5 verified
 #   match — points at a LOCAL, gitignored sidecar holding the blessed read-only SQL.
 #   Capture/encrypt approved SQL together. Commit .sql.age or .sql.sops ciphertext,
@@ -56,9 +53,6 @@ lineage:
 #   value: <actual-approved-value>  # not an estimate, saved notebook output, or simulator claim
 #   as_of: "2026-03-31"        # pin it (quoted) — a live number with no snapshot tells you nothing
 # provenance: dashboard
-# status: draft                # confirm only after actual execution and human review
-# approver: <actual human>
-# confirmed_at: "<YYYY-MM-DD>"
 # verified_query_file: evals/verified/collection-rate.sql   # ignored plaintext; ciphertext can travel
 # lineage:
 #   - source: dbt_core

@@ -25,6 +25,8 @@ def main(argv=None):
     try:
         root = args.root.resolve()
         registry = load_context(root)
+        from acf_runtime.governance import require_working_branch
+        require_working_branch(root, registry.config.get("approval_branch", "main"))
         if registry.errors:
             raise ValueError("context must validate before importing a method")
         data, body, report = draft_notebook(args.notebook, name=args.name, domain=args.domain,

@@ -1,5 +1,10 @@
 # AUTHORING.md
 
+Read [GOVERNANCE.md](GOVERNANCE.md) for protected merge approval, live stale-state
+checks, explicit branch testing and legacy conversion. New definitions omit
+authored approval status; interview confirmation is evidence for review.
+
+
 Rules for agents **editing** this repo (adding or correcting context). For rules on
 **answering data questions** from this repo, see `CLAUDE.md`. Authored context is
 Markdown and YAML; encrypted answer keys and support tooling have separate roles.
@@ -9,7 +14,7 @@ Markdown and YAML; encrypted answer keys and support tooling have separate roles
   sessions" — that belongs in the warehouse.
 - **No schema duplication.** Column types live in dbt/Snowflake.
 - **No invented definitions.** Leave `_To be confirmed by [owner]._` and
-  `status: draft` rather than guessing. Wrong context is worse than missing context.
+  proposed working-branch content rather than guessing. Wrong context is worse than missing context.
 - **SQL only as query patterns.** `reference.md` "Common query patterns" may carry
   a few fenced `sql` blocks, only where the exact query form is the hard-won
   knowledge — pattern, not paste: real model/column names, `<placeholders>` for
@@ -20,10 +25,10 @@ Markdown and YAML; encrypted answer keys and support tooling have separate roles
   `.sql.sops` ciphertext is eligible for commit. Neither is answering context.
 
 ## Conventions
-- YAML entities/metrics carry `status: draft|confirmed` and a `lineage:` pointer.
+- YAML entities/metrics carry a `lineage:` pointer; approval lives in the authority.
 - Each metric lives in `domains/<domain>/metrics/<name>.yaml`; the legacy wrapper
-  and ACF 0.2 are unsupported. Confirmed metrics, methods and seeds require a real
-  `approver` and `confirmed_at`; simulation cannot supply them.
+  and ACF 0.2 are unsupported. Definitions require protected human-reviewed merge;
+  simulation cannot supply approval. Retain prior attribution in `review_history`.
 - `reference.md` is written for retrieval by an agent (routing triggers, grain,
   gotchas), not as narrative — narrative goes in `context.md`.
 - Add `# REVIEW: [question]` where domain-owner verification is needed.
@@ -72,7 +77,7 @@ Context is built one domain at a time; picking it back up is the normal case.
   directories for this repo and asks before touching anything;
   if it doesn't find it, give it the path (or this repo's GitHub URL). It reads
   `context.config.yaml`, sees what's already captured, and resumes from the open
-  `status: draft` items — it never starts over.
+  proposed working-branch content items — it never starts over.
 - **A teammate picking it up.** Install Nodal through the same native-plugin or
   skills.sh channel your team uses, invoke `context-interview`, and answer
   "continuing" with this repo's GitHub URL — the
@@ -153,14 +158,12 @@ separately. Optional `.ci/semantic_lint.py` sends selected authored context to t
 customer's model provider and returns unconfirmed warnings, never approvals.
 It skips without a key; deterministic validation remains independent.
 
-`.ci/drift.py` reports dependency impact. Its `--prepare-patch` creates a private
-status-only proposal; `--apply-plan <path> --sha256 <reviewed-digest>` applies or
-resumes that reviewed change. Neither updates the baseline or commits. Review
-affected metrics/methods, batch snapshot re-verification, then explicitly refresh
-the baseline with complete manifests. Reconfirming a metric does not reconfirm
-its dependents. `scripts/regrade_seeds.py --restore` may restore only previously
-human-approved shape/entity seeds after fresh passing checks with unchanged
-meaning and ready dependencies; it cannot approve new definitions or snapshots.
+`.ci/drift.py` reports dependency impact. The trusted workflow publishes stale
+blocks to the independent authority before any repair proposal. Review affected
+definitions, rerun applicable behavior/source checks and merge the repair. Clear
+only the named block for that exact reviewed revision through the protected
+approval workflow. Re-grading records verification only and cannot restore
+approval. See GOVERNANCE.md for deployment and offline behavior.
 
 The configured drift workflow proposes review PRs with an issue/patch fallback.
 Local commands do not publish. Commit, push or publish only when the user requests

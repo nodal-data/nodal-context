@@ -133,7 +133,7 @@ def validate_changes(root, contents, changes, *, variant_path=None):
             if not nodes:
                 raise ValueError("destination must be a loaded ACF artifact")
             if change["path"] != variant_path:
-                if any(n.data.get("status") != "draft" for n in nodes):
+                if any(n.data.get("status") not in (None, "draft") for n in nodes):
                     raise ValueError("review edits must remain draft; confirm separately after review")
                 # Prior attribution may remain on edited drafts, but cannot be invented.
                 original = load_context(root).nodes

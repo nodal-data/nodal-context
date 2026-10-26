@@ -100,58 +100,24 @@ removed dimensions and negative seeds need human review. Collect the listed
 snapshot seeds into one Stage 5 session, using dashboard or independent notebook
 verification as appropriate.
 
-Previously approved shape/entity seeds are eligible for automatic restoration
-only after a fresh passing re-grade, unchanged authored interpretation, and
-confirmed/unblocked dependencies. A passing grade alone is insufficient. Do not
-manually flip seeds to confirmed just because an upstream metric was reviewed.
-Missing judge/execution capability leaves evidence incomplete. Automated check
-timestamps and results belong in ignored run output, never in `approver` or
-`confirmed_at`.
-
-Run fresh checks with the customer's BYO model key using:
+Re-grading records independent behavior evidence; it never restores definition
+approval or clears stale blocks. Run:
 
 ```bash
-python3 scripts/regrade_seeds.py --seed seed:orders.seed.yaml
-python3 scripts/regrade_seeds.py --seed seed:orders.seed.yaml --restore
+ACF_BRANCH_TEST=1 python3 scripts/regrade_seeds.py --seed seed:orders.seed.yaml
 ```
 
-The first command reports only; `--restore` performs a fresh check and persists
-eligible seed status changes in that same invocation. It cannot apply a saved
-verdict. The original question and every stored variant must pass. Generation
-receives governed definitions/prose, not seed expectations or verified SQL; the
-separate judge receives the obligations. Draft query patterns are excluded from
-answer context. Entity checks include the resolved entity definition. Method
-checks requiring actual execution remain incomplete when only generated SQL is
-available; model claims about results do not supply execution evidence.
+This explicitly tests proposed context and cannot approve it. `--restore` is
+rejected. The original question and variants must pass; missing judge or execution
+capability remains incomplete. Generated answers never receive seed expectations.
+Keep private evidence under `.nodal/regrades/` and report sanitized outcomes.
 
-Approval evidence comes from the most recent stored human-confirmed seed at the
-same path in Git history, starting at `HEAD` (override with `--approved-ref`).
-History scanning is bounded to 100 path changes and never executes historical
-code. A shallow/missing approval history, renamed seed, changed interpretation,
-changed attribution, lost dimension or unresolved reference requires review.
-The search cannot bypass a newer differing confirmation to find an older match.
-Only stored status may change; original human approval fields and comments remain.
-
-All checks are bound to the source/config/schema/baseline fingerprints. Concurrent
-edits reject restoration. A partially interrupted multi-seed restoration retains
-its private evidence; rerun to check the remaining draft seeds afresh. An
-incomplete drift application must finish before restoration. Evidence and check
-timestamps live under ignored `.nodal/regrades/`; public output is seed IDs,
-statuses and sanitized categories. Exit 1 means a failed grade, 3 means missing
-checks or pending dependency review, and 2 means invalid/changed context.
-
-The trusted drift workflow runs these checks when `ANTHROPIC_API_KEY` is present.
-During drift it checks the proposed draft graph, so a passing seed still reports
-“re-grade passed; dependency review pending” while its definitions need review.
-After lineage has been reconciled and dependencies confirmed, subsequent scheduled
-or manual runs can propose eligible seed restorations on a
-`nodal/seed-regrade-<batch>` review branch. No model key means an explicit skip.
-The workflow summary reports failures/skips even when no restoration is proposed;
-it uploads no generated answers, expected values or judge transcripts. Model
-re-grading sends the governed context and obligations to the customer's model
-provider; it is not warehouse execution or human approval.
-
-Once the source changes and context have been reviewed, explicitly refresh the
-baseline with `--update-baseline` and all required manifests. Missing sources or
-models prevent baseline replacement. Commits, pushes and publication still require
-the user's instruction.
+The trusted drift workflow records stale targets in the independent authority
+before opening a repair proposal. No authored status patch is the stale-state
+source. Review the definitions, refresh the lineage baseline with complete
+manifests, merge through protected human review, and run fresh applicable checks.
+Use the protected context-approval workflow to clear the named block for the
+exact reviewed revision. It verifies successful check runs after the block.
+An unrelated merge, passing model grade or changed status field cannot clear it.
+See GOVERNANCE.md and the canonical SPEC for authority setup and expiry behavior.
+Commits, pushes and publication still require the user's instruction.

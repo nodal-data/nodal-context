@@ -133,6 +133,11 @@
         "encryption"
       ],
       "additionalProperties": false
+    },
+    "approval_branch": {
+      "type": "string",
+      "minLength": 1,
+      "default": "main"
     }
   },
   "additionalProperties": false

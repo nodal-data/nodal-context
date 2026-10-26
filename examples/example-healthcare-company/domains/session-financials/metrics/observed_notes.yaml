@@ -1,9 +1,10 @@
 name: observed_notes
 definition: Distinct notes represented in session financials.
 grain: note_id
-status: draft
 expression:
   measure: COUNT(DISTINCT note_id)
   allowed_dimensions: [session_date]
 lineage:
   shared: lineage_3111488458
+review_history:
+- status: draft

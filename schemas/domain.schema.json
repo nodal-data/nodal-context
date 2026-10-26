@@ -3,18 +3,45 @@
   "$id": "https://nodaldata.io/acf/domain.schema.json",
   "title": "ACF Domain",
   "type": "object",
-  "required": ["name", "summary", "status", "grain", "lineage"],
+  "required": [
+    "name",
+    "summary",
+    "grain",
+    "lineage"
+  ],
   "properties": {
-    "name": { "type": "string" },
-    "summary": { "type": "string" },
-    "status": { "enum": ["draft", "confirmed"] },
-    "owner": { "type": "string" },
-    "grain": { "type": "string" },
+    "name": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "confirmed"
+      ],
+      "deprecated": true,
+      "description": "Legacy migration evidence only; never grants approval. Drafts remain blocked until reviewed conversion."
+    },
+    "owner": {
+      "type": "string"
+    },
+    "grain": {
+      "type": "string"
+    },
     "tables": {
       "type": "object",
       "properties": {
-        "canonical": { "type": "string" },
-        "others": { "type": "array", "items": { "type": "string" } }
+        "canonical": {
+          "type": "string"
+        },
+        "others": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "dashboards": {
@@ -22,16 +49,51 @@
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "owner": { "type": "string" },
-          "canonical_question": { "type": "string" },
-          "url": { "type": "string" },
-          "tool": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "canonical_question": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "tool": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }
     },
-    "lineage": { "$ref": "lineage.schema.json" }
+    "lineage": {
+      "$ref": "lineage.schema.json"
+    },
+    "review_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "draft",
+              "confirmed"
+            ]
+          },
+          "approver": {
+            "type": "string"
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Historical attribution only. Does not grant current approval."
+    }
   },
   "additionalProperties": false
 }

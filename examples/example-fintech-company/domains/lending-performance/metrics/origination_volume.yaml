@@ -1,18 +1,19 @@
 # Fictional example: approvals and business rules are illustrative.
 name: origination_volume
 definition: Principal originated once per loan, dated by disbursement; exclude Partner Z.
-status: confirmed
-approver: fictional-example-owner
-confirmed_at: '2026-10-01'
 grain: loan at origination
 lineage:
-  - source: dbt_core
-    models: [fct_loan_performance]
+- source: dbt_core
+  models: [fct_loan_performance]
 parameters:
-  - name: period_start
-    note: Inclusive disbursement date.
-  - name: period_end_exclusive
-    note: Exclusive disbursement date.
+- name: period_start
+  note: Inclusive disbursement date.
+- name: period_end_exclusive
+  note: Exclusive disbursement date.
 expression_blocked_by: Deduplicate monthly snapshots before summing principal.
 deterministic_form: reference.md#pattern-origination-volume
 allowed_dimensions: []
+review_history:
+- status: confirmed
+  approver: fictional-example-owner
+  confirmed_at: '2026-10-01'

@@ -404,6 +404,15 @@ def main(argv=None):
     result = {"impact": impact, "status": "reported_not_applied", "unchecked_sources": unchecked}
     if args.prepare_patch and drifted:
         result["patch"] = prepare(repo_root, impact, source_changes={"changes": changes, "missing_models": missing_models})
+    from acf_runtime.governance import digest
+    result["source_evidence"] = {}
+    for source, path in manifests.items():
+        if source not in unchecked:
+            raw = Path(path).read_bytes()
+            import hashlib
+            fingerprint = hashlib.sha256(raw).hexdigest()
+            result["source_evidence"][source] = {"status": "checked", "revision": "sha256:" + fingerprint, "digest": fingerprint}
+    result["changes"] = changes
     if args.json_out:
         _write_output(args.json_out, json.dumps(result, indent=2) + "\n")
     print(report)

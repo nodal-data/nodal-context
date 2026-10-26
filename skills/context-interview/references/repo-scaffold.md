@@ -131,9 +131,9 @@ keys and credentials remain customer-controlled; never put private keys in confi
 
 ## Draft-vs-confirmed discipline
 
-- Auto-extracted stubs are written `status: draft`.
-- A metric, method or seed becomes `status: confirmed` only after actual human
-  review, with `approver` and `confirmed_at`. Simulated answers remain draft.
+- Auto-extracted stubs are written proposed working-branch content.
+- A metric, method or seed becomes merge approval only after actual human
+  review and protected merge approval. Simulated answers remain proposed.
 - Drafts remain schema-valid. Draft dependencies and open decisions make their
   consumers effectively draft even when stored status is confirmed. The harness
   excludes these from confirmed evaluation; it measures off/on accuracy rather
@@ -173,7 +173,7 @@ anchors; it runs in well under a second:
 nothing.) For each hit, read the identity — don't present bare paths:
 
 - company (the `README.md` title / `context.config.yaml`),
-- domains wired in `context.config.yaml` and open `status: draft` count,
+- domains wired in `context.config.yaml` and open proposed working-branch content count,
 - `git -C <dir> log -1 --format='%an, %ar'` (who touched it last, when).
 
 Offer candidates by identity and let the analyst pick, name a different path, give

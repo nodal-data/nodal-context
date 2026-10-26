@@ -238,7 +238,7 @@ def draft_notebook(path, *, name, domain, registry, source_path=None, repo=None,
                   "extracted_by": "context-interview (Stage 6, static notebook import)"}
     if repo:
         provenance["repo"] = repo
-    method = {"name": name, "kind": "method", "status": "draft", "domain": domain, "aliases": [],
+    method = {"name": name, "kind": "method", "domain": domain, "aliases": [],
               "description": "Draft analysis method; review source decisions with the analyst.",
               "metrics": sorted(proposed), "lineage": "inherit", "parameters": list(params.values()),
               "decisions": decisions, "output": {"grain": "Review with analyst", "columns": sorted(columns),

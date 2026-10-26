@@ -1,7 +1,6 @@
 name: missing_payer_note_rate
 definition: Share of observed notes with at least one missing payer.
 grain: note_id
-status: draft
 expression:
   measure: metric(notes_missing_payer) / metric(observed_notes)
   allowed_dimensions: [session_date]
@@ -9,3 +8,5 @@ expression:
     zero_denominator:
     reason: 'Fictional example policy: no eligible population means no rate.'
 lineage: inherit
+review_history:
+- status: draft

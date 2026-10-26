@@ -23,9 +23,10 @@ def main(argv=None):
     parser.add_argument("--candidate", action="append", default=[], help="viable canonical candidate; never a probability threshold")
     parser.add_argument("--exclude", action="append", default=[], help="seed ID to hold out, including its variants")
     parser.add_argument("--model", default=client.MODEL)
+    parser.add_argument("--branch-test", action="store_true", help="test proposed context; never grants approval")
     args = parser.parse_args(argv)
     try:
-        registry = load_context(args.root)
+        registry = load_context(args.root, branch_test=True if args.branch_test else None)
         if registry.errors:
             raise ValueError("context must validate before matching")
         if args.domain not in registry.domains:
@@ -41,6 +42,7 @@ def main(argv=None):
             candidates=extracted.get("candidates"), exclude=args.exclude)
         if extracted.get("unresolved_reason"):
             result["unresolved_reason"] = extracted["unresolved_reason"]
+        result["governance"] = registry.governance
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0
     except (OSError, ValueError, KeyError, TypeError) as exc:

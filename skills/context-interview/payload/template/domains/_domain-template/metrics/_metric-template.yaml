@@ -1,7 +1,6 @@
 name: <metric>
 definition: <prose definition; what it means here>
 grain: <grain it's computed at>
-status: draft                    # draft | confirmed
 parameters:                      # what the user MUST specify
 - name: <e.g. time_window>
   note: <why it matters>

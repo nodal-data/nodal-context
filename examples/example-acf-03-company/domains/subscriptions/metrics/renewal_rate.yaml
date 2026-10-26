@@ -1,7 +1,4 @@
 name: renewal_rate
-status: confirmed
-approver: fictional-example-reviewer
-confirmed_at: '2026-10-01'
 definition: Renewed terms divided by renewed plus churned terms ending in the selected window.
 aliases:
 - term retention
@@ -16,7 +13,11 @@ expression:
   - plan
   - segment
   ratio:
-    zero_denominator: null
+    zero_denominator:
     reason: An empty decided population has no rate.
 caveats:
 - Undecided and test terms are excluded. The period is the predecessor term end date.
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

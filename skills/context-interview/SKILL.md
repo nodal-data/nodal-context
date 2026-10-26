@@ -3,6 +3,15 @@ name: context-interview
 description: Interview an analyst to build or improve an ACF analytics-context repo, including metrics, entities, caveats, eval seeds, and a five-question test drive. Use for context-layer creation or correction. Do not use for dbt code or continuous eval-harness operation.
 ---
 
+Approval contract: new and changed context stays on a named working branch and
+has no authored approval status. Human-reviewed protected merge grants definition
+approval; consult the live authority through the runtime for the exact revision
+and freshness. Missing/expired evidence or stale dependencies blocks governed
+use. Explicit branch-test mode is proposed context only. Query/notebook result
+verification is separate from definition approval; retain source and review
+evidence. See the context-interview SPEC approval-through-merge contract.
+
+
 # Context Interview
 
 You are conducting a structured interview with a data analyst to build their
@@ -21,7 +30,7 @@ down the answers in a format an agent can query and a team can review.
 
 - **Confirm, don't author.** Auto-extract schema/dbt as a *draft to react to*, then
   let the analyst correct it. Never write a definition the analyst hasn't confirmed;
-  mark anything unconfirmed `status: draft`. The confirmation act itself follows
+  mark anything unconfirmed proposed working-branch content. The confirmation act itself follows
   "Selection beats confirmation" below — the analyst chooses among real readings or
   answers a contested atom; they don't rubber-stamp your paragraph.
 - **One domain at a time, value each round.** After each domain is captured, run
@@ -67,7 +76,7 @@ down the answers in a format an agent can query and a team can review.
   ladder. Rejected options are harvested, not discarded — see
   `references/eval-seed-harvesting.md`.
 - **Work long lists in small batches.** When a stage yields many items (terms,
-  entities, caveats), elicit the list first as `status: draft` stubs, then confirm
+  entities, caveats), elicit the list first as proposed working-branch content stubs, then confirm
   1–3 at a time with a visible progress count — never hand the analyst a wall of
   items to define at once. See "Working a long list" in `references/interview-flow.md`.
 - **Capture the disambiguation, not just the answer.** The eval seed needs the
@@ -126,7 +135,7 @@ new seeds remain draft until the normal human confirmation process completes.
 The stages above are the full interview. There is one other traversal — the
 **test drive** (`references/test-drive.md`): the same state machine at a hard
 ~30-minute, five-question budget for ONE domain, ending with a small live check
-and everything unasked left as `status: draft` stubs. It's the fastest way to
+and everything unasked left as proposed working-branch content stubs. It's the fastest way to
 see the whole loop work on the analyst's own data — interview, context, live
 delta — before they commit real time. Offer the choice right after Stage 0
 setup: *"Full interview for this domain, or a 30-minute test drive — five core
@@ -185,7 +194,7 @@ you enter it.
    - **Analyst says continue → resume, don't scaffold** (the script refuses to overwrite
      anyway). Read `context.config.yaml` (which domains are wired),
      `company/org-structure.md` (the Domain | Owner | Status roster), and count
-     the remaining `status: draft` stubs. Open with a status summary and a
+     the remaining proposed working-branch content stubs. Open with a status summary and a
      choice instead of restarting Stage 1: *"Captured so far: billing
      (confirmed), scheduling (4 drafts open). Continue scheduling, or start a
      new domain?"* Follow "Updating an existing repo" in
@@ -227,7 +236,7 @@ you enter it.
      needed) and read `target/manifest.json`, or fall back to parsing dbt source
      files. It yields grain evidence (uniqueness tests), real table names, value sets
      (`accepted_values`), join paths (`relationships`), dashboards (`exposures`), and
-     the model dependency graph — each drafted as `status: draft` tagged
+     the model dependency graph — each drafted as proposed working-branch content tagged
      `# dbt-derived`. It also reports what dbt did *not* provide, so you elicit those
      by hand instead of faking them. The local clone path is for extraction only —
      never persist it into `context.config.yaml`: derive the durable `repo:` from
@@ -249,7 +258,7 @@ you enter it.
      the rows into `.query-findings.json`. Recurring BI-service clusters become
      Stage-2 dashboard-catalog candidates; conflicting calculations over the same
      tables are interview *questions*, never answers. Everything drafted from it
-     is `status: draft`, tagged `# query-history-derived`. The step ends in
+     is proposed working-branch content, tagged `# query-history-derived`. The step ends in
      exactly one of four outcomes, each recorded in the step-6 disposition
      report:
      - probe succeeded → **mined**: run Phase A+B now;
@@ -265,7 +274,7 @@ you enter it.
      A probe that was down when you first read this bullet does not retire it —
      the condition gets re-checked, not the step skipped.
    - existing BI/dashboard titles if reachable.
-   Write these into `context.config.yaml` (lineage sources) and as `status: draft`
+   Write these into `context.config.yaml` (lineage sources) and as proposed working-branch content
    stubs. Tell the analyst: "I pulled a rough draft from your dbt project and schema.
    We'll correct it together — don't trust any of it yet." Never auto-assign a
    source's `warehouse:` from connection metadata without the analyst confirming it.
@@ -318,9 +327,9 @@ Give each parameter a note and explain optional output columns in decisions.
 Governed entity references are dependencies; their draft status blocks the method.
 Declare referenced metrics explicitly and keep runtime literals in parameters,
 including in procedure steps. Illustrative worked examples may show bound values.
-Methods contain no runnable SQL/Python. Confirmed metrics, methods and seeds
-record the actual `approver` and ISO-date `confirmed_at`; changed interpretations
-return to draft while old attribution is preserved as history.
+Methods contain no runnable SQL/Python. Metrics, methods and seeds become approved only through protected human-reviewed
+merge. Keep changed interpretations on working branches and retain prior attribution
+as review history. Missing or stale authority evidence blocks governed use.
 
 For each domain capture `domain.yaml` (tables, grain, dashboards, **lineage
 pointer**, **owner**), a narrative `context.md`, and — the important one — a
@@ -524,7 +533,7 @@ user-facing block in the full-interview close.
 - You don't maintain continuous eval history or invent a perfect baseline. You
   run the one-shot live verification (Stage 5); harness checks remain separate.
 - You don't invent a definition to fill a gap. Leave
-  `_To be confirmed by [owner]._` and mark `status: draft`.
+  `_To be confirmed by [owner]._` and mark proposed working-branch content.
 - You don't put numbers in context files.
 
 ## Guardrail: a confirmation loop, not an extraction — and not a rubber stamp

@@ -172,14 +172,18 @@ HOW_TO_ANSWER = """\
 def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: bool):
     """-> (skill_dir, stats dict). Writes the skill folder under out_dir."""
     import yaml
-    registry = load_context(repo)
+    registry = load_context(repo, branch_test=True if include_drafts else None)
     if registry.errors:
         raise SystemExit("compile_skill: invalid ACF 0.3 context:\n" + "\n".join(map(str, registry.errors)))
+    if registry.governance["mode"] == "governed" and any(n.blocking_reasons for n in registry.nodes.values()):
+        raise SystemExit("compile_skill: governed export requires approved revision and live freshness evidence")
     company = _company_name(repo, name)
     slug = f"{_slug(company)}-data-analyst"
     skill_dir = out_dir / slug
     refs_dir = skill_dir / "references"
     refs_dir.mkdir(parents=True, exist_ok=True)
+    import json
+    (skill_dir / "governance.json").write_text(json.dumps(registry.governance, indent=2) + "\n")
     stats = {"domains": [], "drafts_excluded": 0, "slug": slug}
 
     # references/entities.md — cross-domain entities (shared by the skill adapter)
@@ -202,7 +206,7 @@ def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: b
     for d in sorted((repo / "domains").iterdir()) if (repo / "domains").is_dir() else []:
         if not d.is_dir() or d.name.startswith(("_", ".")):
             continue
-        dom = registry.domains[d.name]
+        dom = {**registry.domains[d.name], "status": registry.nodes["domain:" + d.name].effective_status}
         if _draft(dom) and not include_drafts:
             stats["drafts_excluded"] += 1
             continue
@@ -285,6 +289,7 @@ description: "{description}"
 > `{_git_stamp(repo)}` on {today} by `scripts/compile_skill.py`
 > ([nodal-context](https://github.com/nodal-data/nodal-context)). The live,
 > reviewed context is the ACF repo (and its MCP endpoint, if served).
+> Approval provenance is in `governance.json`. This export is an offline snapshot; recheck the live authority before governed use. Branch-test exports are proposed context only.
 > Regenerate this skill after every merge; do not edit it by hand.{drafts_note}
 
 {HOW_TO_ANSWER}
@@ -304,7 +309,36 @@ description: "{description}"
 {chr(10).join(nav_rows)}
 """
     (skill_dir / "SKILL.md").write_text(skill_md)
+    import hashlib
+    proof = {**registry.governance, "format": "acf-export/1", "export_name": name, "export_files": {p.relative_to(skill_dir).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+             for p in skill_dir.rglob("*") if p.is_file() and p.name != "governance.json"}}
+    (skill_dir / "governance.json").write_text(json.dumps(proof, indent=2) + "\n")
     return skill_dir, stats
+
+
+def verify_export(repo, exported, name=None):
+    """Recompile from a live-approved source revision; copied proofs aren't trust."""
+    import hashlib
+    import json
+    import os
+    import tempfile
+    if os.environ.get("ACF_BRANCH_TEST") == "1":
+        raise ValueError("export approval cannot be verified in branch-test mode")
+    exported = Path(exported)
+    proof = json.loads((exported / "governance.json").read_text())
+    if proof.get("format") != "acf-export/1" or proof.get("mode") != "governed" or not proof.get("approved"):
+        raise ValueError("export is not an approved revision snapshot")
+    with tempfile.TemporaryDirectory(prefix="acf-export-check-") as directory:
+        rebuilt, _ = compile_skill(Path(repo), Path(directory), name if name is not None else proof.get("export_name"), False)
+        live = json.loads((rebuilt / "governance.json").read_text())
+        for key in ("revision", "content_digest", "approval", "export_files"):
+            if proof.get(key) != live.get(key):
+                raise ValueError("export differs from the approved source revision")
+        actual = {p.relative_to(exported).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                  for p in exported.rglob("*") if p.is_file() and p.name != "governance.json"}
+        if actual != live["export_files"] or any(p.is_symlink() for p in exported.rglob("*")):
+            raise ValueError("export content changed")
+    return live
 
 
 def package_zip(skill_dir: Path) -> Path:
@@ -330,12 +364,17 @@ def main(argv=None):
     ap.add_argument("--include-drafts", action="store_true",
                     help="keep status:draft items, marked '(draft — unconfirmed)' "
                     "(default: excluded — a human owns every definition)")
+    ap.add_argument("--verify-export", type=Path, help="recheck an export against this live-approved source checkout")
     args = ap.parse_args(argv)
 
     repo = Path(args.repo).resolve()
     if not (repo / "domains").is_dir():
         raise SystemExit(f"compile_skill: {repo} has no domains/ directory — point me "
                          "at an ACF context repo (see SPEC.md).")
+    if args.verify_export:
+        verify_export(repo, args.verify_export, args.name)
+        print("compile_skill: export matches live-approved source revision")
+        return 0
     out_dir = Path(args.out).resolve() if args.out else repo / "dist"
     skill_dir, stats = compile_skill(repo, out_dir, args.name, args.include_drafts)
 

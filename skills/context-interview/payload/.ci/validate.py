@@ -165,6 +165,8 @@ def discover_roots():
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("roots", nargs="*")
+    ap.add_argument("--branch-test", action="store_true", help="validate proposed context without granting approval")
+    ap.add_argument("--require-ready", action="store_true", help="fail on unresolved dependencies/readiness blockers before merge")
     ap.add_argument("--schemas")
     ap.add_argument("--manifest", action="append", default=[], metavar="SOURCE_ID=PATH")
     ap.add_argument("--json", action="store_true")
@@ -185,8 +187,13 @@ def main(argv=None):
         diagnostics = []
         total = 0
         for root in strict:
-            registry = load_context(root, schemas=schema_dir, manifests=manifests)
+            registry = load_context(root, schemas=schema_dir, manifests=manifests, branch_test=True if args.branch_test else None)
             diagnostics.extend(vars(d) for d in registry.diagnostics)
+            if args.require_ready and (args.roots or Path("context.config.yaml").is_file()):
+                for node in registry.nodes.values():
+                    if node.blocking_reasons:
+                        diagnostics.append(dict(code="merge.blocked", severity="error", path=node.path, field="",
+                            message=", ".join(sorted(node.blocking_reasons)), target=node.id))
             try:
                 read_queue(root, checker, registry)
             except (ValueError, OSError) as exc:

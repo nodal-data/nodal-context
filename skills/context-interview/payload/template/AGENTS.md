@@ -1,5 +1,10 @@
 # AGENTS.md
 
+Read [GOVERNANCE.md](GOVERNANCE.md) for protected merge approval, live stale-state
+checks, explicit branch testing and legacy conversion. New definitions omit
+authored approval status; interview confirmation is evidence for review.
+
+
 This is [company]'s business context for analytical data, in ACF 0.3. Use it to
 interpret questions; warehouse metadata establishes technical structure, not
 business meaning. `AUTHORING.md` governs edits and `SHARING.md` governs distribution.
@@ -16,7 +21,7 @@ business meaning. `AUTHORING.md` governs edits and `SHARING.md` governs distribu
    honor grouped mandatory filters, entity-filter stages, parameters, grain,
    allowed dimensions, ratio policy and caveats. Methods live at `methods/<slug>.md`.
 3. Check effective readiness. Human approval is required for confirmed definitions;
-   `status: confirmed` does not override an open decision or draft dependency.
+   merge approval does not override an open decision or draft dependency.
    Draft query patterns are not governed guidance. A deterministic-form metric is
    defined by its reviewed pattern/method, not by an invented expression.
 4. Follow the retrieval ladder. For an equivalent metric, add `reference.md`.
@@ -56,8 +61,7 @@ No Nodal source checkout is required. Follow `AUTHORING.md` and use the installe
   metric layouts are unsupported; migrate explicitly before support-file upgrades.
 - Methods contain decisions and prose, not runnable code. Static notebook import
   produces drafts; it neither executes the notebook nor confirms its business rules.
-- Humans own confirmations. Confirmed metrics/methods/seeds require `approver` and
-  `confirmed_at`. A simulator or model cannot supply them. Preserve historical
+- Humans own confirmations. Metrics/methods/seeds require protected human-reviewed merge for approval. A simulator or model cannot supply them. Preserve historical
   attribution when drift makes an artifact draft; fresh eligible seed re-grading
   may restore a previously approved seed, never confirm a metric or method.
 - Every confirmed disambiguation produces a reviewed seed or equivalent variant.

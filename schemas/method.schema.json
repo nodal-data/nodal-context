@@ -15,7 +15,9 @@
       "enum": [
         "draft",
         "confirmed"
-      ]
+      ],
+      "deprecated": true,
+      "description": "Legacy migration evidence only; never grants approval. Drafts remain blocked until reviewed conversion."
     },
     "approver": {
       "type": "string",
@@ -314,12 +316,34 @@
         "kind"
       ],
       "additionalProperties": false
+    },
+    "review_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "draft",
+              "confirmed"
+            ]
+          },
+          "approver": {
+            "type": "string"
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Historical attribution only. Does not grant current approval."
     }
   },
   "required": [
     "name",
     "kind",
-    "status",
     "domain",
     "aliases",
     "description",
@@ -355,7 +379,10 @@
           "status": {
             "const": "confirmed"
           }
-        }
+        },
+        "required": [
+          "status"
+        ]
       },
       "then": {
         "properties": {

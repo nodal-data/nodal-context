@@ -1,7 +1,6 @@
 ---
 name: refund-impact
 kind: method
-status: draft
 domain: revenue
 aliases:
 - refund impact
@@ -24,6 +23,8 @@ output:
   - Chosen refund date policy
 checks:
 - Do not claim an impact while the refund attribution decision is open.
+review_history:
+- status: draft
 ---
 
 ## When to use

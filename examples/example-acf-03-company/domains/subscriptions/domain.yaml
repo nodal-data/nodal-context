@@ -1,8 +1,9 @@
 name: subscriptions
 summary: Fictional subscriptions for the complete ACF 0.3 example.
-status: confirmed
 grain: subscription term
 lineage:
 - source: demo
   models:
   - subscription_terms
+review_history:
+- status: confirmed

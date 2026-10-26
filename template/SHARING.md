@@ -1,5 +1,10 @@
 # Share this context with your team
 
+Read [GOVERNANCE.md](GOVERNANCE.md) for protected merge approval, live stale-state
+checks, explicit branch testing and legacy conversion. New definitions omit
+authored approval status; interview confirmation is evidence for review.
+
+
 This repo is Markdown + YAML that **[company] owns**. A single analyst can point their
 own agent at these files and get governed answers for **free** — clone it, read it
 locally, done. To put the same context in front of the *whole team* — so a non-technical

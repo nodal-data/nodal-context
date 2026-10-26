@@ -1,11 +1,6 @@
-question: Activity cohort retention by customer segment for base [2026-01-01, 2026-02-01) and follow-up
-  [2026-02-01, 2026-03-01), as of 2026-02-15?
-intent: Compare the fictional fixed activity cohort, including empty segment slices, with partial follow-up
-  disclosed.
+question: Activity cohort retention by customer segment for base [2026-01-01, 2026-02-01) and follow-up [2026-02-01, 2026-03-01), as of 2026-02-15?
+intent: Compare the fictional fixed activity cohort, including empty segment slices, with partial follow-up disclosed.
 domain: customers
-status: confirmed
-approver: fictional-example-reviewer
-confirmed_at: '2026-10-01'
 provenance: generated
 expected:
   kind: value_at_snapshot
@@ -24,7 +19,7 @@ expected:
     cohort_key: empty
     cohort_size: 0
     returned: 0
-    retention_rate: null
+    retention_rate:
     followup_complete: false
   tolerance:
     absolute: 0
@@ -48,3 +43,7 @@ ir:
   time_window:
     start: '2026-01-01'
     end: '2026-03-01'
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

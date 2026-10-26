@@ -19,4 +19,4 @@ def resolve_status(nodes):
                         node.blocking_reasons.add(reason)
                         changed = True
     for node in nodes.values():
-        node.effective_status = "draft" if node.blocking_reasons else node.data.get("status", "draft")
+        node.effective_status = "draft" if node.blocking_reasons else "confirmed"

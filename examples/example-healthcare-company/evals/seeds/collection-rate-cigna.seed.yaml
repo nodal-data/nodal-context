@@ -21,9 +21,10 @@ expected:
   must_exclude:
   - "Payer Y / Payer Y-CA payers"
 provenance: interview
-status: confirmed
 lineage:
 - source: dbt_core
   models: [fct_session_financials]
-approver: fictional-example-owner
-confirmed_at: '2026-10-01'
+review_history:
+- status: confirmed
+  approver: fictional-example-owner
+  confirmed_at: '2026-10-01'

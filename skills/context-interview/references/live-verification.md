@@ -147,7 +147,7 @@ the shareable "the system validated itself" artifact.
    answer key?"* (A legitimate rung-3 plain confirm — the truth anchor is the
    dashboard number the analyst just read, not your prose.)
 2. Write/upgrade the seed:
-   - `provenance: dashboard`, `status: confirmed`, the real `approver` and `confirmed_at`
+   - `provenance: dashboard`, merge approval, the real `approver` and `confirmed_at`
    - `expected.kind: value_at_snapshot`, `value: <dashboard number>`, `as_of: <date>`
    - `intent:` ← the confirmed assumptions (the disambiguation it got right)
    - `ir:` ← the decomposition the verified query actually used — `metric` (the
@@ -193,7 +193,7 @@ missing caveat or disambiguation. Harvest it the Stage-4 way:
 
 - add the caveat to the domain's `known-issues.md` and an `IF … DO NOT …` routing
   trigger to its `reference.md`, and
-- write a `provenance: correction`, `status: confirmed` seed whose `expected.kind:
+- write a `provenance: correction`, merge approval seed whose `expected.kind:
   sql_shape` encodes the *correct* handling (`must_include` / `must_exclude`),
   with an `ir:` block recording the correct decomposition (relative
   `time_window` — the value isn't pinned, so the window must stay evergreen),

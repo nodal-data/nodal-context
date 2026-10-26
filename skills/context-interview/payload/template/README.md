@@ -1,5 +1,10 @@
 # [company] Analytics Context
 
+Read [GOVERNANCE.md](GOVERNANCE.md) for protected merge approval, live stale-state
+checks, explicit branch testing and legacy conversion. New definitions omit
+authored approval status; interview confirmation is evidence for review.
+
+
 This repo is [company]'s **business context layer** for analytics agents, in
 Analytics Context Format (ACF) 0.3. It tells an AI agent what your terms mean, which
 table is canonical, what the standard filters are, and where the landmines are — so
@@ -106,14 +111,14 @@ into your prompt.
   picking the work up on another machine or handing it to a teammate, see
   "Continuing this repo" in [`AUTHORING.md`](./AUTHORING.md).
 - Review every change **by PR**. The bundled `.github/workflows/` validate the YAML,
-  flag unconfirmed `status: draft` entries, run the on/off eval delta, and detect
+  flag unconfirmed proposed working-branch content entries, run the on/off eval delta, and detect
   drift when an upstream model changes.
 - **Wire the dbt repo** so model changes trigger the drift check the moment they
   merge: copy [`dbt-repo/notify-context-repo.yml`](./dbt-repo/notify-context-repo.yml)
   into the dbt repo's `.github/workflows/` — setup in
   [`dbt-repo/README.md`](./dbt-repo/README.md).
-- **Review drift proposals.** The bundled `context-drift` workflow proposes draft
-  status changes through transitive dependencies, with an issue/patch fallback
+- **Review drift proposals.** The bundled `context-drift` workflow records stale
+  blocks immediately through transitive dependencies, with a repair issue fallback
   when PR creation is unavailable. Review the batch and reverify affected snapshots;
   it never silently confirms business definitions. Local coverage, observed-demand
   review and approved-query regression are also available. Managed services add

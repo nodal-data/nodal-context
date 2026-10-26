@@ -5,17 +5,14 @@ definition: >
   under 45 days old haven't adjudicated and read artificially low; Payer Y is
   excluded (different reimbursement cycle).
 grain: note_id x authorized_service_id
-status: confirmed
 parameters:
 - name: as_of_date
   note: the adjudication cutoff is relative to this date
 - name: time_window
   note: which sessions to include
 caveats:
-- Blank payer_name is meaningful, not missing-at-random — say so when filtering
-  by payer.
-- Payers are state-specific (Payer X-TX vs Payer X-FL are different
-  contracts/rates); never aggregate across states.
+- Blank payer_name is meaningful, not missing-at-random — say so when filtering by payer.
+- Payers are state-specific (Payer X-TX vs Payer X-FL are different contracts/rates); never aggregate across states.
 common_filters:
 - standard hygiene filters (see reference.md)
 expression:
@@ -24,8 +21,7 @@ expression:
   - field: session_date
     op: "<"
     value: "<as_of_date> - 45 days"
-    reason: claims take ~45 days to adjudicate; recent sessions read
-      artificially low
+    reason: claims take ~45 days to adjudicate; recent sessions read artificially low
   - field: payer_name
     op: not_ilike
     value: "Payer Y%"
@@ -36,5 +32,7 @@ expression:
     reason: 'Fictional example policy: no eligible population means no rate.'
 lineage:
   shared: lineage_3111488458
-approver: fictional-example-owner
-confirmed_at: '2026-10-01'
+review_history:
+- status: confirmed
+  approver: fictional-example-owner
+  confirmed_at: '2026-10-01'

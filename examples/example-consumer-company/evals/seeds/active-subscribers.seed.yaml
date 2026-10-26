@@ -14,12 +14,13 @@ expected:
   - "trialing subscriptions"
   - "engagement-based active users"
 provenance: interview
-status: confirmed
 lineage:
 - source: dbt_core
   models: [fct_subscription_periods]
-approver: fictional-example-owner
-confirmed_at: '2026-10-01'
 ir:
   metric: active_subscribers
   time_window: current_billing_period
+review_history:
+- status: confirmed
+  approver: fictional-example-owner
+  confirmed_at: '2026-10-01'

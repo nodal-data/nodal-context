@@ -28,15 +28,14 @@ expected:
     - "bookings substituted for recognized revenue"
     - "refunds subtracted a second time"
 provenance: interview
-status: draft
 ```
 
-After actual human confirmation, set `status: confirmed`, `approver` to that
-reviewer's name, and `confirmed_at` to the review's ISO date. An owner field,
-commit author, generated example or simulated analyst is not confirmation. The
-referenced metric must exist at `domains/<domain>/metrics/<name>.yaml` and be
-effectively ready; stored confirmation cannot override a draft dependency or an
-open decision. Preserve historical attribution when drift makes a seed draft.
+Record the analyst's selected interpretation as evidence on a working branch.
+Definitions become approved through protected human-reviewed merge. The referenced
+metric must exist and dependencies must be current. Live authority evidence binds
+approval to the exact revision; missing evidence blocks governed use. Preserve
+historical attribution in `review_history`. Snapshot result verification is a
+separate operation and never grants definition approval.
 
 ## Choose the expected kind
 
@@ -142,5 +141,5 @@ See `drift-review.md` for batching affected cases.
 
 Prefer a small set of meaningful caveat and disambiguation cases over redundant
 questions. Optional generated long-tail candidates stay `provenance: generated`,
-`status: draft` until a human reviews them. Simulation also stays draft; it cannot
+proposed working-branch content until a human reviews them. Simulation also stays draft; it cannot
 create human approval or execution evidence.

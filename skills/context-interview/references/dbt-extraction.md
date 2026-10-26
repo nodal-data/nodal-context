@@ -3,7 +3,7 @@
 When a dbt project is available, seed the draft from it instead of hand-eliciting
 everything. dbt encodes grain, value sets, join paths, and dashboards as structured
 artifacts — but they are a **draft to react to**, never truth. Everything you write
-from dbt is `status: draft`, tagged `# dbt-derived (<source node>)`, and stays
+from dbt is proposed working-branch content, tagged `# dbt-derived (<source node>)`, and stays
 excluded from the confirmed evaluation until the analyst confirms it. A wrong dbt
 description is exactly the plausible-but-wrong failure mode; **tag, don't trust.**
 
@@ -37,7 +37,7 @@ there (a transient bootstrap artifact, not ACF). Discard it after Stage 0.
 `columns[]`, `depends_on[]`, `tests[]`, `grain_hint[]`), `exposures[]`,
 `unavailable[]`, `coverage{}`.
 
-Map each artifact to its ACF field — all `status: draft`, all tagged:
+Map each artifact to its ACF field — all proposed working-branch content, all tagged:
 
 | dbt artifact (in findings) | ACF target (actual field) | Notes |
 |---|---|---|
@@ -79,7 +79,7 @@ there — fall back to the interview:
   are warehouse identifiers — often codenames. Use
   `relation` only to fill `domain.yaml.tables`; the company and domain *names* come
   from the analyst in Stages 1–2, not from what you queried. If unsure, ask.
-- Every dbt-derived line: `status: draft` + `# dbt-derived (<node id>)`.
+- Every dbt-derived line: proposed working-branch content + `# dbt-derived (<node id>)`.
 - Descriptions and semantic-layer metric defs are **often stale/aspirational** —
   confirm hard before flipping to `confirmed`.
 - The script drafts nothing into ACF; you draft, the analyst confirms. Same

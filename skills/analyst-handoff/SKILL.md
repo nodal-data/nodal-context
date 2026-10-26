@@ -3,6 +3,15 @@ name: analyst-handoff
 description: Capture analytics knowledge from an analyst who is changing roles, leaving, or transferring domain ownership, producing governed ACF context and eval seeds through context-interview. Use only for an intentional knowledge-transfer or analyst-transition request.
 ---
 
+Approval contract: new and changed context stays on a named working branch and
+has no authored approval status. Human-reviewed protected merge grants definition
+approval; consult the live authority through the runtime for the exact revision
+and freshness. Missing/expired evidence or stale dependencies blocks governed
+use. Explicit branch-test mode is proposed context only. Query/notebook result
+verification is separate from definition approval; retain source and review
+evidence. See the context-interview SPEC approval-through-merge contract.
+
+
 # Analyst Handoff
 
 Run a time-bounded, transition-focused form of `context-interview`. The departing

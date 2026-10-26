@@ -3,6 +3,15 @@ name: verify-result
 description: Review analytics SQL and results against an approved plan for metric, filter, grain, join, and time fidelity, then assess plausibility and escalation needs. Use after analytics execution or when asked to audit a query/result. Do not use to define metrics or modify data.
 ---
 
+Approval contract: new and changed context stays on a named working branch and
+has no authored approval status. Human-reviewed protected merge grants definition
+approval; consult the live authority through the runtime for the exact revision
+and freshness. Missing/expired evidence or stale dependencies blocks governed
+use. Explicit branch-test mode is proposed context only. Query/notebook result
+verification is separate from definition approval; retain source and review
+evidence. See the context-interview SPEC approval-through-merge contract.
+
+
 # Verify Result
 
 Review an analytical result the way a careful analytics reviewer examines a code

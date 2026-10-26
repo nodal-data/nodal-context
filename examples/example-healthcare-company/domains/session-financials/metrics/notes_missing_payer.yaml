@@ -1,7 +1,6 @@
 name: notes_missing_payer
 definition: Notes with at least one session row whose payer is null or blank.
 grain: note_id
-status: draft
 expression:
   measure: COUNT(DISTINCT note_id)
   mandatory_filters:
@@ -12,3 +11,5 @@ expression:
   allowed_dimensions: [session_date]
 lineage:
   shared: lineage_3111488458
+review_history:
+- status: draft

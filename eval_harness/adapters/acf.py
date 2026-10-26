@@ -16,11 +16,13 @@ def _read(path):
     return path.read_text().strip() if path.is_file() else ""
 
 
-def build_ncr(root, domains=None):
+def build_ncr(root, domains=None, *, branch_test=None):
     root = Path(root).resolve()
-    registry = load_context(root)
+    registry = load_context(root, branch_test=branch_test)
     if registry.errors:
         raise ValueError("invalid ACF context:\n" + "\n".join(map(str, registry.errors)))
+    if registry.governance["mode"] == "governed" and any(n.blocking_reasons for n in registry.nodes.values()):
+        raise ValueError("governed context unavailable: approval, freshness or dependencies blocked")
     components = {}
     wanted = set(domains) if domains else set(registry.domains)
     for domain in sorted(wanted & set(registry.domains)):
@@ -39,12 +41,12 @@ def build_ncr(root, domains=None):
             if node.kind in ("evalseed", "pattern"):
                 continue
             # Definitions may be visible for disambiguation, but never silently approved.
-            definitions.append(f"# {key} (effective status: {node.effective_status})\n" +
+            definitions.append(f"# {key} (approval: {node.approval_state}; effective status: {node.effective_status})\n" +
                                yaml.safe_dump(node.data, sort_keys=False))
             if node.blocking_reasons:
                 definitions.append("Blocked: " + ", ".join(sorted(node.blocking_reasons)))
             if node.kind == "method":
-                method_bodies.append(f"# {key} (effective status: {node.effective_status})\n" + node.body)
+                method_bodies.append(f"# {key} (approval: {node.approval_state}; effective status: {node.effective_status})\n" + node.body)
         components[domain] = {
             "definitions": "\n\n".join(definitions),
             "reference": "\n\n".join(render_reference(_read(root / "domains" / d / "reference.md"),
@@ -58,5 +60,8 @@ def build_ncr(root, domains=None):
               definitions=registry.definitions(), context_components=components,
               capabilities={"matching", "methods", "coverage"},
               diagnostics=[vars(d) for d in registry.diagnostics])
+    if registry.governance["mode"] == "branch-test":
+        for component in components.values():
+            component["orientation"] = "BRANCH TEST: proposed context; no approval or result verification claimed.\n" + component["orientation"]
     ncr.context_by_domain = {domain: ncr.context_for(domain) for domain in components}
     return ncr

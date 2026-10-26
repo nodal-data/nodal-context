@@ -1,10 +1,11 @@
 question: Show the revenue impact of shifting refund recognition dates.
 intent: Show the revenue impact of shifting refund recognition dates.
 domain: revenue
-status: confirmed
-approver: fictional-example-reviewer
-confirmed_at: '2026-10-01'
 provenance: generated
 expected:
   kind: negative
   reason: unresolved_semantics
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

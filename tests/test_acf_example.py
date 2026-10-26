@@ -27,8 +27,10 @@ def run():
     assert not registry.diagnostics, [str(e) for e in registry.diagnostics]
     assert len(registry.metrics)==10 and len(registry.methods)==2 and len(registry.seeds)==9
     for node in registry.metrics+registry.methods+registry.seeds:
-        if node.data['status']=='confirmed':
-            assert node.data['approver']=='fictional-example-reviewer'
+        assert 'status' not in node.data
+        for review in node.data.get('review_history', []):
+            if review.get('status') == 'confirmed':
+                assert review['approver'] == 'fictional-example-reviewer'
     family=registry.lookup('revenue','revenue')
     assert len(family)==5
     assert match_registry(registry,{'metric':'revenue'},'revenue')['relation']=='ambiguous'
@@ -53,7 +55,7 @@ def run():
     assert relation(normalize(a,'customers',defs),normalize(c,'customers',defs))=='same_metric_new_slice'
     assert match_registry(registry,b,'customers')['relation']=='equivalent'
     assert not registry.nodes['seed:cohort-notebook-pending.seed.yaml'].data.get('approver')
-    assert registry.nodes['seed:cohort-notebook-pending.seed.yaml'].effective_status=='draft'
+    assert registry.nodes['seed:cohort-notebook-pending.seed.yaml'].approval_state=='proposed'
     negatives=[n for n in registry.seeds if n.data['expected']['kind']=='negative']
     assert {n.data['expected']['reason'] for n in negatives}=={'lack_data','unresolved_semantics'}
     # Finite fictional observations exercise the method's decisions independently

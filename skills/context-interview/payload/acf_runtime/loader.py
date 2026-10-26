@@ -97,10 +97,13 @@ class Schemas:
                       key=lambda e: "/".join(map(str, e.path)))
 
 
-def load_context(root, schemas=None, manifests=None):
+def load_context(root, schemas=None, manifests=None, *, branch_test=None, authority=None):
     """Return a Registry with located diagnostics. Never mutates authored files."""
     from .registry import Registry
     from .fragments import expand_metric, FragmentError
+    import os
+    if branch_test is None:
+        branch_test = os.environ.get("ACF_BRANCH_TEST") == "1"
     root = Path(root).resolve()
     schema_dir = Path(schemas) if schemas else root / "schemas"
     if not schema_dir.is_dir() and schemas is None:
@@ -168,4 +171,8 @@ def load_context(root, schemas=None, manifests=None):
                     result.warn("fragment.low_use", relative, f"{namespace}/{name}",
                                 f"fragment has {count} referring metrics; inline fragments used fewer than twice")
     result.build()
+    from .governance import apply_governance
+    from .status import resolve_status
+    apply_governance(result, branch_test=branch_test, authority=authority)
+    resolve_status(result.nodes)
     return result

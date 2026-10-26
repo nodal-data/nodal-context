@@ -41,6 +41,16 @@ def approved_history(root, seeds, reference="HEAD"):
     revision = commit(root, reference)
     checker = Schemas(schema_dir(root))
     records = {}
+    # Read authoritative merge history; authored attribution alone is insufficient.
+    from .governance import authority_request, read_authority, validate_ledger
+    registry = load_context(root)
+    approved = {}
+    try:
+        response = read_authority(authority_request(registry))
+        approved, _ = validate_ledger(response["events"])
+    except (ValueError, OSError, KeyError):
+        pass
+    legacy_test = registry.governance.get("mode") == "branch-test"
     for node in seeds:
         revisions = [revision, *git(root, "log", "-100", "--format=%H", revision, "--", node.path).decode().splitlines()]
         for current in dict.fromkeys(revisions):
@@ -58,10 +68,11 @@ def approved_history(root, seeds, reference="HEAD"):
                 break
             if not isinstance(value, dict):
                 break
-            if value.get("status") != "confirmed":
+            if current not in approved and not (legacy_test and value.get("status") == "confirmed"):
                 continue
             if not checker.errors("evalseed", value):
-                records[node.id] = {"data": value, "revision": current, "blob": oid}
+                records[node.id] = {"data": value, "revision": current, "blob": oid,
+                                    "approval_event": approved.get(current, {}).get("id"), "legacy_test_only": current not in approved}
             break
     return records
 
@@ -72,7 +83,7 @@ def check_seeds(root, previous, *, seed_ids=None, model=client.MODEL, provider=c
     registry = load_context(root)
     if registry.errors:
         raise ValueError("current context must validate before re-grading")
-    selected = set(seed_ids) if seed_ids is not None else {n.id for n in registry.seeds if n.data["status"] == "draft"}
+    selected = set(seed_ids) if seed_ids is not None else {n.id for n in registry.seeds if n.effective_status != "confirmed"}
     if selected - {n.id for n in registry.seeds}:
         raise ValueError("unknown re-grade seed ID")
     initial = fingerprints(root)
@@ -84,7 +95,7 @@ def check_seeds(root, previous, *, seed_ids=None, model=client.MODEL, provider=c
             continue
         record = {"seed": node.id, "status": "skipped", "category": "human_review_required", "eligible": False}
         checks.append(record)
-        if node.data["status"] != "draft":
+        if node.effective_status == "confirmed":
             record["category"] = "already_confirmed"
             continue
         kind = node.data["expected"]["kind"]
@@ -92,7 +103,8 @@ def check_seeds(root, previous, *, seed_ids=None, model=client.MODEL, provider=c
             continue
         prior = previous.get(node.id, {})
         old = prior.get("data", {})
-        if old.get("status") != "confirmed" or not old.get("approver") or not old.get("confirmed_at"):
+        if not prior.get("approval_event") and not (registry.governance.get("mode") == "branch-test" and
+                old.get("status") == "confirmed" and old.get("approver") and old.get("confirmed_at")):
             record["category"] = "previous_human_approval_unavailable"
             continue
         if interpretation(old) != interpretation(node.data):
@@ -166,6 +178,8 @@ def public_report(evidence):
 
 def run_regrade(root, *, approved_ref="HEAD", seed_ids=None, restore=False, model=client.MODEL, provider=client):
     root = Path(root).resolve()
+    if restore:
+        raise ValueError("re-grading records verification only; repair approval requires reviewed merge and explicit authority clearance")
     registry = load_context(root)
     if registry.errors:
         raise ValueError("current context must validate before re-grading")
@@ -176,36 +190,6 @@ def run_regrade(root, *, approved_ref="HEAD", seed_ids=None, restore=False, mode
     evidence_path = directory / "evidence.json"
     evidence["application"] = "not_requested" if not restore else "pending"
     atomic_private(evidence_path, encoded(evidence))
-    if restore:
-        with locked(root):
-            for path in (root / ".nodal/drift").glob("*/application.json"):
-                journal = strict_json(contained(root, path.relative_to(root).as_posix(), ".nodal/drift").read_text())
-                if journal.get("status") == "applying":
-                    raise ValueError("resume the incomplete drift application before seed restoration")
-            if fingerprints(root) != evidence["fingerprints"]:
-                raise ValueError("context changed after re-grading; fresh checks are required")
-            current = load_context(root)
-            identifiers = {r["seed"] for r in evidence["checks"] if r["eligible"]}
-            # The API never accepts metrics, methods, snapshots or a cached receipt
-            # as candidates. Recompute seed-only status edits from this exact graph.
-            edits = status_edits(current, identifiers, status="confirmed")
-            contents = documents(root)
-            with overlay(root, contents, edits):
-                pass
-            expected = deepcopy(evidence["fingerprints"])
-            evidence.update(application="restoring", edits=edits)
-            atomic_private(evidence_path, encoded(evidence), overwrite=True)
-            for edit in edits:
-                if fingerprints(root) != expected:
-                    raise ValueError("context changed during restoration; preserve edits and re-grade remaining drafts")
-                atomic_private(contained(root, edit["path"], "evals/seeds"), edit["after"].encode(), overwrite=True)
-                expected["documents"][edit["path"]] = edit["after_sha256"]
-                for record in evidence["checks"]:
-                    if current.nodes[record["seed"]].path == edit["path"]:
-                        record["category"] = "restored"
-                atomic_private(evidence_path, encoded(evidence), overwrite=True)
-            evidence["application"] = "complete"
-            atomic_private(evidence_path, encoded(evidence), overwrite=True)
     report = public_report(evidence)
     report.update(run_id=run_id, evidence=evidence_path.relative_to(root).as_posix())
     atomic_private(directory / "report.json", encoded(report))

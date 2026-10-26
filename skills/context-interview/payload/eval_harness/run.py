@@ -85,12 +85,15 @@ def main(argv=None):
                     help="seed status to score (default: confirmed; draft excluded)")
     ap.add_argument("--model", default=client.MODEL, help="Anthropic model id")
     ap.add_argument("--out", help="also write the report here")
+    ap.add_argument("--branch-test", action="store_true", help="ACF only: test proposed context without approval")
     args = ap.parse_args(argv)
 
     requested = [d.strip() for d in args.domains.split(",") if d.strip()]
 
     builder = adapters.get_builder(args.adapter)
-    ncr = builder(args.root, requested or None)
+    ncr = builder(args.root, requested or None, branch_test=True) if args.adapter == "acf" and args.branch_test else builder(args.root, requested or None)
+    if args.adapter == "acf" and (args.branch_test or __import__("os").environ.get("ACF_BRANCH_TEST") == "1"):
+        print("BRANCH TEST: proposed context; results do not grant approval or establish live freshness.")
     if args.seeds:
         ncr.seeds.extend(seeds_mod.load_seeds(args.seeds))
     domains = requested or ncr.domains()

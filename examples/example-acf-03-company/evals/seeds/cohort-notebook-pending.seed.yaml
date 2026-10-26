@@ -1,7 +1,6 @@
 question: Verify the fictional cohort snapshot against a freshly rerun source notebook.
 intent: Verify the fictional cohort snapshot against a freshly rerun source notebook.
 domain: customers
-status: draft
 provenance: notebook
 expected:
   kind: value_at_snapshot
@@ -20,7 +19,7 @@ expected:
     cohort_key: empty
     cohort_size: 0
     returned: 0
-    retention_rate: null
+    retention_rate:
     followup_complete: false
 ir:
   method: cohort-retention
@@ -46,3 +45,5 @@ verification_source:
   path: customer-owned/fictional-cohort.ipynb
   ref: UNVERIFIED-FICTIONAL-POINTER
   output: retention_table
+review_history:
+- status: draft

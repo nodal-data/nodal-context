@@ -1,19 +1,18 @@
 ---
 name: <method-slug>
 kind: method
-status: draft
 domain: <owning-domain>
 aliases: []
 description: <the analysis and when to use it>
 metrics: []
 lineage: inherit
 parameters:
-  - name: window
-    note: <reporting window; require explicit bounds>
+- name: window
+  note: <reporting window; require explicit bounds>
 decisions:
-  - id: population
-    rule: <which population is included in <window>>
-    without_this: ''
+- id: population
+  rule: <which population is included in <window>>
+  without_this: ''
 output:
   grain: <one row per what>
   columns: []

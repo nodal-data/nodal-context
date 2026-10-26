@@ -1,9 +1,6 @@
 question: Term renewal rate by plan last month?
 intent: Term renewal rate by plan last month?
 domain: subscriptions
-status: confirmed
-approver: fictional-example-reviewer
-confirmed_at: '2026-10-01'
 provenance: generated
 expected:
   kind: sql_shape
@@ -18,3 +15,7 @@ ir:
   dimensions:
   - plan
   time_window: last_month
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

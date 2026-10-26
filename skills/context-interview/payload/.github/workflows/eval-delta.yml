@@ -10,6 +10,8 @@ permissions:
   pull-requests: write      # to post the delta report as a PR comment
 jobs:
   delta:
+    env:
+      ACF_BRANCH_TEST: "1"  # proposed context; tests cannot grant approval
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -100,8 +100,8 @@ warehouse query or notebook execution is part of semantic lint.
 
 ## Load-bearing rules
 
-1. Every confirmed metric, method and seed records `approver` and `confirmed_at`
-   (ISO date). An owner, git author, model or simulated analyst is not an approval.
+1. Definitions are approved only by protected human-reviewed merge into the
+   designated approval branch. Authored fields and successful tests cannot approve them.
 2. Qualitative business logic belongs in context; statistics and execution output
    stay outside it. Expected values at a pinned date belong in snapshot seeds.
 3. Definitions carry or inherit lineage, and dependency changes invalidate their
@@ -179,7 +179,7 @@ keys; private identities belong in customer-controlled environment/CI secrets.
 ## Metrics and shared fragments
 
 Each metric file contains one object; its `name` must equal the filename stem.
-Required fields are `name`, `definition`, and `status: draft|confirmed`. An
+Required fields are `name` and `definition`. Approval is revision-level authority state. An
 expression also requires `grain`. Confirmed metrics require approval metadata.
 
 Other fields are `aliases`, `alias_notes`, `parameters[{name,note?,default?}]`,
@@ -232,7 +232,7 @@ use canonical names, not aliases.
 `open_decisions: [{id,question,blocks}]` records unresolved choices. `blocks`
 uses local/qualified metric names or `methods/<slug>`. The owner may remain
 confirmed; named targets and their dependents are effectively draft. Validation
-computes effective status without rewriting approval/status fields.
+computes dependency eligibility without rewriting definitions or authority state.
 
 For an inexpressible metric, name the unsupported construct and point
 `deterministic_form` at `reference.md#pattern-<slug>` or `methods/<slug>`. The
@@ -247,7 +247,7 @@ A domain's `reference.md` may contain a few confirmed query patterns where the
 exact form prevents a named wrong answer. Each has a leading `Without this:`
 rationale, real lineage model/column names, and placeholders instead of report
 parameter literals. It is not a runnable report or a query-log paste. Draft
-patterns carry `<!-- status: draft -->`. Deterministic-form patterns have explicit
+patterns stay on working branches; new patterns have no status marker. Deterministic-form patterns have explicit
 `<a id="pattern-<slug>"></a>` anchors. Their models must belong to domain lineage.
 Pattern rationales map to filter/ratio reasons or method decisions; unmapped
 paraphrases warn for review rather than claim semantic disagreement.
@@ -255,9 +255,9 @@ paraphrases warn for review rather than claim semantic disagreement.
 ## Methods
 
 `methods/<slug>.md` starts with YAML frontmatter and a Markdown body. Required
-frontmatter: `name` (= slug), `kind: method`, `status`, `domain`, `aliases`,
+frontmatter: `name` (= slug), `kind: method`, `domain`, `aliases`,
 `description`, `metrics`, `parameters`, `decisions`, `output`, `checks`.
-Confirmed methods require `approver`, `confirmed_at`, and complete review items.
+Merge-ready methods require complete review items. Historical attribution is retained separately.
 
 `metrics` resolve to expressions or deterministic forms. Lineage defaults to
 inheritance; an explicit lineage list must be a subset of the dependency union
@@ -301,7 +301,7 @@ malformed syntax, unsafe paths and cycles are invalid even in drafts.
 ## Seeds and IR
 
 `evals/seeds/<name>.seed.yaml` requires `question`, `intent`, `domain`, `expected`,
-`provenance`, `status`. Confirmed seeds require `approver` and `confirmed_at`.
+`provenance`. Seed approval comes from reviewed merge; snapshot verification attribution remains evidence.
 Provenance is `interview|dashboard|correction|generated|observed|notebook`.
 Metric/method positive confirmed seeds require IR. Entity and negative seeds may
 omit IR; supplied IR must still validate. No invented extraction during migration.
@@ -699,44 +699,13 @@ checks seed/definition/config/query revisions before reporting a checked pass;
 existence or decryptability alone does not prove result fidelity.
 
 Drift follows the transitive definition graph across domains, methods, patterns
-and seeds. Read-only reporting computes affected objects; explicit application
-creates reviewable draft patches. Preserve human attribution and lineage baseline.
-`.ci/drift.py --prepare-patch` writes a private status-only plan/patch, and
-`--apply-plan <path> --sha256 <digest>` explicitly applies or resumes it with
-source-revision checks. It does not commit, publish or update the baseline.
-`.ci/changed_domains.py` reads context-only base/head Git snapshots for PR routing;
-unresolvable graphs select all available domains with an explanation. Blocker
-edges propagate impact without inventing lineage inheritance.
-Open a drift PR when permitted, otherwise report unapplied changes in an issue.
-Use one `nodal/context-drift-<batch>` branch and draft PR per source-change batch.
-Only trusted default-branch workflow runs publish. Verify plan/context/baseline
-revisions, compare the remote base revision, and never force-update or overwrite
-human changes on an existing proposal. Permission failures publish the patch and
-affected list in a batch-specific issue; oversized reports link a complete review
-artifact. If both publication routes are unavailable, fail with the artifact
-retained. Reports distinguish an unmerged proposal from persisted default-branch
-status. Manifest collection accepts only configured dbt sources, reads regular
-Git blobs without checkout, and passes source/path maps as JSON rather than shell
-arguments. Authentication remains customer runner configuration and is not logged
-or persisted by collection.
-Re-confirming a metric does not re-confirm dependents. Previously approved shape/
-entity seeds can regain eligibility after a passing re-grade only when semantics
-are unchanged and dependencies are confirmed/unblocked. Methods, changed
-interpretations, snapshots and removed dimensions need human review. Batch Stage 5
-work. External notebook changes are detected when their pinned source is checked.
-
-`scripts/regrade_seeds.py` checks the original question and all variants using
-fresh independent answer/judge calls. `--restore` performs fresh checks and then
-persists only eligible seed statuses, preserving original human attribution;
-saved verdicts cannot authorize restoration. Obtain the latest human-confirmed
-seed at the same path from Git history, bounded to 100 path changes; do not bypass
-a newer differing approval or execute historical code. Missing history requires
-human review. Source/config/schema/baseline changes during checks prevent writes.
-Checks requiring method execution remain incomplete without actual evidence.
-Private evidence belongs under `.nodal/regrades/`, outside public summaries.
-The trusted workflow checks the proposed draft graph during drift, then proposes
-eligible restorations on a separate seed-review branch after lineage reconciliation
-and dependency clearance. No key or incomplete checks leave stored status stale.
+and seeds. The trusted workflow appends a block to the independent authority ref
+before creating a repair proposal. Definition files are not the stale-state store.
+No automatic re-grade, status edit, or unrelated merge clears a block. Re-grading
+records verification evidence only; `--restore` is rejected. Repair clearance
+requires reviewed merge and fresh checks and names the original block and exact
+repair revision. Source/config/schema changes invalidate applicable evidence.
+Legacy status patch tools are conversion aids only, not an approval mechanism.
 
 Canonical sources are root SPEC, schemas, template, CI, scripts, workflows and
 runtime packages. `skills/context-interview/` contains generated distribution
@@ -831,3 +800,103 @@ Disabling optional gateway attribution or client-ID retention lets existing
 analytics planning continue. Registry and deployment details belong to Query
 Hub's `docs/analysis-context.md` and the gateway's
 `docs/question-attribution.md`.
+
+## Approval through merge (normative)
+
+Context is proposed until its exact revision is merged into the designated
+`approval_branch` (`main` by default) through enforced human review and checks.
+A branch name, a local `status`, a passing test, or a copied receipt is insufficient.
+
+### Authority setup (maintainer-operated)
+
+1. Protect the approval branch: require at least one human review, CODEOWNER
+   review, dismissal of stale reviews, strict `validate` and `approval-policy`
+   checks, and all applicable behavior checks. Enforce on administrators; disable
+   force pushes, deletion and review bypass. Add the context owners to CODEOWNERS.
+2. Create a separate `acf-governance` branch containing `state.json`:
+   `{"approval_branch":"main","events":[],"freshness":{}}`. Restrict writes to
+   the governance service identity. Set `ACF_GOVERNANCE_WRITER` on consumer
+   hosts and as a repository variable to that single service login or GitHub App
+   slug. Enforce state-ref restrictions for administrators too. The live reader
+   verifies these restrictions. Context authors and ordinary workflow tokens
+   must not be able to update/delete/force-push this ref. Keep its Git history.
+3. Provision the service identity through GitHub's own credential facilities.
+   `ACF_GOVERNANCE_TOKEN` needs contents writes and read access to branch
+   protection, PR reviews and checks. Nodal does not provision credentials.
+   Restrict its use to the trusted approval and drift workflows. Protect workflow
+   changes with CODEOWNERS. Both `nodal-governance` and `nodal-governance-repair`
+   environments permit only the approval branch. The repair environment requires
+   human review for clearance; routine merge recording needs no second approval.
+   Drift revocations run promptly
+   without waiting for repair approval. Set `ACF_APPROVAL_BRANCH` if not `main`.
+4. On consumer hosts, install trusted tooling outside authored context. Set
+   `ACF_GOVERNANCE_REPOSITORY=owner/repo` and `ACF_GOVERNANCE_COMMAND` to a JSON argv
+   array with an absolute executable, for example
+   `["/opt/nodal/bin/python","/opt/nodal/scripts/governance_github.py","read"]`.
+   `gh` manages authentication. Never source commands from a context repository.
+
+An absent authority, inaccessible protection settings, missing source checks,
+expired checks, dirty content, or an unrecognized revision blocks governed use.
+The reader also checks that the latest source workflow completed and published
+its state; pending checks or failed publication block use immediately.
+The reader always fetches live state; there is no offline approval fallback.
+Local copies must retain their approved Git commit and exact content. Exports
+carry `governance.json` identifying the revision, content hash, approval event,
+ledger head and freshness evidence. They are snapshots, not perpetual approval:
+consumers must run `scripts/compile_skill.py APPROVED_SOURCE --verify-export EXPORT`
+(using the original `--name` override if any) to recheck the live authority and
+recompile/compare exported files before
+using them as governed guidance. The skill evaluation adapter requires
+`ACF_EXPORT_SOURCE` pointing to that approved checkout, or explicit branch-test
+mode, for ACF exports. Plain exported text cannot enforce revocation.
+
+### Detection and repair
+
+`context-drift` writes an append-only block event to the authority ref before
+publishing any repair proposal. It records target IDs, source evidence, revision
+and reason. Dependency propagation blocks metrics, methods, patterns and seeds.
+A source that cannot be checked blocks use too. Periodic source checks expire in
+24 hours; live authority responses expire in five minutes. Dispatch source
+changes promptly; no system can detect changes that have not been reported.
+
+Merge the reviewed repair, run fresh applicable behavior/source checks, then run
+`context-approval` manually with the block ID, repair reason and passing checks
+URL. Its protected environment requires human approval. The clearance names the
+block and exact reviewed repair revision. It cannot clear a different block or
+approve an older revision. New unrelated revisions require explicit clearance;
+they never silently inherit a clearance. Preserve every event and source record.
+Repeated detection can create additional blocks; each must be addressed.
+
+### Authoring and tests
+
+Use a named working branch for interview, notebook and simulator output. New
+objects have no authored `status`. Interview decisions and verification receipts
+remain evidence; only reviewed merge grants definition approval. Query/notebook
+verification is separate and may be missing, failed, or outdated even when the
+definition is approved.
+
+Use `.ci/validate.py --branch-test --require-ready` before merge. Consumers and
+regression tools expose `--branch-test`; the eval adapter accepts
+`branch_test=True`. `ACF_BRANCH_TEST=1` is an explicit process-wide test mode for
+customer harnesses. This mode permits proposed definitions but never claims
+approval or live freshness. Reports and exports identify it. Do not set it for
+production answers. Dependency and structural failures remain failures.
+
+Legacy conversion is `scripts/migrate_approval.py ROOT --admit-legacy` after the
+owner authorizes admission of existing drafts. The converter retains original
+fields in `review_history` and creates backups. Without that option it refuses
+legacy drafts. Remove backups from the review tree before merging. The conversion
+itself does not publish authority evidence. The repository owner has authorized
+admission of the legacy content in this package's 0.3 migration; customer
+repositories require their own explicit authorization. Existing history stays in
+Git. Legacy fields accepted during conversion never grant live approval.
+
+### Runtime compatibility
+
+The format-neutral harness retains `effective_status: confirmed|draft` as an
+eligibility wire field, not authored approval. `approval_state` is separately
+`approved`, `proposed`, or `unavailable`; all reports carry governance mode.
+Branch-test eligibility never proves approval. Deprecated authored statuses are
+accepted only as migration input: legacy drafts block until explicitly converted,
+and legacy confirmed fields cannot bypass the live authority. New authored
+objects omit status; `review_history` preserves converted attribution.

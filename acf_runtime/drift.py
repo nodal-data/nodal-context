@@ -45,7 +45,7 @@ def status_edits(registry, identifiers, status="draft"):
     grouped = {}
     for identifier in sorted(identifiers):
         node = registry.nodes.get(identifier)
-        if node and node.data.get("status") != status:
+        if node and "status" in node.data and node.data.get("status") != status:
             grouped.setdefault(node.path, []).append(node)
     edits = []
     for name, nodes in sorted(grouped.items()):

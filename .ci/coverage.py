@@ -20,11 +20,9 @@ def evidence(root, seed, config, *, manager=None, check_decryption=False, checke
     root = Path(root).resolve()
     expected = seed["expected"]
     result = {"state": "unverified", "verified": False}
-    if expected["kind"] == "value_at_snapshot" and seed.get("status") == "confirmed":
-        if seed.get("provenance") == "dashboard":
-            result.update(state="dashboard_confirmed_snapshot", verified=True)
-        elif seed.get("provenance") == "notebook" and seed.get("verification_source"):
-            result.update(state="notebook_confirmed_snapshot", verified=True, source_revision_checked=False)
+    if expected["kind"] == "value_at_snapshot":
+        result.update(state="snapshot_evidence_recorded", verified=False,
+                      source_revision_checked=False)
     if seed.get("verified_query_file"):
         manager = manager or VerifiedSQL(root, config=config)
         availability = manager.probe(seed["verified_query_file"], decrypt=check_decryption)
@@ -115,6 +113,7 @@ def main(argv=None):
                                    notebook_run=notebook_runs.get(s["id"]))
                                for s in seeds} if not registry.errors else {},
                               all_cells=args.all)
+        result["governance"] = registry.governance
         result["diagnostics"] = [vars(d) for d in registry.diagnostics]
         print(json.dumps(result, indent=2) if args.json else render(result), end="\n")
         return 1 if registry.errors else 0

@@ -29,9 +29,9 @@ def run_tests():
     ncr = adapters.get_builder("acf")(HEALTHCARE, ["session-financials"])
     assert ncr.domains() == ["session-financials"], ncr.domains()
     confirmed = ncr.seeds_for("session-financials", "confirmed")
-    assert len(confirmed) == 2, [s.question for s in confirmed]   # both example seeds confirmed
+    assert len(confirmed) == 3, [s.question for s in confirmed]   # owner-admitted legacy examples, branch-test eligibility only
     kinds = sorted(s.kind for s in confirmed)
-    assert kinds == ["sql_shape", "value_at_snapshot"], kinds
+    assert kinds == ["sql_shape", "sql_shape", "value_at_snapshot"], kinds
     ctx = ncr.context_for("session-financials")
     # context-on payload carries the routing triggers the seeds test
     assert "Payer X" in ctx and "45-day" in ctx, "context blob missing routing triggers"

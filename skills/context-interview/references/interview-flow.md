@@ -29,9 +29,9 @@ them all in one turn; that's a wall of line items no one can react to. Instead:
 
 1. **Elicit the list first (cheap, breadth-first).** Ask the analyst to just *name*
    the candidates — "List them; don't define them yet. We'll go through them together
-   a couple at a time." Write each as a `status: draft` stub in the stage's output
+   a couple at a time." Write each as a proposed working-branch content stub in the stage's output
    file, using the no-invented-definitions placeholder: `_To be confirmed._` with a
-   trailing `<!-- status: draft -->`. These stubs are your scratchpad **and** your
+   working-branch review notes. These stubs are your scratchpad **and** your
    progress tracker.
 2. **Confirm 1–3 at a time — by selection.** Take one to three stubs; for each,
    ask that stage's probe (meaning + misconception, or the disambiguation),
@@ -104,7 +104,7 @@ Then:
    policy? That's usually the grain of your most important fact table."
 3. "Name the 5–10 terms a new analyst always gets wrong in their first month — just
    *name* them, we'll define them together." Then run the **elicit-then-batch**
-   pattern (above): write each named term as a `status: draft` stub in
+   pattern (above): write each named term as a proposed working-branch content stub in
    `terminology.md`, then work them 1–3 at a time — for each, "What does it mean here,
    and what do people *think* it means?" → a terminology entry **and** an eval seed —
    showing the progress line each round. Before confirming each drafted
@@ -117,7 +117,7 @@ Then:
 4. While eliciting, also ask "Are there terms that two teams define differently?" Add
    these to the same list (they're high-value — a guaranteed silent-failure source).
 
-Write `terminology.md` as a glossary. Anything still unconfirmed stays `status: draft`
+Write `terminology.md` as a glossary. Anything still unconfirmed stays proposed working-branch content
 in a trailing comment until the analyst confirms it.
 
 ---
@@ -196,7 +196,7 @@ instead of asking the analyst to read numbers aloud.
 **Goal:** the ambiguous terms that map to data values, captured and disambiguated.
 
 For each domain, run the **elicit-then-batch** pattern (above): first surface the
-candidate ambiguous terms across the three patterns below as `status: draft` stubs in
+candidate ambiguous terms across the three patterns below as proposed working-branch content stubs in
 `entities/<group>.yaml` (subject entities) or `domains/<domain>/entities.yaml`
 (domain statuses), then disambiguate
 them 1–3 at a time with a progress line — a seed per confirmed term. Hunt for three
@@ -227,7 +227,7 @@ single-domain repo**; single-fact-table status/type value →
 `reference.md`. These produce the most valuable eval seeds — the silent failures.
 
 Run the **elicit-then-batch** pattern (above) here too. Open with the framing
-question to surface the candidate failure modes, capture each as a `status: draft`
+question to surface the candidate failure modes, capture each as a proposed working-branch content
 stub in `known-issues.md`, then work them 1–3 at a time with a progress line —
 writing the routing trigger + seed as each is confirmed. The follow-ups below are
 prompts for surfacing more candidates, not a checklist to answer in one pass.
@@ -277,7 +277,7 @@ having condition, and reference individually before the assembled read-back.
 Referring dimensions must be supported by every component; references cannot be
 cyclic. Declare placeholders in `parameters` and keep them as query-time slots.
 Use context version 0.3 and one metric per `metrics/<name>.yaml`. Later edits to a
-confirmed metric's expression reset it to `status: draft` until re-confirmed.
+confirmed metric's expression reset it to proposed working-branch content until re-confirmed.
 
 Division requires a reviewed `ratio.zero_denominator` policy (YAML `null`, `zero`
 or `error`) and its reason. Repeated domain-local lineage, filters and parameters
@@ -290,8 +290,8 @@ Use `open_decisions` to name unresolved questions and blocked metrics/methods.
 Stored confirmation of an owner does not make blocked targets ready. For measures
 outside the expression grammar, record `expression_blocked_by` and a reviewed
 `deterministic_form` pattern/method instead of forcing SQL into the expression.
-Every confirmed metric, method and seed records the real `approver` and
-`confirmed_at`; neither extraction nor simulation provides those fields.
+Every analyst-confirmed decision is review evidence. Definitions become approved
+only through protected human-reviewed merge; extraction and simulation cannot approve.
 
 For a composed analysis, draft a root `methods/<slug>.md` with owning domain,
 metric references, bound parameters, decisions and `without_this` rationales,
@@ -335,6 +335,6 @@ dispositions, and return to Stage 5 when the change requires result verification
 ## When the analyst doesn't know
 
 That's a finding, not a failure. Write `_To be confirmed by [owner]._`, mark
-`status: draft`, add a `# REVIEW:` comment, and move on. Drafted-but-unconfirmed
+proposed working-branch content, add a `# REVIEW:` comment, and move on. Drafted-but-unconfirmed
 context is excluded from confirmed evaluation and coverage. Missing confirmation
 must remain visible; it is never a perfect baseline score.

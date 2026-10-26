@@ -42,9 +42,9 @@ new slice/decomposition or method → also `context.md` and relevant method bodi
 unresolved/ambiguous → also company overview/terminology before escalation. Do
 not use a draft pattern as governed query guidance.
 
-Confirmed claims require human provenance and ready dependencies. Authored
-`status: confirmed` does not override an open decision or effectively draft
-dependency. A family or alias collision requires user selection, not a guessed
+Governed use requires live authority evidence of protected human-reviewed merge
+at the exact source revision, current freshness checks, and ready dependencies.
+Authored status or a branch name is not proof. Missing/expired evidence blocks use. A family or alias collision requires user selection, not a guessed
 default. Use seed IDs/IR metadata for structural matching only. Keep expected
 answers, seed variants and verified SQL out of answer generation; they belong to
 separate verification. Ciphertext availability is not a successful regression.
