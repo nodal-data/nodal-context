@@ -21,10 +21,11 @@ INCLUDED = (
     Path("LICENSE"),
     Path("README.md"),
 )
+IGNORED_NAMES = {"__pycache__", ".pytest_cache", ".DS_Store", "Thumbs.db", "__MACOSX"}
 
 
 def should_skip(path: Path) -> bool:
-    return "__pycache__" in path.parts or path.suffix in {".pyc", ".pyo"}
+    return bool(IGNORED_NAMES.intersection(path.parts)) or path.suffix in {".pyc", ".pyo"}
 
 
 def copy_payload(staging: Path) -> None:
@@ -35,7 +36,7 @@ def copy_payload(staging: Path) -> None:
             shutil.copytree(
                 source,
                 target,
-                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
+                ignore=shutil.ignore_patterns(*IGNORED_NAMES, "*.pyc", "*.pyo"),
             )
         else:
             target.parent.mkdir(parents=True, exist_ok=True)

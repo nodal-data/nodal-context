@@ -1,0 +1,44 @@
+name: recognized_revenue
+status: confirmed
+approver: fictional-example-reviewer
+confirmed_at: '2026-10-01'
+definition: Signed earned fees on the service-recognition date; retail pass-through value is excluded.
+aliases:
+- revenue
+- recognized revenue
+alias_notes:
+- 'Revenue is a split term: ask for one revenue_measures family member.'
+family:
+  name: revenue_measures
+  discriminator: measure_name
+  siblings:
+  - gmv
+  - billed_revenue
+  - net_revenue
+  - collected_cash
+grain: signed measure contribution
+temporal_kind: flow
+lineage:
+  shared: entries
+parameters:
+- shared: window
+expression:
+  measure: SUM(amount)
+  mandatory_filters:
+  - field: measure_name
+    op: '='
+    value: recognized_revenue
+    reason: Different measure bases must never be added together.
+  include_filters:
+  - window
+  allowed_dimensions:
+  - activity_date
+  - channel
+  - revenue_stream
+caveats:
+- Choose one measure_name. Rows are already signed; do not subtract credits a second time.
+open_decisions:
+- id: refund_attribution
+  question: Which date should a refund-impact counterfactual use?
+  blocks:
+  - methods/refund-impact

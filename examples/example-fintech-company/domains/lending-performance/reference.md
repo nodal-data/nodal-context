@@ -31,3 +31,13 @@
 
 ## Cross-references
 - collections (repayments subset of this table); borrower-risk (dim_borrower).
+# Deterministic origination measure
+
+<a id="pattern-origination-volume"></a>
+
+Without this: Monthly snapshots count the same loan's principal repeatedly.
+
+For `origination_volume`, select the origination row once per loan before
+aggregating principal. Use disbursement dates within
+`[<period_start>, <period_end_exclusive>)` and exclude Partner Z. Resolve duplicate
+origination rows with the analyst before answering; do not add monthly balances.

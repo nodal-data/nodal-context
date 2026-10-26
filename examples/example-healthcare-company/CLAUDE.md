@@ -13,7 +13,7 @@ schema alone.
 3. Honor every `IF … DO NOT …` routing trigger and `caveats` you find. These encode
    the silent-failure modes a senior analyst would warn about. When a "Common query
    patterns" block matches the question, start your SQL from its form.
-4. Before computing a metric, read `domains/<domain>/metrics.yaml` and honor its
+4. Before computing a metric, read `domains/<domain>/metrics/<name>.yaml` and honor its
    `parameters` and `caveats`. When a **confirmed** metric carries an
    `expression:` block, build the query from it — its `measure`, every
    `mandatory_filters` entry, and only `allowed_dimensions` slices — don't
@@ -26,6 +26,12 @@ schema alone.
 
 If the answer depends on a caveat the context names, apply it and state it in your
 answer (e.g. "excluding sessions under 45 days, per the collection-rate caveat").
+
+Follow the ACF 0.3 readiness and retrieval rules in `AGENTS.md`: unresolved choices
+and draft dependencies block governed use despite historic approval. Load method
+decisions and domain context for composed analyses, and verify their disclosures
+and result checks. Seed answers, variants, verified SQL and execution traces are
+evaluation evidence, not material to copy into answer generation.
 
 ## Editing this repo
 

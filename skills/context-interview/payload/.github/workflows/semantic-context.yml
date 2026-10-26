@@ -1,0 +1,68 @@
+# Optional model warnings: trusted base code reads proposed context as Git data.
+# Never checkout PR code or load its schemas while a model key is available.
+name: semantic-context
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths: ['domains/**', 'entities/**', 'methods/**', 'company/**', 'context.config.yaml']
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  semantic:
+    if: >-
+      (github.event_name == 'pull_request_target' && github.event.pull_request.base.ref == github.event.repository.default_branch) ||
+      (github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          fetch-depth: 1
+          # checkout manages its own credential cleanup; fetch below only reads objects.
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install jsonschema pyyaml anthropic
+      - name: Fetch proposed context objects without checkout
+        if: github.event_name == 'pull_request_target'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: git fetch --no-tags --depth=1 origin "$HEAD_SHA"
+      - name: Optional semantic warnings
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python .ci/semantic_lint.py --revision "$HEAD_SHA" > semantic-summary.md
+          cat semantic-summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain warning report
+        id: report
+        if: hashFiles('.nodal/semantic-lint/report.md') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-context-warnings
+          path: .nodal/semantic-lint/report.md
+          include-hidden-files: true
+          retention-days: 14
+      - name: Post unconfirmed warnings
+        if: github.event_name == 'pull_request_target' && hashFiles('.nodal/semantic-lint/report.md') != ''
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          REPORT_URL: ${{ steps.report.outputs.artifact-url }}
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- nodal-semantic-lint -->';
+            const report = fs.readFileSync('.nodal/semantic-lint/report.md', 'utf8');
+            const preview = report.length > 50000 ? report.slice(0, 50000) + '\n\nPreview abbreviated.' : report;
+            const body = preview + '\n\n[Complete warning report](' + process.env.REPORT_URL + ').\n' + marker;
+            const args = {owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number};
+            const comments = await github.paginate(github.rest.issues.listComments, {...args, per_page: 100});
+            const previous = comments.find(c => c.user?.type === 'Bot' && c.body?.includes(marker));
+            if (previous) await github.rest.issues.updateComment({owner: args.owner, repo: args.repo, comment_id: previous.id, body});
+            else await github.rest.issues.createComment({...args, body});

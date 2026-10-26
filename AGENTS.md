@@ -18,7 +18,7 @@ do not edit or include it in package work.
 ## Canonical and generated files
 
 Root ACF files are canonical: `SPEC.md`, `schemas/`, `template/`, `.ci/`, the
-three customer workflows, `scripts/`, and `eval_harness/`. The payload under
+customer workflows, `scripts/`, and `eval_harness/`. The payload under
 `skills/context-interview/` is a generated distribution mirror described by
 `scripts/scaffold_manifest.py`; it is not another manually maintained source.
 

@@ -2,6 +2,14 @@
 FINDINGS.md
 .nodal.local.json
 
+# Local implementation specifications; canonical SPEC.md remains tracked.
+/specs/
+
+# Derived context indexes, migration backups and execution evidence.
+.nodal/
+.sim-analyst.json
+simulated-analyst-log*
+
 .venv/
 dist/
 

@@ -1,0 +1,10 @@
+question: Reconstruct erased source identities for deleted customers.
+intent: Reconstruct erased source identities for deleted customers.
+domain: customers
+status: confirmed
+approver: fictional-example-reviewer
+confirmed_at: '2026-10-01'
+provenance: generated
+expected:
+  kind: negative
+  reason: lack_data

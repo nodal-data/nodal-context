@@ -1,0 +1,8 @@
+name: revenue
+summary: Fictional revenue for the complete ACF 0.3 example.
+status: confirmed
+grain: signed contribution on the selected basis event date
+lineage:
+- source: demo
+  models:
+  - revenue_entries

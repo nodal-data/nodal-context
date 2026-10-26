@@ -8,13 +8,18 @@ intent: >
 expected:
   kind: sql_shape
   must_include:
-    - "paid status in the current billing_period"
-    - "single count of each subscription_id (no snapshot double-count)"
+  - "paid status in the current billing_period"
+  - "single count of each subscription_id (no snapshot double-count)"
   must_exclude:
-    - "trialing subscriptions"
-    - "engagement-based active users"
+  - "trialing subscriptions"
+  - "engagement-based active users"
 provenance: interview
 status: confirmed
 lineage:
-  - source: dbt_core
-    models: [fct_subscription_periods]
+- source: dbt_core
+  models: [fct_subscription_periods]
+approver: fictional-example-owner
+confirmed_at: '2026-10-01'
+ir:
+  metric: active_subscribers
+  time_window: current_billing_period

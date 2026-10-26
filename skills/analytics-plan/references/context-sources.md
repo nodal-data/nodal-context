@@ -25,15 +25,29 @@ Read only the source types present for the current question.
 
 ### ACF
 
-1. `company/terminology.md`
-2. the selected `domains/<domain>/reference.md` for routing and `IF … DO NOT …`
-3. `domains/<domain>/metrics.yaml`, including `expression.measure`, every
-   `mandatory_filters` entry, parameters, caveats, grain, and allowed dimensions
-4. `entities/*.yaml`, then domain-specific `entities.yaml`
-5. matching confirmed seeds and their local verified-query sidecars when present
+ACF 0.3 uses `domains/<domain>/metrics/<name>.yaml` and optional `_shared.yaml`;
+the old wrapper, LookML metric artifacts and 0.2 repositories require migration.
+Read the normalized registry when available, so shared filters/parameters and
+transitive references agree across consumers. Otherwise expand the declared
+references explicitly and report any unavailable validation/matching capability.
 
-Confirmed human-authored claims are `confirmed`. Draft claims remain evidence but
-cannot silently become the selected definition.
+Always read structured metrics and `entities/*.yaml`, then domain entities.
+Honor measure, grouped mandatory filters, entity-group filters, parameters, grain,
+allowed dimensions, ratio policy and caveats. Methods live at `methods/<slug>.md`:
+read declarations, decision rationales, procedure, output and checks. Cross-domain
+references bring the relevant definitions with them.
+
+Use the relation-based prose ladder: equivalent metric → domain `reference.md`;
+new slice/decomposition or method → also `context.md` and relevant method bodies;
+unresolved/ambiguous → also company overview/terminology before escalation. Do
+not use a draft pattern as governed query guidance.
+
+Confirmed claims require human provenance and ready dependencies. Authored
+`status: confirmed` does not override an open decision or effectively draft
+dependency. A family or alias collision requires user selection, not a guessed
+default. Use seed IDs/IR metadata for structural matching only. Keep expected
+answers, seed variants and verified SQL out of answer generation; they belong to
+separate verification. Ciphertext availability is not a successful regression.
 
 ### KTX
 

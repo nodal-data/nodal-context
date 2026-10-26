@@ -1,0 +1,6 @@
+lineage:
+  lineage_3111488458:
+    - source: dbt_core
+      models: [fct_session_financials]
+
+  # ACF 0.2 syntax examples only; these additions await analyst confirmation.

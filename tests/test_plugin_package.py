@@ -1,6 +1,9 @@
 """Static native-plugin and marketplace contract tests."""
 import json
+import importlib.util
 from pathlib import Path
+import tempfile
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,7 +19,7 @@ def run():
     codex = load(".codex-plugin/plugin.json")
     for manifest in (claude, codex):
         assert manifest["name"] == "nodal-analytics"
-        assert manifest["version"] == "1.6.4"
+        assert manifest["version"] == "1.7.0"
         assert manifest["license"] == "Apache-2.0"
         assert manifest["skills"] == "./skills/"
         assert "mcpServers" not in manifest
@@ -97,6 +100,30 @@ def run():
         "https://github.com/nodal-data/nodal-context/"
         "blob/main/docs/agent-guide.md"
     ) in readme
+    spec = importlib.util.spec_from_file_location("submission_builder", ROOT / "scripts/build_openai_submission.py")
+    builder = importlib.util.module_from_spec(spec); spec.loader.exec_module(builder)
+    with tempfile.TemporaryDirectory() as directory:
+        temporary = Path(directory)
+        fake_root = temporary / "source"; fake_root.mkdir()
+        for path in builder.INCLUDED:
+            target = fake_root / path
+            if path.suffix or path.name in {"LICENSE", "README.md"}:
+                target.write_text("fixture")
+            else:
+                target.mkdir()
+        for relative in ("skills/.DS_Store", "skills/__pycache__/cache.pyc", "skills/.pytest_cache/private",
+                         "assets/__MACOSX/resource", "assets/Thumbs.db", "specs/private.md", ".env"):
+            target = fake_root / relative; target.parent.mkdir(parents=True, exist_ok=True); target.write_text("excluded fixture")
+        (fake_root / "skills/real.md").write_text("authored fixture")
+        builder.ROOT = fake_root
+        staging = temporary / "staged"; staging.mkdir()
+        builder.copy_payload(staging)
+        archive = temporary / "plugin.zip"; builder.write_archive(staging, archive)
+        with zipfile.ZipFile(archive) as zipped:
+            names = zipped.namelist()
+            assert "skills/real.md" in names
+            assert not any(builder.should_skip(Path(name)) for name in names)
+            assert not any(name.startswith("specs/") or name == ".env" for name in names)
     print("test_plugin_package: OK")
 
 

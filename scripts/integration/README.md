@@ -190,6 +190,102 @@ temporary directory by itself is not a security sandbox.
 A private `clean-test.sh` or `clean-test.local.sh` may remain as a short wrapper
 that supplies these local arguments. Both names are ignored.
 
+## Quick simulated analyst loop
+
+Use the current worktree directly, without publishing or refreshing an installed
+plugin and without running the release matrix:
+
+```bash
+scripts/integration/clean_test.sh --package-source source-checkout --host claude --brief ./responses.md
+```
+
+The same path supports `--host codex`, `--prepare-only`, `--non-interactive`, and
+`--resume ROOM`. The familiar `--auto` selects root `responses.md` (or legacy
+`RESPONSES.md`); `--auto=/path/to/brief.md` supplies a specific brief. A positional
+room path is accepted for old wrappers but must be absent or empty under an OS
+temporary directory. Otherwise a unique room is created. No caller directory is
+deleted. `--auto` selects simulation, not permission bypass.
+
+Keep the ignored root wrapper small:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/scripts/integration/clean_test.sh" "$@"
+```
+
+The copied brief stays outside both projects with owner-only permissions. Source
+copies exclude `/specs/`, private response/context briefs, notebooks, raw run
+evidence, plaintext answer keys and local operator configuration even when a
+file was accidentally tracked. They preserve canonical `SPEC.md`, hidden package
+files and encrypted answer keys. A brief explicitly supplied with `--brief` is
+also excluded regardless of its filename. Source copying reflects uncommitted
+code changes; it never reads local planning specs as package inputs.
+
+Both starting project and generated context destination receive
+`.sim-analyst.json`, containing `responses` and `log` pointers plus launch mode
+and optional run ID/state path. The initial prompt names the marker explicitly.
+Only the responder subagent may read the brief; this separation is an interview
+protocol, not an OS sandbox between agents. The helper never reads the brief.
+
+`scripts/simulated_analyst.py record|pending` maintains a private transcript and
+shared state. `CONFIDENT` replies progress the interview but leave artifacts
+draft with no approval fields. `NOT_CONFIDENT`, malformed replies or missing
+responder capability require a real human. Interactive mode asks; non-interactive
+mode records the question and pauses with **exit code 3**, preserving the room.
+Use `pending --marker PROJECT/.sim-analyst.json` to inspect unresolved questions.
+Record the human reply with `record --source human --reviewer NAME` using the
+same question ID, then resume. A second simulated guess cannot resolve it.
+
+Resume discovers simulation from the existing marker even without another
+`--brief` argument. It retains question history and the exact copied brief,
+refuses to silently substitute a different brief, and works if the first pending
+question occurred before scaffolding. Use a new room for a different brief.
+
+Post-run assertions require actual draft metric/seed output and a logged exchange.
+They reject confirmed objects without matching explicit real-human receipts.
+Only a real-human approval permits `simulated_analyst.py attest-human` after the
+reviewed artifact has been authored; it changes no definitions or status. It is
+an operator attestation, not proof of identity or external execution. The helper's
+`check` command detects stale receipts after edits. Dashboard, notebook and
+warehouse checks remain actual executions; unavailable capabilities are skipped,
+not simulated as passes. Draft evals use `--status draft` and are labeled as such.
+
+Every actual simulation launch writes owner-only `simulation-summary.json` in
+the room, including pauses before scaffolding. It records the generated context
+path, draft metric/method paths, transcript, pending human questions, open
+decisions and verification follow-ups. Inspect `context_created` and
+`context_valid` separately from `execution_verification`: draft validation cannot
+establish a warehouse, dashboard or notebook match. The console prints the summary
+and log paths. Preparation alone starts no interview and creates no run summary.
+Static notebook imports can participate in this quick loop; unavailable execution
+does not prevent draft capture, and simulated answers never confirm a method.
+
+Offline preparation, marker handoff, early-pause resume, pending-question behavior,
+draft validation and destination preservation run in the direct test suite. A
+short live acceptance test is available only when a maintainer selects it:
+
+```bash
+.venv/bin/python tests/test_simulation.py --live claude
+# Or: --live codex
+```
+
+It uses a fictional brief, normal host safeguards and customer-owned host
+authentication, preserves its room, and requires draft metric/method/seed output.
+It performs no warehouse/dashboard/notebook acceptance. No live agent is started
+by the default test command. A paused or failed live run is not a passing release
+check; inspect its pending questions/transcript before continuing.
+
+For a noninteractive Claude run that needs explicit script grants, first use
+`tests/test_simulation.py --live claude --prepare-only`. Prepare an ignored
+operator settings file for that printed room, then launch it with the tracked
+harness's `--launch-prepared ROOM --non-interactive --operator-settings FILE`.
+The launch prompt supplies absolute scaffold/helper/validation paths from the
+selected package so grants can match the actual files rather than discovery
+symlinks. The harness does not generate permissions or weaken host safeguards.
+Inspect the resulting method drafts as well as the harness's metric/seed checks.
+
 ## Assertions and resume testing
 
 After the host exits successfully, the harness checks the generated repo for:

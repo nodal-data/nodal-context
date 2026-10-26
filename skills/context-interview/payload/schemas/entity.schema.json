@@ -3,21 +3,60 @@
   "$id": "https://nodaldata.io/acf/entity.schema.json",
   "title": "ACF Entity",
   "type": "object",
-  "required": ["entities"],
+  "required": [
+    "entities"
+  ],
   "properties": {
     "entities": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["name", "description", "status"],
+        "required": [
+          "name",
+          "description",
+          "status"
+        ],
         "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "status": { "enum": ["draft", "confirmed"] },
-          "mappings": { "type": "object" },
-          "important": { "type": "string" },
-          "analytical_notes": { "type": "string" },
-          "lineage": { "$ref": "lineage.schema.json" }
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "confirmed"
+            ]
+          },
+          "mappings": {
+            "type": "object"
+          },
+          "important": {
+            "type": "string"
+          },
+          "analytical_notes": {
+            "type": "string"
+          },
+          "lineage": {
+            "$ref": "lineage.schema.json"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "alias_notes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
         },
         "additionalProperties": false
       }

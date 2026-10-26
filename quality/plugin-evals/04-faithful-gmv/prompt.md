@@ -21,7 +21,7 @@ analytical_plan:
     time_window: "2026-06-01 through 2026-06-30, inclusive, activity_date"
   evidence:
     - claim: "GMV is the buyer's full ticket across all channels, gross of refunds, attributed to order date."
-      source: "domains/revenue/metrics.yaml (gmv)"
+      source: "domains/revenue/metrics/gmv.yaml"
       authority: confirmed
       used: true
     - claim: "fct_revenue is one row per revenue event; activity_date x measure_name is not unique, so always SUM(amount)."
@@ -29,7 +29,7 @@ analytical_plan:
       authority: confirmed
       used: true
     - claim: "Every fct_revenue query must filter exactly one measure_name."
-      source: "domains/revenue/metrics.yaml (expression.mandatory_filters)"
+      source: "domains/revenue/metrics/gmv.yaml (expression.mandatory_filters)"
       authority: confirmed
       used: true
   sources:

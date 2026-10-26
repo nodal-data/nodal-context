@@ -1,0 +1,21 @@
+name: churned_terms
+status: confirmed
+approver: fictional-example-reviewer
+confirmed_at: '2026-10-01'
+definition: Decided terms ending in the period that have no valid successor link.
+grain: decided subscription term
+temporal_kind: flow
+lineage:
+- source: demo
+  models:
+  - subscription_terms
+parameters:
+- name: period_start
+  note: Inclusive term end date.
+- name: period_end_exclusive
+  note: Exclusive term end date.
+allowed_dimensions:
+- plan
+- segment
+expression_blocked_by: Successor self-join requires a multi-step query pattern.
+deterministic_form: reference.md#pattern-renewal-outcomes

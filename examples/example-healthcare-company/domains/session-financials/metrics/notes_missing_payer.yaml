@@ -1,0 +1,14 @@
+name: notes_missing_payer
+definition: Notes with at least one session row whose payer is null or blank.
+grain: note_id
+status: draft
+expression:
+  measure: COUNT(DISTINCT note_id)
+  mandatory_filters:
+  - any_of:
+    - {field: payer_name, op: is_null}
+    - {field: payer_name, op: '=', value: ''}
+    reason: Checking only SQL null misses blank payer names.
+  allowed_dimensions: [session_date]
+lineage:
+  shared: lineage_3111488458

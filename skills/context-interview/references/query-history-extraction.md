@@ -12,8 +12,8 @@ cluster with count 365. But mined clusters are a **draft to react to**, never
 truth (LLM-bootstrapped definitions from query logs measure net-negative — the
 value is in the *questions* mining surfaces, not the answers). Everything you
 write from findings is `status: draft`, tagged
-`# query-history-derived (<fingerprint>)`, and stays excluded from the perfect
-eval baseline until the analyst confirms it. **Tag, don't trust.**
+`# query-history-derived (<fingerprint>)`, and stays excluded from the confirmed
+evaluation until the analyst confirms it. **Tag, don't trust.**
 
 **Ambiguity is the payload.** When mining finds three different revenue
 calculations over the same table (run 120 / 45 / 8 times, by different teams),
@@ -246,7 +246,7 @@ Map each artifact to its ACF target — all `status: draft`, all tagged:
 |---|---|---|
 | admitted `bi_service` clusters | Stage-2 domain/dashboard catalog candidates, beside dbt `exposures[]` | a recurring cluster ≈ one dashboard-shaped unit: a recurring question + the tables it reads |
 | cluster `tables[]` | `domain.yaml.tables.{canonical,others}` candidates; cross-check `context.config.yaml` lineage models | regex-extracted **hints** — confirm, never trust |
-| `conflict_groups[]` | the interview disambiguation question → confirmed `metrics.yaml` `expression:` + an eval seed with `ir:` | the headline win; phrase it as a question (below) |
+| `conflict_groups[]` | the interview disambiguation question → confirmed `metrics/*.yaml` `expression:` + an eval seed with `ir:` | the headline win; phrase it as a question (below) |
 | recurring predicates in `sample_text` | hygiene-filter / `expression.mandatory_filters` candidates (`reference.md`, metric) | e.g. every cluster on a table filters `< 45 days` — ask why |
 | admitted `ad_hoc` clusters | long-tail demand signal → draft seeds (`provenance: generated`, `status: draft`) + glossary candidates | lower trust; never definition candidates |
 | a high-count cluster the analyst calls "the query everyone gets wrong" | `reference.md` Common query pattern (pattern-not-paste) + a `sql_shape` seed | interview-flow §4 follow-up 5 |
@@ -330,3 +330,13 @@ is the same kind of evidence.
 
 The miner has a stdlib test (no pytest dep):
 `python3 tests/test_query_history_extract.py`.
+
+## ACF 0.3 review boundary
+
+Write one draft metric per `domains/<domain>/metrics/<name>.yaml`; do not emit the
+legacy wrapper or infer a confirmation from source frequency or a dbt description.
+Review inherited/shared constraints, allowed dimensions and any division policy.
+If the formula is outside the expression grammar, propose an explicit blocked
+expression and deterministic pattern/method for review. Confirmed metrics and
+seeds need a real `approver` and `confirmed_at`, plus reviewed metric/method IR
+for positive seeds. Extraction findings remain local draft inputs, not answer keys.

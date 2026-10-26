@@ -31,12 +31,21 @@ access remain read-only. Never request or handle credentials.
    the normal selection/confirmation ladder. Work in batches of one to three and
    show progress.
 4. Every confirmed disambiguation emits an eval seed. Record rejected credible
-   readings as negative examples. Unconfirmed recollections remain drafts with a
+   readings in intent and shape exclusions. Use a negative-kind seed only for a
+   correctly declined/escalated question, with its declared reason. Unconfirmed recollections remain drafts with a
    named follow-up owner or role.
 5. Run the normal per-domain live verification where time and tools allow. A
    missing connection degrades to semantic capture; it never turns recollection
    into verified truth.
 6. Validate the context repo and finish with a handoff coverage report.
+
+Carry explicit open decisions, method decision rationales, family/alias choices,
+stale seeds and pending Stage 6 observations into the successor's agenda. Notebook
+knowledge can become a statically imported draft method, followed by human review
+and independent Stage 5 verification when authorized and available. Do not treat
+an import, a simulation or a departing analyst's recollection as an execution.
+Keep raw observations and execution evidence local; confirmed metric/method/seed
+records preserve the actual approver and date.
 
 ## Coverage report
 

@@ -15,12 +15,12 @@ Mapping (the inverse of eval_harness/adapters/skill.py):
                             + knowledge-base navigation table
   references/entities.md <- entities/*.yaml (cross-domain; the skill adapter
                             shares this file across every domain)
-  references/<domain>.md <- domain.yaml header + reference.md (verbatim)
-                            + metrics.yaml + entities.yaml + known-issues.md
+  references/<domain>.md <- domain.yaml header + reference.md (draft patterns filtered)
+                            + expanded metrics + methods + entities + context.md
 
-Deliberately NOT compiled: evals/ (ground truth, not context), context.md (human
-onboarding narrative), org-structure.md and repo-operational files. Items with
-`status: draft` are EXCLUDED by default — a human owns every definition — pass
+Deliberately NOT compiled: evals/ (ground truth, not context), org-structure.md and
+repo-operational files. Items with effective `status: draft` are EXCLUDED by default
+— a human owns every definition — pass
 --include-drafts to keep them, clearly marked.
 
 Usage:
@@ -37,6 +37,11 @@ import subprocess
 import sys
 import zipfile
 from pathlib import Path
+
+CONTAINER = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTAINER / "payload" if (CONTAINER / "payload/acf_runtime").is_dir() else CONTAINER))
+from acf_runtime import load_context
+from acf_runtime.markdown import render_reference
 
 
 def _read(p: Path) -> str:
@@ -111,6 +116,7 @@ def _render_entity(e: dict, drafts: bool) -> str:
 
 
 def _render_metric(m: dict, drafts: bool) -> str:
+    import yaml
     lines = [f"### {m.get('name', '(unnamed)')}" + ("   _(draft — unconfirmed)_" if drafts and _draft(m) else "")]
     if m.get("definition"):
         lines.append(f"**Definition:** {str(m['definition']).strip()}")
@@ -125,6 +131,11 @@ def _render_metric(m: dict, drafts: bool) -> str:
         if vals:
             lines.append(f"{title}:")
             lines += [f"- {v}" for v in vals]
+    structured = {k: m[k] for k in ("aliases", "alias_notes", "family", "expression",
+                  "expression_blocked_by", "deterministic_form", "allowed_dimensions",
+                  "lineage", "open_decisions") if k in m}
+    if structured:
+        lines.append("```yaml\n" + yaml.safe_dump(structured, sort_keys=False).rstrip() + "\n```")
     return "\n".join(lines)
 
 
@@ -160,6 +171,10 @@ HOW_TO_ANSWER = """\
 
 def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: bool):
     """-> (skill_dir, stats dict). Writes the skill folder under out_dir."""
+    import yaml
+    registry = load_context(repo)
+    if registry.errors:
+        raise SystemExit("compile_skill: invalid ACF 0.3 context:\n" + "\n".join(map(str, registry.errors)))
     company = _company_name(repo, name)
     slug = f"{_slug(company)}-data-analyst"
     skill_dir = out_dir / slug
@@ -169,10 +184,10 @@ def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: b
 
     # references/entities.md — cross-domain entities (shared by the skill adapter)
     ent_blocks = []
-    for f in sorted((repo / "entities").glob("*.yaml")):
-        if f.name.startswith("_"):
+    for node in registry.nodes.values():
+        if node.kind != "entity" or node.domain:
             continue
-        items = _load_yaml(f).get("entities") or []
+        items = [{**node.data, "status": node.effective_status}]
         md, skipped = _render_items(items, _render_entity, include_drafts)
         stats["drafts_excluded"] += skipped
         if md:
@@ -187,7 +202,7 @@ def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: b
     for d in sorted((repo / "domains").iterdir()) if (repo / "domains").is_dir() else []:
         if not d.is_dir() or d.name.startswith(("_", ".")):
             continue
-        dom = _load_yaml(d / "domain.yaml")
+        dom = registry.domains[d.name]
         if _draft(dom) and not include_drafts:
             stats["drafts_excluded"] += 1
             continue
@@ -203,17 +218,37 @@ def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: b
         if head:
             parts.append("\n".join(head))
         if (ref := _read(d / "reference.md")):
-            parts.append(_body_sans_title(ref) or ref)
+            ref, skipped = render_reference(ref,
+                {n.id.rsplit("#", 1)[1]: n.effective_status for n in registry.nodes.values()
+                 if n.kind == "pattern" and n.domain == d.name}, include_drafts=include_drafts)
+            if not include_drafts:
+                stats["drafts_excluded"] += skipped
+            if ref.strip():
+                parts.append(_body_sans_title(ref) or ref)
         metrics_md, skipped = _render_items(
-            _load_yaml(d / "metrics.yaml").get("metrics") or [], _render_metric, include_drafts)
+            [{**n.data, "status": n.effective_status} for n in registry.metrics if n.domain == d.name],
+            _render_metric, include_drafts)
         stats["drafts_excluded"] += skipped
         if metrics_md:
             parts.append("## Metrics\n\n" + metrics_md)
         dom_ent_md, skipped = _render_items(
-            _load_yaml(d / "entities.yaml").get("entities") or [], _render_entity, include_drafts)
+            [{**n.data, "status": n.effective_status} for n in registry.nodes.values()
+             if n.kind == "entity" and n.domain == d.name], _render_entity, include_drafts)
         stats["drafts_excluded"] += skipped
         if dom_ent_md:
             parts.append("## Domain entities\n\n" + dom_ent_md)
+        for method in registry.methods:
+            if method.domain != d.name:
+                continue
+            if method.effective_status != "confirmed" and not include_drafts:
+                stats["drafts_excluded"] += 1
+                continue
+            data = {**method.data, "status": method.effective_status}
+            parts.append("## Method: " + data["name"] +
+                         (" _(draft — unconfirmed)_" if method.effective_status != "confirmed" else "") +
+                         "\n\n```yaml\n" + yaml.safe_dump(data, sort_keys=False) + "```\n\n" + method.body)
+        if (reasoning := _read(d / "context.md")):
+            parts.append("## Reasoning context for new slices and methods\n\n" + reasoning)
         if (issues := _read(d / "known-issues.md")):
             parts.append("## Known issues\n\n" + (_body_sans_title(issues) or issues))
         (refs_dir / f"{d.name}.md").write_text("\n\n".join(parts) + "\n")

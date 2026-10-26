@@ -13,29 +13,25 @@ per project.
    ```
 
    Resolve the default `../analytics-context/` from the user's project root,
-   display the absolute destination, and get confirmation before writing. The
+   display the absolute destination, and confirm it if not already authorized. The
    bundled manifest is the single source of truth for the file list. It copies two
    layers and then self-checks:
 
    - **The template** (the authorable content): empty `company/`, a
-     `_domain-template/`, `entities/`, `evals/seeds/`, `AGENTS.md`, `CLAUDE.md`
+     `_domain-template/` with `metrics/`, root `methods/`, `entities/`,
+     `evals/seeds/`, `AGENTS.md`, `CLAUDE.md`
      (consumption-first — how an agent answers questions from this repo),
      `AUTHORING.md` (how to edit it), `README.md` (the end-user getting-started
      doc), and `context.config.yaml`. `AGENTS.md` and `CLAUDE.md` make the
      generated repo directly usable by agents; the installable `analytics-plan`
      skill adds plan approval, multi-source evidence, and uncertainty scoring.
-   - **The CI support set**, so validation, drift, and the eval delta run on PRs
-     from day one: `.github/workflows/`, `.ci/` (the workflow scripts —
-     `validate.py`, `drift.py`, `collect_manifests.py`, `suggest.py`,
-     `changed_domains.py`), `schemas/` (the ACF JSON Schemas — `.ci/validate.py`
-     validates the repo's YAML against them locally, with no network),
-     `scripts/dbt_extract.py` (which `drift.py` imports),
-     `scripts/query_history_extract.py` (the Stage-0 query-history miner —
-     re-mining and the upcoming reconciliation mode run from the context repo
-     root), `scripts/compile_skill.py`, the format's `SPEC.md`, and
-     **`eval_harness/`** — vendored because `eval-delta.yml` runs
-     `python -m eval_harness.run` from the context repo root and there is no pip
-     package to install it from.
+   - **The support set**: `.github/workflows/`, `.ci/`, `schemas/`,
+     `acf_runtime/`, `eval_harness/`, repo-local extraction, migration, matching,
+     coverage, observed-review, notebook, encryption and regression scripts, and
+     `SPEC.md`. Use the bundled manifest for the exact list. Deterministic
+     validation is local; model-assisted lint/evaluation needs the customer's
+     configured model access. Notebook and warehouse execution is explicit,
+     never a side effect of scaffolding or ordinary PR validation.
 
    **Hard gate: do not proceed to Stage 1 until the script's self-check passes**
    (run the same resolved scaffold script with `--check <target-dir>`; it exits
@@ -43,10 +39,11 @@ per project.
    part of the support set ships broken CI — this is exactly how a missing
    `schemas/` or `eval_harness/` turns into red workflows on the customer's first PR.
 
-2. Once a dbt manifest is available, establish the drift baseline once and commit it:
+2. Once complete configured dbt manifests are available, establish the baseline:
    `python .ci/drift.py --update-baseline --manifest <source_id>=<path>` writes
    `.ci/lineage-baseline.json` (the snapshot drift compares against). The scaffold
-   script never overwrites an existing baseline.
+   script never overwrites an existing baseline. Include it in a commit only
+   when the user requests committing; missing source coverage is not a baseline.
 3. For each domain discovered in Stage 2, copy `_domain-template/` to
    `domains/<domain>/` and fill it in. The copied `entities.yaml` is for
    domain-specific status/type values only — subject entities (customer,
@@ -57,11 +54,10 @@ per project.
 5. **Initialize the repo.** Run `git init -b main` in the target dir — pin the
    branch explicitly rather than inheriting the machine's `init.defaultBranch`
    (often still `master`); the wrap-up push instructions and PR workflow assume
-   `main`. Then make an initial commit once the scaffold is in place
-   (`git add -A && git commit -m "Initial analytics context scaffold"`). If the
-   repo was already initialized on `master`, rename with `git branch -m master main`. This is safe, offline, and reversible, and makes
-   the "review by PR" workflow real from the first domain. Do *not* create or push a
-   GitHub remote here — that's the wrap-up offer in `SKILL.md`.
+   `main`. Preserve an existing repository's branch and work. Commit only when
+   explicitly requested, after reviewing the intended paths; do not stage local
+   queues, briefs, credentials or execution evidence. Remote creation, pushing
+   and publication also require the user's instruction.
 
 ## Wire `context.config.yaml` (do not defer this)
 
@@ -92,7 +88,7 @@ values on every PR as a backstop.
 Then, as you discover each domain's tables (Stage 2, Q4), record the lineage pointer:
 
 ```yaml
-version: 0.2
+version: "0.3"
 warehouse: snowflake                # default platform; per-source `warehouse:` overrides it
 lineage_sources:
   - id: dbt_core
@@ -112,6 +108,14 @@ domains:
     lineage:
       - source: dbt_core
         models: [<model_a>, <model_b>]
+time_tokens:
+  calendar: [last_month, last_quarter, last_year, ytd, all_time]
+  fiscal: [last_fiscal_quarter, fiscal_ytd]
+fiscal_calendar: {year_start_month: 1}
+variants: {max_per_seed: 20}
+verified_sql:
+  encryption: none  # explicit local-only; configure age/sops for portable ciphertext
+  decrypt_to: evals/verified/
 ```
 
 A domain's platform is **derived** from the sources its `lineage:` references — there
@@ -119,18 +123,21 @@ is no per-domain warehouse field. A domain whose models span two platforms simpl
 lists one lineage entry per source (the array already supports this); don't invent a
 federated marker.
 
-If there is no dbt project, set `type: none` and list the raw table names — drift
-detection degrades to "warehouse column-set changed" instead of "model changed,"
-which is still useful. The point is that **every domain has a lineage pointer even
-when context lives in its own repo.** A domain with no pointer cannot be protected
-from drift, so flag it.
+If there is no dbt project, set `type: none` and list the raw table names. Without
+a supported manifest, report lineage as unchecked; do not promise automatic
+warehouse column monitoring. Every domain still needs a lineage pointer. Confirm
+fiscal boundaries and supported time tokens rather than guessing them. Encryption
+keys and credentials remain customer-controlled; never put private keys in config.
 
 ## Draft-vs-confirmed discipline
 
 - Auto-extracted stubs are written `status: draft`.
-- A definition becomes `status: confirmed` only after the analyst says so.
-- The validation workflow warns (does not fail) on `draft` so they're visible in
-  the PR; the eval workflow excludes `draft` from the perfect baseline.
+- A metric, method or seed becomes `status: confirmed` only after actual human
+  review, with `approver` and `confirmed_at`. Simulated answers remain draft.
+- Drafts remain schema-valid. Draft dependencies and open decisions make their
+  consumers effectively draft even when stored status is confirmed. The harness
+  excludes these from confirmed evaluation; it measures off/on accuracy rather
+  than assuming a perfect baseline.
 
 ### dbt draft
 
@@ -185,19 +192,22 @@ rather than starting over. Append new seeds; never rewrite confirmed ones withou
 asking.
 
 **A fresh clone (teammate handoff) is the same resume.** A teammate who clones the
-context repo on another machine already has everything committed — the authored
-content *and* the full CI support set — so there is nothing to scaffold. Run
-run the installed skill's scaffold script with `--check <target-dir>` once to
+context repo on another machine has committed authored content and the support
+set. Run the installed skill's scaffold script with `--check <target-dir>` once to
 confirm the clone is
-intact, then resume as above. Two things deliberately do **not** travel with the
-clone:
+intact, then resume as above. Customer-local inputs do **not** travel with the clone:
 
-- **`evals/verified/*` sidecars** are gitignored — local to the machine that ran
-  Stage 5. Never fabricate them; re-run Stage 5 live verification to mint new ones.
+- **Plaintext verified SQL and decryption keys** stay local. Configured
+  `.sql.age` / `.sql.sops` ciphertext does travel; its presence is not a passing
+  regression. Decrypt explicitly with customer keys and a trusted executor, or
+  repeat Stage 5. Never fabricate missing evidence.
 - **`evals/captures/*`** (dashboard-verify captures + reconciliation reports) are
   gitignored — point-in-time generated output; re-run the skill for fresh ones.
   Learned playbooks in `evals/playbooks/` DO travel (committed), so a teammate's
   first dashboard read is already a deterministic replay.
+- **Queues, runs, caches and source notebooks** stay local or in their original
+  repositories. Notebook provenance is a pointer; rerun with matching pinned
+  inputs before claiming fresh verification.
 - **The local dbt clone.** When drafting a new domain, re-clone from the
   `lineage_sources[].repo` URL already recorded in `context.config.yaml` and
   `dbt parse` — don't ask the analyst where the project lives. If the new domain
@@ -214,4 +224,22 @@ python3 <resolved-skill-directory>/scripts/scaffold.py --upgrade <target-dir>
 ```
 
 Upgrade mode never touches authored content (`company/`, `domains/`, `entities/`,
-`evals/`, `context.config.yaml`) and never overwrites `.ci/lineage-baseline.json`.
+`methods/`, `evals/`, `context.config.yaml`) and never overwrites
+`.ci/lineage-baseline.json`. Preserve local evidence and ignore rules. Root agent
+instructions are authorable too; review the support upgrade's report and reconcile
+new consumer guidance explicitly rather than replacing customer instructions.
+The command prints the path to a private `.nodal/migrations/scaffold-<hash>.md`
+report with differences from incoming fresh templates, including ignore rules,
+configuration and agent guidance. These differences include customer edits as
+well as new template content: they are not an automatically applicable patch.
+Missing authoring stubs are listed, not recreated. Review the report locally and
+adopt only the changes appropriate to the customer's repo. Keep `.nodal/` ignored.
+
+ACF 0.2 and legacy/mixed metric layouts cannot be upgraded in place as supported
+inputs. Run the explicit `split_metrics.py <domain-dir> --check` first, then the
+converter after reviewing its proposed conversion. Resolve remaining 0.3 approval,
+ratio and definition requirements before setting `version: "0.3"` and upgrading.
+The converter is the only legacy YAML reader; LookML is unsupported. Backups stay
+under ignored `.nodal/migrations/`. Version/layout preflight failure must leave
+the repo untouched. A later support-copy failure may need an upgrade retry; it
+must not overwrite the preserved lineage baseline or authored files.

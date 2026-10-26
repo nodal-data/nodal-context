@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.7.0 — Unreleased
+
+- Adopt ACF 0.3 per-metric YAML, shared fragments, aliases and families, approval
+  metadata, explicit blockers, ratio policies and cross-domain dependencies.
+  Retire ACF 0.2 and legacy metric layouts immediately; provide a one-time,
+  comment-preserving YAML converter with backups and conflict protection.
+- Add governed methods, static notebook import, and independent notebook/method
+  execution comparisons with separate human confirmation and revision checks.
+- Match questions structurally and report definition, slicing and verification
+  coverage separately. Add negative seeds, reviewed variants and resumable
+  observed-demand interviews; keep answer keys out of answer generation.
+- Add encrypted approved SQL, customer-controlled regression execution,
+  dependency-aware drift review proposals, gated seed re-grading and optional
+  semantic warnings. Missing capabilities are reported, never counted as passes.
+- Preserve quick simulated-analyst runs and resume, with private draft-capture
+  summaries and no fabricated approval or execution evidence. Update package
+  guidance and scaffolds, and add a complete fictional ACF 0.3 worked example.
+- Report incoming authoring-template differences during support upgrades while
+  preserving customer instructions, configuration, evidence and lineage baseline.
+- Add behavioral evals for family choices, method fidelity, open-decision blockers
+  and missing-data declines, retaining the should-not-fire control and ablation.
+- Live host, warehouse, dashboard and customer notebook acceptance remains an
+  opt-in maintainer check; offline tests do not establish those results.
+
 ## 1.6.4 — 2026-10-19
 
 - Preserve the substantive business request through clarification and approval.

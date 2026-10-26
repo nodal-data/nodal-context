@@ -259,24 +259,46 @@ seed whose `expected` encodes the *correct* handling (right filter, right table,
 **When a metric is confirmed, draft its `expression:` too.** Once the analyst has
 confirmed a metric's measure, its must-have filters (follow-ups 1–2), and what it
 may be sliced by, assemble them into the metric's structured `expression:` block in
-`metrics.yaml` — `measure` + `mandatory_filters` (each with a `reason` naming the
+`metrics/<name>.yaml` — `measure` + `mandatory_filters` (each with a `reason` naming the
 failure it prevents) + `allowed_dimensions` — and read it back for confirmation
-(see SPEC.md "Deterministic anchor"). The assembled read-back is the one
+(see SPEC.md "Metrics and shared fragments"). The assembled read-back is the one
 legitimate plain confirm (ladder rung 3) — *provided every load-bearing piece
 (the measure, each mandatory filter, the grain) was individually selected or
 contested during drafting*. If any piece is entering the expression un-chosen,
 ask that piece's atom first; never introduce a new clause for the first time
 inside a read-back. The schema requires
 `grain`; column/row measures require lineage, while reference-only arithmetic
-inherits the union of referenced lineage. Confirm the applicable pointers at the
+declares `lineage: inherit` for the union of referenced lineage. Confirm the applicable pointers at the
 same moment (§2 steps 3–4 usually already captured them). Use `any_of`/`all_of`
 for nested alternatives, `entity_filters` for per-entity eligibility, and
-`metric(name)` for same-file governed components. Confirm each group, entity key,
+`metric(name)` for same-domain governed components or `metric(domain.name)` for
+cross-domain references. Confirm each group, entity key,
 having condition, and reference individually before the assembled read-back.
 Referring dimensions must be supported by every component; references cannot be
 cyclic. Declare placeholders in `parameters` and keep them as query-time slots.
-Set the context version to 0.2 when adopting these constructs. Later edits to a
+Use context version 0.3 and one metric per `metrics/<name>.yaml`. Later edits to a
 confirmed metric's expression reset it to `status: draft` until re-confirmed.
+
+Division requires a reviewed `ratio.zero_denominator` policy (YAML `null`, `zero`
+or `error`) and its reason. Repeated domain-local lineage, filters and parameters
+may live in `_shared.yaml`; expand them before reviewing each metric's actual
+constraints. A shared edit affects every consumer. Capture competing revenue
+definitions as an explicit mutual family and distinguish aliases; do not select
+a family member from popularity alone.
+
+Use `open_decisions` to name unresolved questions and blocked metrics/methods.
+Stored confirmation of an owner does not make blocked targets ready. For measures
+outside the expression grammar, record `expression_blocked_by` and a reviewed
+`deterministic_form` pattern/method instead of forcing SQL into the expression.
+Every confirmed metric, method and seed records the real `approver` and
+`confirmed_at`; neither extraction nor simulation provides those fields.
+
+For a composed analysis, draft a root `methods/<slug>.md` with owning domain,
+metric references, bound parameters, decisions and `without_this` rationales,
+required outputs/disclosures and qualitative checks. Review any filter override,
+stock/flow alignment and intentional constant explicitly. Methods are prose,
+not runnable SQL/Python. A notebook may draft this structure during Stage 6;
+result verification remains a separate Stage 5 operation.
 
 ---
 
@@ -286,16 +308,33 @@ confirmed metric's expression reset it to `status: draft` until re-confirmed.
 seeds. At domain close, answer a handful of the domain's questions against the live
 warehouse twice — context off vs on — with parallel in-session subagents, then have
 the analyst confirm the on-answer against their dashboard. Matches become
-`value_at_snapshot` / `dashboard` seeds whose blessed SQL is written to a gitignored
-sidecar (`evals/verified/`) and referenced by `verified_query_file`; mismatches feed
+`value_at_snapshot` / `dashboard` seeds whose blessed SQL is captured to ignored
+plaintext and encrypted in the same operation (`verified-sql.md`), referenced by
+`verified_query_file`; only ciphertext is eligible for commit. Explicit local-only
+mode or encryption failure must be reported. Mismatches feed
 a caveat + a `correction` seed. This stage has its own reference —
 read `live-verification.md` when you enter it.
 
+If the reference is a notebook-derived method, follow `notebook-verification.md`
+instead: static import remains a draft, then a fresh notebook run and an
+independent method-derived analysis use the same pinned inputs. Compare rows and
+method obligations, ask the real analyst to confirm the evidence, and emit a
+notebook-provenance snapshot seed. Keep source/code/results local; no saved output
+or simulated answer substitutes for either execution.
+
 ---
+
+## §6 — Observed demand
+
+Read `observed-demand.md` when reviewing a local question queue or importing a
+notebook. Prioritize ambiguous and frequent questions, elicit the interpretation,
+then preview the corresponding variant, draft metric/method/seed edits or
+dismissal. Apply only the reviewed preview. Preserve local overflow and resumable
+dispositions, and return to Stage 5 when the change requires result verification.
 
 ## When the analyst doesn't know
 
 That's a finding, not a failure. Write `_To be confirmed by [owner]._`, mark
 `status: draft`, add a `# REVIEW:` comment, and move on. Drafted-but-unconfirmed
-context is excluded from the "perfect" eval baseline, so it won't silently corrupt
-the delta.
+context is excluded from confirmed evaluation and coverage. Missing confirmation
+must remain visible; it is never a perfect baseline score.

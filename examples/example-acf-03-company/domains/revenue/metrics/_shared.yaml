@@ -1,0 +1,23 @@
+lineage:
+  entries:
+  - source: demo
+    models:
+    - revenue_entries
+parameters:
+  window:
+  - name: period_start
+    note: Inclusive event date.
+  - name: period_end_exclusive
+    note: Exclusive event date.
+filter_sets:
+  window:
+    description: A half-open window on the selected basis event date.
+    filters:
+    - field: activity_date
+      op: '>='
+      value: <period_start>
+      reason: Use the selected basis event date.
+    - field: activity_date
+      op: <
+      value: <period_end_exclusive>
+      reason: Exclude the next reporting period.

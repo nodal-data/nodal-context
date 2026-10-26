@@ -1,0 +1,13 @@
+entities:
+- name: canonical-customer
+  status: confirmed
+  description: One real customer identified by customers.customer_id across all source systems.
+  aliases:
+  - customer
+  - canonical identity
+  important: Two external identities can refer to the same canonical customer.
+  lineage:
+  - source: demo
+    models:
+    - customers
+    - orders

@@ -3,7 +3,10 @@
 The payoff stage. You've captured a domain; now *show the analyst the context
 works* before they commit to more. Answer real questions against their live
 warehouse twice — once with the context off, once on — and have the analyst confirm
-the on-answer against a source they already trust (a dashboard). Every confirmation
+the on-answer against a source they already trust (a dashboard). For a notebook
+reference, follow `notebook-verification.md` for a fresh reference run and an
+independent method answer on identical pinned inputs; a context-off run is optional
+there. Every reviewed dashboard confirmation
 is the strongest kind of eval seed: a real number, pinned to a date, with the SQL
 that produced it.
 
@@ -83,9 +86,20 @@ hammer the warehouse, and `log` what's batched. Each subagent must:
   question and return: the number, the exact SQL you ran, your assumptions, and the
   tables you used."
 - **context-on:** identical, but also: "First read this domain's `reference.md`,
-  `metrics.yaml`, `entities`, and `evals/seeds/` for the domain, and follow them."
+  normalized per-metric definitions (including shared and transitive dependencies)
+  and entities. For a method or new slice, also read the relevant `context.md` and
+  method body. Follow effective readiness, filters, dimensions, ratio policy,
+  method decisions and disclosures. Do not read `evals/seeds/`, verified queries,
+  prior result traces, notebook code or reference outputs."
 
-Return shape from each agent: `{ value, sql, assumptions[], tables[] }`.
+Use identical reviewed question bindings, time boundaries and input snapshot for
+both agents. Keep their contexts independent; the orchestrator's answer keys and
+dashboard evidence must not leak into either prompt. If fresh answering contexts
+are unavailable, report this limitation rather than claiming an independent check.
+
+Return shape from each agent: `{ value, sql, assumptions[], tables[], disclosures[] }`,
+with actual execution evidence. Method answers additionally carry their resolved
+metrics and parameters. A proposed query without a completed run is not a result.
 
 Write each agent's full output as a trace to
 `evals/runs/<timestamp>/<question-slug>.{off,on}.md`. These are generated artifacts
@@ -112,9 +126,10 @@ Then get the truth from the dashboard:
   visible**, and have them bless it as the truth: *"Your dashboard shows 0.92
   for this (read exactly from the chart data; window Jan–Mar, sessions ≥ 45
   days) — is that the number you'd trust?"* A tier-4 (vision) value is called
-  out as low-confidence before they bless it. Take `as_of` from the capture's
-  `filter_state.as_of` (the dashboard's own freshness stamp), falling back to
-  `captured_at`.
+   out as low-confidence before they bless it. Take `as_of` from the capture's
+  `filter_state.as_of` (the dashboard's own freshness stamp). If missing, have the
+  analyst establish data freshness; `captured_at` records when the screen was
+  read, not necessarily the snapshot represented by its values.
 - **Human read** (no binding): ask *"What does your dashboard show for this, and
   as of what date?"* and record the value and `as_of`.
 
@@ -132,20 +147,29 @@ the shareable "the system validated itself" artifact.
    answer key?"* (A legitimate rung-3 plain confirm — the truth anchor is the
    dashboard number the analyst just read, not your prose.)
 2. Write/upgrade the seed:
-   - `provenance: dashboard`, `status: confirmed`
+   - `provenance: dashboard`, `status: confirmed`, the real `approver` and `confirmed_at`
    - `expected.kind: value_at_snapshot`, `value: <dashboard number>`, `as_of: <date>`
    - `intent:` ← the confirmed assumptions (the disambiguation it got right)
    - `ir:` ← the decomposition the verified query actually used — `metric` (the
-     `metrics.yaml` name), `dimensions`, `filters`, `time_window` (absolute
+     per-metric canonical name), `dimensions`, `filters`, `time_window` (absolute
      `{start, end}` is fine here; `as_of` pins the seed). You have the query in
      front of you at this moment, so record its structure, not just its prose —
      this is what makes the seed and the production decomposition the same object.
-   - write the blessed context-on SQL to `evals/verified/<seed-name>.sql` (a LOCAL,
-     gitignored sidecar — **do not commit the SQL**) and point the seed at it with
-     `verified_query_file: evals/verified/<seed-name>.sql`. The seed (committed) holds
-     the answer key (value + date); the SQL (local) stays out of git because it goes
-     stale fast and must not be cloneable from a published context repo.
-   This is the strongest seed you can produce: number + date + reusable (local) SQL.
+     For a method use `method`, resolved `metrics` and bound `parameters` instead
+     of a metric target; check its required disclosures and result relationships.
+     Multirow snapshots need `key_columns` and agreed numeric tolerances. A numeric
+     match alone does not establish the correct cohort or denominator.
+   - capture the approved, actually executed SQL with `scripts/verified.py capture`
+     in this verification operation (see `verified-sql.md`). It writes private
+     `evals/verified/<seed-name>.sql` and immediately encrypts with the configured
+     age/SOPS backend. Point the seed at the plaintext name via
+     `verified_query_file: evals/verified/<seed-name>.sql`; only ciphertext is
+     eligible for commit. The query remains outside context and answer prompts.
+     Explicit `encryption: none` is local-only. On encryption failure, report
+     `local_unpublished`; preserve the local query and repair encryption before
+     claiming that a portable answer key exists. Do not silently use `none`.
+   The snapshot records the approved value/date; successful encryption makes the
+   reviewed replay query portable without exposing it as analytics context.
 3. **Offer to promote the form into context.** If the blessed query's exact form is
    itself the hard-won knowledge (the dedup, join path, or mandatory clause the
    off-agent missed), offer: *"Want me to save this shape as a query pattern in the
@@ -153,7 +177,8 @@ the shareable "the system validated itself" artifact.
    literal values with `<placeholders>`, lead with a one-line `Without this: …`
    naming the failure it prevents — and add it under "Common query patterns"
    (rules in `reference-doc-skeleton.md`). The runnable original stays only in the
-   sidecar; what's committed is the form, not the report.
+   sidecar; the context contains the form and the answer-key area may contain its
+   encrypted runnable counterpart, never plaintext.
 
 ## 6. On a mismatch (on-answer != dashboard)
 
@@ -171,7 +196,9 @@ missing caveat or disambiguation. Harvest it the Stage-4 way:
 - write a `provenance: correction`, `status: confirmed` seed whose `expected.kind:
   sql_shape` encodes the *correct* handling (`must_include` / `must_exclude`),
   with an `ir:` block recording the correct decomposition (relative
-  `time_window` — the value isn't pinned, so the window must stay evergreen).
+  `time_window` — the value isn't pinned, so the window must stay evergreen),
+  with actual `approver` and `confirmed_at` only after the analyst confirms that
+  handling. Unresolved explanations remain draft.
 - Do **not** write the wrong SQL to `evals/verified/` or set `verified_query_file`.
   Leave the value unpinned until a re-run verifies it.
 
@@ -194,7 +221,9 @@ Domain: session-financials   (verified live, 5 questions)
 ```
 
 The durable outputs are the seeds and the updated `reference.md` / `known-issues.md`;
-the summary itself is ephemeral.
+the summary itself is ephemeral. Calculate the delta only over comparable cases
+actually graded on both sides; report missing, blocked and skipped checks
+separately. Negative-kind escalation accuracy is separate from positive accuracy.
 
 ## Later: remote execution
 

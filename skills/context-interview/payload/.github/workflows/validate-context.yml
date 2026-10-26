@@ -2,7 +2,7 @@
 name: validate-context
 on:
   pull_request:
-    paths: ['**/*.yaml', '**/*.md', 'context.config.yaml']
+    paths: ['domains/**', 'entities/**', 'methods/**', 'company/**', 'evals/seeds/**', 'evals/verified/*.sql.age', 'evals/verified/*.sql.sops', 'context.config.yaml', 'schemas/**', 'acf_runtime/**', '.ci/**', '**/*.md']
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -13,7 +13,12 @@ jobs:
       - run: pip install jsonschema pyyaml
       - name: Validate YAML against ACF schemas
         run: python .ci/validate.py        # validates entities/metrics/domain/seeds
-      - name: Surface unconfirmed drafts (warn, don't fail)
+      - name: Surface effective draft status (report only)
         run: |
-          echo "Definitions still marked status: draft:"
-          grep -rn "status: draft" --include=*.yaml . || echo "none — all confirmed"
+          python - <<'PY'
+          from acf_runtime import load_context
+          registry = load_context('.')
+          for node in sorted(registry.nodes.values(), key=lambda n: n.id):
+              if node.effective_status != 'confirmed':
+                  print(node.id + ': ' + ', '.join(sorted(node.blocking_reasons)))
+          PY

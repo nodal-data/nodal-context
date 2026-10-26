@@ -86,17 +86,17 @@ def run():
         assert any("cross-domain by definition" in w for w in warns), \
             f"expected a duplicate-name warning, got {warns}"
 
-    # --- canonical filenames: a .yml near-miss warns but does not fail ---
+    # --- old wrapper is rejected even under a .yml spelling ---
     with tempfile.TemporaryDirectory() as td:
         ctx = Path(td) / "ctx"
         shutil.copytree(ROOT / "examples" / "example-fintech-company", ctx)
         (ctx / "domains" / "lending-performance" / "metrics.yml").write_text(
             "metrics: []\n")
         warns = validate.canonical_name_warnings(ctx)
-        assert warns and "rename to .yaml" in warns[0], \
-            f"expected a near-miss filename warning, got {warns}"
-        assert validate.main([str(ctx), "--schemas", "schemas"]) == 0, \
-            "a .yml near-miss must warn, not fail"
+        assert warns and "unsupported in 0.3" in warns[0], \
+            f"expected migration guidance, got {warns}"
+        assert validate.main([str(ctx), "--schemas", "schemas"]) == 1, \
+            "legacy metric wrappers must fail under either extension"
 
     # --- structural failure: unknown field in a copied template doc ---
     with tempfile.TemporaryDirectory() as td:

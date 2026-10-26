@@ -27,12 +27,20 @@ renormalize missing features.
 | execution integrity | 0.15 | query completed with no truncation or runtime warning |
 | result-shape match | 0.10 | rows/columns/grouping match the plan |
 | anomaly evidence | 0.15 | bounded checks find no material anomaly |
-| trusted verification | 0.10 | confirmed seed/dashboard snapshot agrees |
+| trusted verification | 0.10 | a current human-confirmed snapshot agrees on the same inputs, using independent dashboard/notebook or approved regression evidence |
 
 Levels are `high` at >= 0.75, `medium` at >= 0.45, and `low` below 0.45. Use
 `unknown` when artifacts cannot be inspected enough to score. Always label the
 score `calibrated: false` and display it as an uncalibrated heuristic, not a
 probability.
+
+Method checks include resolved metric branches, bound parameters, explicit filter
+overrides, stock/flow alignment, output disclosures and qualitative relationships
+against executed results. A matching total alone does not prove method fidelity.
+For notebook comparisons, require independent fresh reference and method runs,
+matching source/context revisions, input snapshot, row keys and agreed tolerances.
+Missing required execution evidence is `WARN`, not `PASS`; ciphertext existence,
+saved notebook outputs or a structurally equivalent seed are not verification.
 
 Overall confidence is the lower of pre-query plan confidence and post-query
 confidence. If plan confidence is absent, overall confidence is `unknown`.

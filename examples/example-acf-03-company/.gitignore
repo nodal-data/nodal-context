@@ -1,0 +1,6 @@
+.nodal/
+evals/observed/queue.jsonl
+evals/runs/
+evals/captures/
+evals/verified/*.sql
+dist/

@@ -1,0 +1,48 @@
+question: Verify the fictional cohort snapshot against a freshly rerun source notebook.
+intent: Verify the fictional cohort snapshot against a freshly rerun source notebook.
+domain: customers
+status: draft
+provenance: notebook
+expected:
+  kind: value_at_snapshot
+  as_of: '2026-02-15'
+  key_columns:
+  - cohort_label
+  - cohort_key
+  value:
+  - cohort_label: January activity
+    cohort_key: returning
+    cohort_size: 2
+    returned: 1
+    retention_rate: 0.5
+    followup_complete: false
+  - cohort_label: January activity
+    cohort_key: empty
+    cohort_size: 0
+    returned: 0
+    retention_rate: null
+    followup_complete: false
+ir:
+  method: cohort-retention
+  metrics:
+  - active_customers
+  parameters:
+    base_window:
+      start: '2026-01-01'
+      end: '2026-02-01'
+    followup_window:
+      start: '2026-02-01'
+      end: '2026-03-01'
+    cohort_anchor: activity
+    cohort_key: customers.segment
+    as_of_date: '2026-02-15'
+  dimensions:
+  - customers.segment
+  time_window:
+    start: '2026-01-01'
+    end: '2026-03-01'
+verification_source:
+  kind: notebook
+  path: customer-owned/fictional-cohort.ipynb
+  ref: UNVERIFIED-FICTIONAL-POINTER
+  output: retention_table

@@ -1,29 +1,32 @@
 #!/usr/bin/env python3
-"""Collect each lineage source's dbt manifest for .ci/drift.py, in CI.
+"""Acquire configured dbt manifests without checking out or running source code.
 
-Two acquisition mechanisms, tried in order per source:
-  1. repository_dispatch payload — the dbt repo's CI pushes manifests inline as
-     client_payload.manifests = {source_id: "<base64 of manifest.json>"}. Only viable
-     for tiny manifests: GitHub caps dispatch payloads at ~64 KB.
-  2. clone — read the source's repo/ref/manifest_path from context.config.yaml, shallow
-     `git clone` it (with $DBT_REPO_TOKEN if set; tokenless for public repos) and copy
-     the manifest out. This is the recommended path: the dbt repo's sender workflow
-     (dbt-repo/notify-context-repo.yml) publishes manifest.json on an orphan
-     `dbt-manifest` branch, so point ref/manifest_path at that branch.
+Dispatch payloads accept base64 JSON only for configured dbt source IDs. Otherwise
+read one regular Git blob from the configured GitHub repo/ref. Authentication is
+customer runner configuration; an optional DBT_REPO_TOKEN is passed to Git only
+through its process environment, never a URL, log, or persisted Git config.
 
-Manifests are written to <out-dir>/<source_id>.json and the matching
-`--manifest source_id=path` flags are printed to stdout for drift.py to consume.
-A source we cannot acquire is WARNED, not fatal — drift.py then reports it as an
-unchecked source so the gap is visible rather than silently passing.
+Stdout is a JSON {source_id: absolute_manifest_path} map for drift.py
+--manifest-map. Unavailable sources are omitted and reported as unchecked by drift.
 """
 import argparse
 import base64
+import hashlib
 import json
 import os
+from pathlib import Path, PurePosixPath
+import re
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from acf_runtime.loader import read_yaml, Schemas
+from eval_harness.execution import strict_json
+
+MAX_MANIFEST_BYTES = 64 * 1024 * 1024
 
 
 def _warn(msg):
@@ -31,99 +34,170 @@ def _warn(msg):
 
 
 def load_sources(config_path):
-    """[(id, type, repo, ref, manifest_path), ...] from context.config.yaml."""
-    import yaml
-    cfg = yaml.safe_load(Path(config_path).read_text()) or {}
-    out = []
-    for s in cfg.get("lineage_sources") or []:
-        if not s.get("id"):
+    cfg = read_yaml(config_path)
+    if Schemas(ROOT / "schemas").errors("config", cfg):
+        raise ValueError("a valid ACF 0.3 context.config.yaml is required")
+    sources = []
+    seen = set()
+    for source in cfg["lineage_sources"]:
+        identifier = source["id"]
+        if not identifier or identifier in seen:
+            raise ValueError("lineage source IDs must be nonempty and unique")
+        seen.add(identifier)
+        sources.append({"id": identifier, "type": source["type"], "repo": source.get("repo"),
+                        "ref": source.get("ref") or "main",
+                        "manifest_path": source.get("manifest_path") or "target/manifest.json"})
+    return sources
+
+
+def validate_manifest(raw):
+    if len(raw) > MAX_MANIFEST_BYTES:
+        raise ValueError("manifest exceeds size limit")
+    doc = strict_json(raw.decode("utf-8"))
+    if not isinstance(doc, dict) or not isinstance(doc.get("nodes"), dict):
+        raise ValueError("manifest must contain a nodes object")
+    if "sources" in doc and not isinstance(doc["sources"], dict):
+        raise ValueError("manifest sources must be an object")
+    return raw
+
+
+def destination(out_dir, source_id):
+    # IDs never become paths or CLI syntax, including IDs with spaces or slashes.
+    name = hashlib.sha256(source_id.encode()).hexdigest() + ".json"
+    return Path(out_dir).resolve() / name
+
+
+def save_manifest(out_dir, source_id, raw):
+    validate_manifest(raw)
+    target = destination(out_dir, source_id)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.is_symlink():
+        raise ValueError("manifest destination is a symlink")
+    fd, temporary = tempfile.mkstemp(prefix=".manifest-", dir=target.parent)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(raw)
+        os.replace(temporary, target)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+    return str(target)
+
+
+def from_payload(event, out_dir, allowed_ids):
+    """Return acquired ID/path map. Ignore unknown IDs without writing any files."""
+    acquired = {}
+    payload = event.get("client_payload", {}) if isinstance(event, dict) else {}
+    manifests = payload.get("manifests", {}) if isinstance(payload, dict) else {}
+    if not isinstance(manifests, dict):
+        _warn("payload manifests must be an object; ignoring payload")
+        return acquired
+    for source_id, encoded in manifests.items():
+        if source_id not in allowed_ids:
+            _warn("ignoring payload manifest for an unconfigured or non-dbt source")
             continue
-        out.append({
-            "id": s["id"],
-            "type": s.get("type"),
-            "repo": s.get("repo"),
-            "ref": s.get("ref") or "main",
-            "manifest_path": s.get("manifest_path") or "target/manifest.json",
-        })
-    return out
-
-
-def from_payload(event, out_dir):
-    """Decode client_payload.manifests into out_dir. Returns set of acquired ids."""
-    acquired = set()
-    manifests = (((event or {}).get("client_payload") or {}).get("manifests")) or {}
-    for source_id, b64 in manifests.items():
         try:
-            raw = base64.b64decode(b64)
-            json.loads(raw)  # validate it's JSON before trusting it
-        except (ValueError, TypeError) as e:
-            _warn(f"payload manifest for {source_id!r} is not valid base64 JSON: {e}")
-            continue
-        dest = Path(out_dir) / f"{source_id}.json"
-        dest.write_bytes(raw)
-        acquired.add(source_id)
+            if not isinstance(encoded, str) or len(encoded) > 4 * ((MAX_MANIFEST_BYTES + 2) // 3):
+                raise ValueError("invalid encoded manifest")
+            raw = base64.b64decode(encoded, validate=True)
+            acquired[source_id] = save_manifest(out_dir, source_id, raw)
+        except (ValueError, TypeError, OSError):
+            # Do not echo payload fragments, paths, arbitrary JSON or exception text.
+            _warn(f"source {source_id!r}: invalid or unwritable payload manifest")
     return acquired
 
 
-def _clone_url(repo, token):
-    """github.com/org/repo -> authenticated https clone URL."""
-    repo = repo.replace("https://", "").replace("http://", "").rstrip("/")
-    if not repo.startswith("github.com/"):
-        repo = "github.com/" + repo
-    return f"https://x-access-token:{token}@{repo}.git" if token else f"https://{repo}.git"
+def _clone_url(repo):
+    value = repo.removeprefix("https://").removeprefix("github.com/").removesuffix("/")
+    value = value.removesuffix(".git")
+    if not re.fullmatch(r"[A-Za-z0-9_-]+/[A-Za-z0-9_.-]+", value) or value.split("/")[1] in (".", ".."):
+        raise ValueError("repo must be a GitHub owner/repository or HTTPS GitHub URL")
+    return f"https://github.com/{value}.git"
 
 
-def clone_source(src, out_dir, token):
-    """Shallow-clone one dbt source and copy its committed manifest. True on success."""
-    if src["type"] != "dbt" or not src["repo"]:
-        return False
-    with tempfile.TemporaryDirectory() as td:
-        try:
-            subprocess.run(
-                ["git", "clone", "--depth", "1", "--branch", src["ref"],
-                 _clone_url(src["repo"], token), td],
-                check=True, capture_output=True, text=True,
-            )
-        except subprocess.CalledProcessError as e:
-            _warn(f"clone of {src['id']} ({src['repo']}@{src['ref']}) failed: "
-                  f"{e.stderr.strip().splitlines()[-1] if e.stderr else e}")
-            return False
-        manifest = Path(td) / src["manifest_path"]
-        if not manifest.exists():
-            _warn(f"{src['id']}: {src['manifest_path']} not found in repo (have the dbt "
-                  "repo's sender workflow publish it on a `dbt-manifest` branch — see "
-                  "dbt-repo/notify-context-repo.yml — or push it via the dispatch payload)")
-            return False
-        (Path(out_dir) / f"{src['id']}.json").write_text(manifest.read_text())
-        return True
+def _git_env(token):
+    env = os.environ.copy()
+    env.pop("DBT_REPO_TOKEN", None)
+    # Avoid inherited command/config injection; normal customer credential helpers
+    # remain available. The only per-command config is an ephemeral auth header.
+    for key in list(env):
+        if key.startswith("GIT_CONFIG_"):
+            env.pop(key)
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    if token:
+        credential = base64.b64encode(("x-access-token:" + token).encode()).decode()
+        env.update(GIT_CONFIG_COUNT="1", GIT_CONFIG_KEY_0="http.https://github.com/.extraheader",
+                   GIT_CONFIG_VALUE_0="AUTHORIZATION: basic " + credential)
+    return env
+
+
+def _manifest_path(value):
+    path = PurePosixPath(value)
+    if (not value or path.is_absolute() or ".." in path.parts or ".git" in path.parts
+            or "\\" in value or any(ord(c) < 32 for c in value) or path.as_posix() != value):
+        raise ValueError("manifest_path must be a normalized repo-relative file")
+    return path.as_posix()
+
+
+def clone_source(src, out_dir, token=""):
+    """Fetch a regular blob only, with bounded size. No source checkout or execution."""
+    if src["type"] != "dbt" or not src.get("repo"):
+        return None
+    try:
+        url = _clone_url(src["repo"])
+        manifest_path = _manifest_path(src["manifest_path"])
+        ref = src["ref"]
+        if not ref or ref.startswith("-") or any(ord(c) < 32 for c in ref):
+            raise ValueError("invalid source ref")
+        env = _git_env(token)
+        with tempfile.TemporaryDirectory(prefix="nodal-manifest-") as directory:
+            def git(*args):
+                return subprocess.run(["git", *args], cwd=directory, env=env, check=True,
+                                      capture_output=True, timeout=120).stdout
+            git("clone", "--no-checkout", "--depth", "1", "--branch", ref, "--", url, directory)
+            record = git("--literal-pathspecs", "ls-tree", "-z", "HEAD", "--", manifest_path)
+            entries = record.rstrip(b"\0").split(b"\0")
+            if len(entries) != 1 or b"\t" not in entries[0]:
+                raise ValueError("manifest blob not found")
+            metadata, name = entries[0].split(b"\t", 1)
+            mode, kind, oid = metadata.decode().split()
+            if (mode not in ("100644", "100755") or kind != "blob"
+                    or name.decode() != manifest_path or not re.fullmatch(r"[0-9a-f]{40,64}", oid)):
+                raise ValueError("manifest must be a regular file, not a symlink or tree")
+            size = int(git("cat-file", "-s", oid))
+            if size > MAX_MANIFEST_BYTES:
+                raise ValueError("manifest exceeds size limit")
+            raw = git("cat-file", "blob", oid)
+            return save_manifest(out_dir, src["id"], raw)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        _warn(f"source {src['id']!r}: manifest acquisition failed; check repo/ref/path and runner access")
+        return None
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--config", default="context.config.yaml")
-    ap.add_argument("--out-dir", default=".manifests")
-    ap.add_argument("--event-path", default=os.environ.get("GITHUB_EVENT_PATH"))
-    args = ap.parse_args(argv)
-
-    out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    token = os.environ.get("DBT_REPO_TOKEN", "")
-
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", default="context.config.yaml")
+    parser.add_argument("--out-dir", default=".nodal/manifests")
+    parser.add_argument("--event-path", default=os.environ.get("GITHUB_EVENT_PATH"))
+    args = parser.parse_args(argv)
+    try:
+        sources = load_sources(args.config)
+    except (ValueError, OSError, yaml.YAMLError):
+        # YAML/schema failures are configuration errors, not missing source evidence.
+        _warn("invalid context configuration; collection stopped")
+        return 2
     event = {}
-    if args.event_path and Path(args.event_path).exists():
+    if args.event_path:
         try:
-            event = json.loads(Path(args.event_path).read_text())
-        except ValueError:
-            _warn("could not parse GITHUB_EVENT_PATH; ignoring payload")
-
-    acquired = from_payload(event, out_dir)
-
-    flags = []
-    for src in load_sources(args.config):
-        if src["id"] in acquired or clone_source(src, out_dir, token):
-            flags.append(f"--manifest {src['id']}={out_dir / (src['id'] + '.json')}")
-    print(" ".join(flags))
+            event = strict_json(Path(args.event_path).read_text())
+        except (ValueError, OSError):
+            _warn("could not parse event JSON; ignoring payload")
+    acquired = from_payload(event, args.out_dir, {s["id"] for s in sources if s["type"] == "dbt"})
+    for source in sources:
+        if source["id"] not in acquired:
+            path = clone_source(source, args.out_dir, os.environ.get("DBT_REPO_TOKEN", ""))
+            if path:
+                acquired[source["id"]] = path
+    print(json.dumps(acquired, sort_keys=True))
     return 0
 
 

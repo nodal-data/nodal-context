@@ -21,7 +21,7 @@ _Affected context files: domains/orders/domain.yaml, domains/orders/reference.md
     - columns added: order_id
 
 ### domain: billing
-_Affected context files: domains/billing/metrics.yaml_
+_Affected context files: domains/billing/metrics/invoice_amount.yaml_
   - **fct_invoices** (dbt_core)
     - tests removed: unique:invoice_id
 """
@@ -33,7 +33,7 @@ def run():
     assert files == [
         "domains/orders/domain.yaml",
         "domains/orders/reference.md",
-        "domains/billing/metrics.yaml",
+        "domains/billing/metrics/invoice_amount.yaml",
     ], files
 
     # dedupe: a path mentioned twice appears once
@@ -46,11 +46,19 @@ def run():
         (repo / "domains" / "orders").mkdir(parents=True)
         (repo / "domains" / "orders" / "domain.yaml").write_text("name: orders\n")
         (repo / "domains" / "orders" / "reference.md").write_text("# orders\n")
-        # billing/metrics.yaml intentionally absent
+        # billing/metrics/invoice_amount.yaml intentionally absent
         prompt = suggest.build_prompt(REPORT, repo)
         assert "name: orders" in prompt
         assert "# Drift report" in prompt
         assert "(missing on disk)" in prompt  # billing file not created
+        forbidden = 'domains/../../private.md evals/verified/answer.sql evals/seeds/answer.seed.yaml methods/../../private.md'
+        assert not suggest.affected_files(forbidden)
+        secret = repo / 'private.md'; secret.write_text('PRIVATE_DO_NOT_SEND')
+        (repo / 'methods').mkdir()
+        (repo / 'methods' / 'symlink.md').symlink_to(secret)
+        prompt = suggest.build_prompt('methods/symlink.md', repo)
+        assert 'PRIVATE_DO_NOT_SEND' not in prompt and 'path rejected' in prompt
+        assert suggest.affected_files('methods/cohort.md entities/customer.yaml') == ['methods/cohort.md','entities/customer.yaml']
 
     print("test_suggest: OK")
 

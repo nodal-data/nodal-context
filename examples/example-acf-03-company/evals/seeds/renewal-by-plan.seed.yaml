@@ -1,0 +1,20 @@
+question: Term renewal rate by plan last month?
+intent: Term renewal rate by plan last month?
+domain: subscriptions
+status: confirmed
+approver: fictional-example-reviewer
+confirmed_at: '2026-10-01'
+provenance: generated
+expected:
+  kind: sql_shape
+  must_include:
+  - Use the successor link to classify decided predecessor terms.
+  - Null rate for an empty denominator.
+  must_exclude:
+  - Count customers instead of terms.
+  - Include undecided or test terms.
+ir:
+  metric: renewal_rate
+  dimensions:
+  - plan
+  time_window: last_month

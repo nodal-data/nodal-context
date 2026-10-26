@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from eval_harness import adapters, client, grader, report, run  # noqa: E402
 from eval_harness.grader import PASS, FAIL, SKIPPED  # noqa: E402
+from eval_harness.seeds import load_seeds  # noqa: E402
 
 HEALTHCARE = ROOT / "examples" / "example-healthcare-company"
 
@@ -34,6 +35,24 @@ def run_tests():
     ctx = ncr.context_for("session-financials")
     # context-on payload carries the routing triggers the seeds test
     assert "Payer X" in ctx and "45-day" in ctx, "context blob missing routing triggers"
+
+    # The generic runner must honor vocabulary supplied by ACF, not only the
+    # standalone ACF matcher. An extractor typo requires clarification.
+    original_clients = (client.extract_ir, client.generate, client.judge)
+    generated_contexts = []
+    client.extract_ir = lambda *args: {"ir": {"metric": "collection_rate",
+        "time_window": "unknown_fiscal_period"}, "candidates": []}
+    client.generate = lambda question, context=None, model=None: (
+        generated_contexts.append(context) or {"outcome": "escalate", "sql": "",
+        "reason": "unresolved_semantics", "explanation": "Clarify the time window."})
+    client.judge = lambda *args: {"passed": False, "reason": "No answer"}
+    try:
+        measured = run._eval_domain(ncr, "session-financials", "confirmed", "fictional-test-model")
+        routed = [row for row in measured["seeds"] if "routing" in row]
+        assert routed and all(row["routing"] == "unresolved" for row in routed)
+        assert any(context and "unknown_time_token" in context for context in generated_contexts)
+    finally:
+        client.extract_ir, client.generate, client.judge = original_clients
 
     # unknown adapter errors
     try:
@@ -189,6 +208,33 @@ def run_tests():
         finally:
             client.available, client.generate, client.judge, client.MAX_CONTEXT_CHARS = orig
 
+        # External seeds remain format-neutral, but ambiguous YAML cannot choose
+        # the answer key or confirmation status by last-key-wins parsing.
+        external = td / "strict-seeds"
+        external.mkdir()
+        seed_path = external / "external.seed.yaml"
+        prefix = "question: Q\ndomain: finance\nintent: I\nprovenance: interview\n"
+        for content in (
+            "status: draft\nstatus: confirmed\nexpected: {kind: sql_shape}\n",
+            "status: confirmed\nexpected: {kind: value_at_snapshot, value: 1, value: 2}\n",
+            "status: confirmed\nexpected:\n  kind: sql_shape\n  <<: {kind: negative}\n",
+            "status: draft\nexpected: {kind: sql_shape, 1: invalid}\n",
+            "status: draft\nexpected: &recursive {kind: sql_shape, value: *recursive}\n",
+        ):
+            seed_path.write_text(prefix + content)
+            try:
+                load_seeds(external)
+                assert False, "ambiguous or cyclic external ground truth was accepted"
+            except ValueError as exc:
+                assert str(seed_path) in str(exc) and "invalid seed YAML" in str(exc)
+        seed_path.write_text(prefix + "status: confirmed\nconfirmed_at: 2026-10-01\n"
+            "expected: {kind: value_at_snapshot, value: 12, as_of: 2026-10-01}\n"
+            "variants: [{text: Another Q, observed_at: 2026-10-01T10:00:00Z, provenance: observed}]\n")
+        loaded = load_seeds(external)[0]
+        assert loaded.confirmed_at == loaded.expected["as_of"] == "2026-10-01"
+        assert loaded.variants[0]["observed_at"] == "2026-10-01T10:00:00+00:00"
+        json.dumps(loaded.expected)
+
     # --- client: prompt-cache content shape (no network — _structured_call mocked)
     calls = []
     orig_call = client._structured_call
@@ -247,10 +293,11 @@ def run_tests():
     def fake_judge(sql, expected, model=None):
         return {"passed": "with-context" in sql, "reason": "" if "with-context" in sql else "missed caveat"}
 
-    orig = (client.available, client.generate, client.judge)
+    orig = (client.available, client.generate, client.judge, client.extract_ir)
     client.available = lambda: True
     client.generate = fake_generate
     client.judge = fake_judge
+    client.extract_ir = lambda *args: {"ir": {}, "candidates": []}
     try:
         rc = run.main(["--adapter", "acf", "--root", str(HEALTHCARE),
                        "--domains", "session-financials", "--report", "pr-comment"])
@@ -259,7 +306,7 @@ def run_tests():
         client.available = lambda: False
         assert run.main(["--root", str(HEALTHCARE), "--domains", "session-financials"]) == 0
     finally:
-        client.available, client.generate, client.judge = orig
+        client.available, client.generate, client.judge, client.extract_ir = orig
 
     print("test_eval_harness: OK")
 

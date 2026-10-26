@@ -1,7 +1,7 @@
 # [company] Analytics Context
 
 This repo is [company]'s **business context layer** for analytics agents, in
-Analytics Context Format (ACF). It tells an AI agent what your terms mean, which
+Analytics Context Format (ACF) 0.3. It tells an AI agent what your terms mean, which
 table is canonical, what the standard filters are, and where the landmines are — so
 it answers data questions correctly instead of writing confidently-wrong SQL.
 
@@ -14,9 +14,16 @@ agent: `/nodal-analytics:context-interview` in Claude Code or
 `nodal-data/nodal-context` through the team's native plugin channel or skills.sh;
 no Nodal source checkout is required. See `AUTHORING.md` for resume behavior.
 
+Metrics live one per `domains/<domain>/metrics/<name>.yaml`, with optional shared
+fragments. Composed analyses live in root `methods/`; reviewed questions live in
+`evals/seeds/`. Definitions, supported slices and verified results have separate
+coverage. Notebook import creates method drafts; verification reruns the notebook
+and independently executes an AI method answer before human confirmation.
+Legacy `metrics.yaml`, LookML and ACF 0.2 require explicit migration.
+
 ## Prerequisite: a warehouse MCP server
 
-Answering a question requires the agent to run **read-only** SQL against your warehouse.
+Fetching live warehouse results requires **read-only** SQL against your warehouse.
 Configure a warehouse MCP server in your agent before you start — without it the agent can
 read this context but cannot fetch live numbers. Pick the server for your warehouse:
 
@@ -29,6 +36,8 @@ read this context but cannot fetch live numbers. Pick the server for your wareho
 | Other / general | [Model Context Protocol servers](https://github.com/modelcontextprotocol/servers) |
 
 Use a **read-only role/credential** — answering only ever runs `SELECT`.
+Methods may additionally use a customer-controlled Python executor with read-only
+data access. Nodal does not manage credentials or execute notebooks during import.
 
 ### The MCP user may need extra grants for query-history mining (Snowflake, Redshift)
 
@@ -103,17 +112,18 @@ into your prompt.
   merge: copy [`dbt-repo/notify-context-repo.yml`](./dbt-repo/notify-context-repo.yml)
   into the dbt repo's `.github/workflows/` — setup in
   [`dbt-repo/README.md`](./dbt-repo/README.md).
-- **Keep it in sync with dbt automatically (optional, Nodal).** Connect your dbt repo
-  and upstream changes — renamed columns, redefined metrics — propagate into the
-  affected definitions as drafts for your analyst to confirm, so the context tracks the
-  warehouse without anyone remembering to re-run the interview. The `context-drift`
-  workflow above flags the same drift on PR for free; the managed loop closes it. See
-  [docs.nodaldata.io](https://docs.nodaldata.io/enterprise/overview).
+- **Review drift proposals.** The bundled `context-drift` workflow proposes draft
+  status changes through transitive dependencies, with an issue/patch fallback
+  when PR creation is unavailable. Review the batch and reverify affected snapshots;
+  it never silently confirms business definitions. Local coverage, observed-demand
+  review and approved-query regression are also available. Managed services add
+  team operation and continuous history; see `SHARING.md`.
 
 ## Push to GitHub
 
-This repo is initialized as a git repo with an initial commit. To share it with your
-team:
+When you are ready to share, review the authored diff and make an initial commit
+if one has not already been requested and created. Keep local queues, plaintext
+SQL, notebooks, keys and run evidence excluded. Then, on your instruction:
 
 ```bash
 gh repo create [company]-analytics-context --private --source . --push

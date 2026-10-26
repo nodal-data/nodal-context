@@ -47,6 +47,8 @@ later. Do not add ACF fields or write `.nodal.local.json` for progress.
 - Keep answered counts monotonic within the session. On resume, rebuild the agenda
   from existing drafts and the conversation; if prior counts are unavailable, label
   the count `answered this session` rather than inventing historical progress.
+- In simulated-analyst mode, label simulated exchanges separately from real-human
+  answers. They may advance draft capture but never human confirmation counts.
 
 ## Full interview
 
@@ -99,3 +101,18 @@ so instead of marking it complete.
 Close with **This round complete · 7 topics saved for later**, using actual counts
 and naming any deferred verification. This marks the session stopping point,
 not complete domain coverage; retain the test drive's mandatory depth stamp.
+
+## Stage 6 and notebook cases
+
+Stage 6 can start directly on an existing repo. Track selected queue entries,
+reviewed dispositions, pending decisions and imported method review items. Use
+the local review journal to resume; a prepared proposal is not an applied or
+human-confirmed definition. For example:
+
+> **Retention · Observed demand · 2/6 entries reviewed · ~3–5 questions left**
+
+Notebook import is draft capture. Move to the Stage 5 verification indicator when
+the analyst elects the independent comparison. Count reviewed cases, not the two
+executions per case; a run match awaiting human review is not a confirmed case.
+Record blocked/skipped execution as pending work. Keep the quick test drive's
+five core topics unchanged; method imports and deeper decisions may be deferred.

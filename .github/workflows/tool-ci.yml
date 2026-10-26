@@ -21,7 +21,7 @@ jobs:
 
       - name: Install validation dependencies
         run: |
-          python -m pip install jsonschema pyyaml
+          python -m pip install jsonschema pyyaml ruamel.yaml nbformat sqlglot
           npm install --global @anthropic-ai/claude-code @openai/codex
 
       - name: Check generated payload

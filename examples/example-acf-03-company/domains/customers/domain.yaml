@@ -1,0 +1,9 @@
+name: customers
+summary: Fictional customers for the complete ACF 0.3 example.
+status: confirmed
+grain: canonical customer
+lineage:
+- source: demo
+  models:
+  - customers
+  - orders

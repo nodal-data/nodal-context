@@ -34,6 +34,16 @@ ARTIFACTS = (
         "scripts/query_history_extract.py",
     ),
     Artifact("scripts/compile_skill.py", "scripts/compile_skill.py", "scripts/compile_skill.py"),
+    Artifact("scripts/split_metrics.py", "scripts/split_metrics.py", "scripts/split_metrics.py"),
+    Artifact("scripts/import_notebook.py", "scripts/import_notebook.py", "scripts/import_notebook.py"),
+    Artifact("scripts/verify_notebook.py", "scripts/verify_notebook.py", "scripts/verify_notebook.py"),
+    Artifact("scripts/notebook_reference.py", "scripts/notebook_reference.py", "scripts/notebook_reference.py"),
+    Artifact("scripts/verified.py", "scripts/verified.py", "scripts/verified.py"),
+    Artifact("scripts/regress.py", "scripts/regress.py", "scripts/regress.py"),
+    Artifact("scripts/regrade_seeds.py", "scripts/regrade_seeds.py", "scripts/regrade_seeds.py"),
+    Artifact("scripts/review_observed.py", "scripts/review_observed.py", "scripts/review_observed.py"),
+    Artifact("scripts/match_question.py", "scripts/match_question.py", "scripts/match_question.py"),
+    Artifact("scripts/simulated_analyst.py", "scripts/simulated_analyst.py", "scripts/simulated_analyst.py"),
 
     # Fresh-only authoring scaffold. These rows deliberately retain dot paths.
     Artifact("template/.gitignore", "payload/template/.gitignore", ".gitignore", upgrade=False),
@@ -51,6 +61,7 @@ ARTIFACTS = (
     ),
     Artifact("template/domains", "payload/template/domains", "domains", upgrade=False),
     Artifact("template/entities", "payload/template/entities", "entities", upgrade=False),
+    Artifact("template/methods", "payload/template/methods", "methods", upgrade=False),
     Artifact("template/evals", "payload/template/evals", "evals", upgrade=False),
 
     # Support files refreshed on upgrade. Customer state is explicitly preserved.
@@ -61,6 +72,7 @@ ARTIFACTS = (
         preserve=(".ci/lineage-baseline.json",),
     ),
     Artifact("schemas", "payload/schemas", "schemas"),
+    Artifact("acf_runtime", "payload/acf_runtime", "acf_runtime"),
     Artifact("eval_harness", "payload/eval_harness", "eval_harness"),
     Artifact("template/dbt-repo", "payload/dbt-repo", "dbt-repo"),
     Artifact(
@@ -77,6 +89,16 @@ ARTIFACTS = (
         ".github/workflows/context-drift.yml",
         "payload/.github/workflows/context-drift.yml",
         ".github/workflows/context-drift.yml",
+    ),
+    Artifact(
+        ".github/workflows/verified-regression.yml",
+        "payload/.github/workflows/verified-regression.yml",
+        ".github/workflows/verified-regression.yml",
+    ),
+    Artifact(
+        ".github/workflows/semantic-context.yml",
+        "payload/.github/workflows/semantic-context.yml",
+        ".github/workflows/semantic-context.yml",
     ),
 )
 

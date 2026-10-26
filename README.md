@@ -65,6 +65,11 @@ the current domain-by-domain validation model.
   definitions. The output of the analyst interview is here
   [completed context repository](https://github.com/shorelane-data/shorelane-analytics-context).
 
+For a self-contained format example, see
+[Example Orchard](examples/example-acf-03-company/README.md). It demonstrates the
+complete ACF 0.3 revenue family, renewal components, cohort method, review blockers
+and seed types using explicitly fictional approvals and snapshot values.
+
 ## Or let your agent guide installation
 
 If you already use an AI coding agent, paste this prompt into a project where

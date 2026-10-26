@@ -60,6 +60,12 @@ and label plan comparison unavailable.
    user's concern without letting it crowd out independent alternatives. Test
    whether the user's expectation could be wrong as well as whether the reported
    number could be wrong.
+   For ACF 0.3, use the same normalized definitions, canonical IR and dependency
+   evidence as planning/verification. Challenge family selection, method branch
+   selection/defaults, inherited filter stages, ratio policy, fixed cohorts,
+   partial-window disclosures and stale or blocked definitions where relevant.
+   A matched seed shape or old notebook/dashboard snapshot cannot prove the
+   current parameterization; investigate source/input/revision differences.
 3. **Keep a challenge ledger.** For each hypothesis record the evidence that
    would distinguish it, checks performed, finding, likely impact, and evidence
    still missing. Missing evidence remains unknown.

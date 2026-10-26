@@ -1,0 +1,39 @@
+name: new_customers
+status: confirmed
+approver: fictional-example-reviewer
+confirmed_at: '2026-10-01'
+definition: Canonical real customers whose first-ever eligible order falls in the selected window.
+aliases:
+- new customers
+grain: canonical customer
+temporal_kind: flow
+lineage:
+- source: demo
+  models:
+  - customers
+  - orders
+parameters:
+- name: period_start
+  note: Inclusive window bound.
+- name: period_end_exclusive
+  note: Exclusive window bound.
+expression:
+  measure: COUNT(DISTINCT customers.customer_id)
+  mandatory_filters:
+  - field: customers.is_test
+    op: '='
+    value: false
+    reason: Test customers and orders are not business activity.
+  - field: customers.first_order_date
+    op: '>='
+    value: <period_start>
+    reason: Use the selected cohort window.
+  - field: customers.first_order_date
+    op: <
+    value: <period_end_exclusive>
+    reason: Use half-open window boundaries.
+  allowed_dimensions:
+  - customers.segment
+  - customers.signup_year
+caveats:
+- Use the canonical customer join; never count source identities or order rows as customers.
