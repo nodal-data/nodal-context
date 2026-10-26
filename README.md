@@ -7,7 +7,7 @@
 [Documentation](https://docs.nodaldata.io) ·
 [Quickstart](https://docs.nodaldata.io/quickstart) ·
 [Website](https://nodaldata.io) ·
-[Analytics Context Format](./SPEC.md) ·
+[Analytics Context Format](./skills/context-interview/references/SPEC.md) ·
 [Getting started](./docs/getting-started.md)
 
 [Support](./docs/support.md) · [Privacy](./docs/privacy.md) ·
@@ -382,7 +382,7 @@ actually satisfy that intent afterward.
 
 ## Bring the context you already have
 
-ACF is readable Markdown and YAML, defined by [`SPEC.md`](./SPEC.md). It is the
+ACF is readable Markdown and YAML, defined by [the specification](./skills/context-interview/references/SPEC.md). It is the
 native authoring format, but it is not a lock-in boundary. The format-agnostic
 [evaluation harness](./eval_harness/INTERFACE.md) can normalize ACF, Kaelio KTX,
 dbt models and docs, raw Markdown, or an agent data-analysis skill and measure
@@ -413,7 +413,7 @@ the first and only point at which any data reaches Nodal.
 ```text
 nodal-context/
 ├── skills/                    # the seven installable agent workflows
-├── SPEC.md                    # Analytics Context Format specification
+│   └── context-interview/references/SPEC.md  # canonical ACF specification
 ├── schemas/                   # machine-validatable ACF schemas
 ├── template/                  # generated context-repository scaffold
 ├── examples/                  # worked ACF examples

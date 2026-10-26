@@ -218,8 +218,9 @@ exec "$SCRIPT_DIR/scripts/integration/clean_test.sh" "$@"
 The copied brief stays outside both projects with owner-only permissions. Source
 copies exclude `/specs/`, private response/context briefs, notebooks, raw run
 evidence, plaintext answer keys and local operator configuration even when a
-file was accidentally tracked. They preserve canonical `SPEC.md`, hidden package
-files and encrypted answer keys. A brief explicitly supplied with `--brief` is
+file was accidentally tracked. They preserve the canonical specification in
+`skills/context-interview/references/SPEC.md`, hidden package files and encrypted
+answer keys. A brief explicitly supplied with `--brief` is
 also excluded regardless of its filename. Source copying reflects uncommitted
 code changes; it never reads local planning specs as package inputs.
 

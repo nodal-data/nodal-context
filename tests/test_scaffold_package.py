@@ -34,6 +34,23 @@ def run():
     bundle_destinations = [a.skill_source for a in manifest.ARTIFACTS]
     assert len(bundle_destinations) == len(set(bundle_destinations))
     assert any(a.target == "SPEC.md" for a in manifest.ARTIFACTS)
+    spec = next(a for a in manifest.ARTIFACTS if a.target == "SPEC.md")
+    assert spec.root_source == "skills/context-interview/references/SPEC.md"
+    # Sync must preserve the canonical reference when source and destination
+    # are the same file, and must not read the ignored root copy.
+    with tempfile.TemporaryDirectory() as td:
+        source_root = Path(td)
+        skill_root = source_root / "skills/context-interview"
+        reference = source_root / spec.root_source
+        reference.parent.mkdir(parents=True)
+        reference.write_text("canonical specification")
+        (source_root / "SPEC.md").write_text("local notes")
+        with patch.object(sync, "ROOT", source_root), patch.object(sync, "SKILL", skill_root), \
+                patch.object(sync, "ARTIFACTS", (spec,)):
+            sync.write()
+            assert sync.check() == 0
+        assert reference.read_text() == "canonical specification"
+        assert (source_root / "SPEC.md").read_text() == "local notes"
     assert any(a.target == "scripts/compile_skill.py" for a in manifest.ARTIFACTS)
     generated_targets = set()
     for artifact in manifest.ARTIFACTS:

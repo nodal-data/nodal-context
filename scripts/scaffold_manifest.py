@@ -26,7 +26,8 @@ ARTIFACTS = (
     Artifact("scripts/scaffold_manifest.py", "scripts/scaffold_manifest.py", None),
 
     # Format and context-repo-local tooling.
-    Artifact("SPEC.md", "references/SPEC.md", "SPEC.md"),
+    # Maintained in the skill; the root SPEC.md is a local, ignored copy.
+    Artifact("skills/context-interview/references/SPEC.md", "references/SPEC.md", "SPEC.md"),
     Artifact("scripts/dbt_extract.py", "scripts/dbt_extract.py", "scripts/dbt_extract.py"),
     Artifact(
         "scripts/query_history_extract.py",

@@ -110,10 +110,14 @@ def write():
             shutil.rmtree(path) if path.is_dir() and not path.is_symlink() else path.unlink()
     for relative in generated_files_outside_trees():
         path = SKILL / relative
+        if path == expected[relative]:
+            continue  # Canonical references already live in the skill.
         if path.exists() or path.is_symlink():
             path.unlink()
     for relative, source in sorted(expected.items(), key=lambda item: str(item[0])):
         destination = SKILL / relative
+        if source == destination:
+            continue
         destination.parent.mkdir(parents=True, exist_ok=True)
         if source.is_symlink():
             destination.symlink_to(source.readlink())
