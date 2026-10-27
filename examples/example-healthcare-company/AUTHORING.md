@@ -9,7 +9,7 @@ Markdown and YAML.
   sessions" — that belongs in the warehouse.
 - **No schema duplication.** Column types live in dbt/Snowflake.
 - **No invented definitions.** Leave `_To be confirmed by [owner]._` and
-  `status: draft` rather than guessing. Wrong context is worse than missing context.
+  a working-branch review note rather than guessing. Wrong context is worse than missing context.
 - **SQL only as query patterns.** `reference.md` "Common query patterns" may carry
   a few fenced `sql` blocks, only where the exact query form is the hard-won
   knowledge — pattern, not paste: real model/column names, `<placeholders>` for
@@ -19,7 +19,8 @@ Markdown and YAML.
   `evals/verified/` sidecar.
 
 ## Conventions
-- YAML entities/metrics carry `status: draft|confirmed` and a `lineage:` pointer.
+- YAML entities/metrics carry a `lineage:` pointer and omit authored approval status.
+  Protected human-reviewed merge and live authority determine approval.
 - `reference.md` is written for retrieval by an agent (routing triggers, grain,
   gotchas), not as narrative — narrative goes in `context.md`.
 - Add `# REVIEW: [question]` where domain-owner verification is needed.

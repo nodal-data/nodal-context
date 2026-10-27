@@ -120,8 +120,8 @@ does not call a model or execute a query.
 contents and a digest. After reviewing that exact interpretation, use `apply`
 with the proposal, digest and actual reviewer name. Use `resume` with the same
 arguments after an interruption. New definitions/seeds and changed definitions
-remain draft; confirming them is a separate interview step. Equivalent variants
-preserve the seed's approval, and overflow remains in `.nodal/observed/history/`.
+remain proposed until protected review and merge; interview answers alone do not
+grant approval. Equivalent variants preserve the seed's interpretation, and overflow remains in `.nodal/observed/history/`.
 Concurrent edits stop application rather than being overwritten. Queue writers
 must share `.nodal/observed/review.lock`, or be paused during application.
 Proposals and history are local; never commit their raw question data.

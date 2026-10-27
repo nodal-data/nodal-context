@@ -8,14 +8,14 @@ ownership changes. Keep it in sync with each `domains/<domain>/domain.yaml: owne
 
 ## Domain Ownership
 
-| Domain | Owner | Team | Status |
-|---|---|---|---|
-| _e.g. session-financials_ | _e.g. Jane Doe_ | _e.g. Finance Analytics_ | draft |
+| Domain | Owner | Team |
+|---|---|---|
+| _e.g. session-financials_ | _e.g. Jane Doe_ | _e.g. Finance Analytics_ |
 
 <!--
-One row per domain. `Status` is `draft` until the analyst confirms the owner, then
-`confirmed` (mirrors the domain's draft/confirmed discipline). Leave the owner as
-`_To be confirmed._` rather than guessing.
+One row per domain. Record the owner identified by the analyst; leave an unknown
+owner as `_To be confirmed._` rather than guessing. Do not add an approval-status
+column. Ownership confirmation is review evidence; protected merge grants approval.
 -->
 
 ## Notes

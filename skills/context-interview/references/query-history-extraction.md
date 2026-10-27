@@ -314,7 +314,7 @@ is the same kind of evidence.
 ## Guardrails
 
 - **The miner surfaces candidates and conflicts; it never writes definitions.**
-  You draft, the analyst confirms — their confirmation is the only trust event.
+  You draft, the analyst confirms — their answers provide review evidence; protected merge grants definition approval.
 - Every derived line: proposed working-branch content + `# query-history-derived (<fingerprint>)`.
 - **Raw SQL stays in the gitignored transients.** The only path from mined SQL
   into a committed file is an analyst-confirmed, pattern-not-paste Common query
@@ -337,6 +337,8 @@ Write one draft metric per `domains/<domain>/metrics/<name>.yaml`; do not emit t
 legacy wrapper or infer a confirmation from source frequency or a dbt description.
 Review inherited/shared constraints, allowed dimensions and any division policy.
 If the formula is outside the expression grammar, propose an explicit blocked
-expression and deterministic pattern/method for review. Confirmed metrics and
-seeds need a real `approver` and `confirmed_at`, plus reviewed metric/method IR
-for positive seeds. Extraction findings remain local draft inputs, not answer keys.
+expression and deterministic pattern/method for review. New definitions and seeds
+omit authored `status`, `approver` and `confirmed_at`; protected human-reviewed
+merge and live authority determine approval. Positive seeds need reviewed
+metric/method IR. Preserve separate result-verification evidence where applicable.
+Extraction findings remain local review inputs, not answer keys.

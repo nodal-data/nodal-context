@@ -274,8 +274,9 @@ class Registry:
                         self.readiness(node, "pattern.rationale", "deterministic_form", "pattern requires Without this:")
                     pattern_id = f"pattern:{path}#{anchor}"
                     if pattern_id not in self.nodes:
+                        legacy_status = pattern_status(section, default=None)
                         p = Node(pattern_id, "pattern", node.domain, path,
-                                 {"status": pattern_status(section)}, section)
+                                 {"status": legacy_status} if legacy_status else {}, section)
                         p.lineage = self._lineage(self.domains.get(node.domain, {}).get("lineage"))
                         self.nodes[pattern_id] = p
                     node.dependencies.add(pattern_id)

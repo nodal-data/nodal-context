@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.3 — Unreleased
+
+- Remove leftover authored approval-status instructions and Markdown markers from
+  interview guidance, extraction documentation and customer templates. Keep owner
+  rosters status-free; distinguish interview evidence from protected merge approval.
+- Stop drift patches from inventing legacy status markers on unmarked query
+  patterns. Preserve explicit legacy migration support and runtime eligibility.
+
 ## 1.7.2 — 2026-10-27
 
 This release includes all changes since 1.6.4: the ACF 0.3 migration,

@@ -62,8 +62,8 @@ No Nodal source checkout is required. Follow `AUTHORING.md` and use the installe
 - Methods contain decisions and prose, not runnable code. Static notebook import
   produces drafts; it neither executes the notebook nor confirms its business rules.
 - Humans own confirmations. Metrics/methods/seeds require protected human-reviewed merge for approval. A simulator or model cannot supply them. Preserve historical
-  attribution when drift makes an artifact draft; fresh eligible seed re-grading
-  may restore a previously approved seed, never confirm a metric or method.
+  attribution when drift blocks an artifact. Seed re-grading records behavior
+  evidence; it does not restore approval or clear a stale block.
 - Every confirmed disambiguation produces a reviewed seed or equivalent variant.
   Use negative-kind seeds for appropriate declines/escalations, not merely for an
   incorrect alternative interpretation. Stage 6 review is resumable and explicit.

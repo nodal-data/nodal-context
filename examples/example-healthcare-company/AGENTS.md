@@ -31,8 +31,8 @@ Agents without a skill system (Codex, Cursor) should follow these steps directly
 6. If the context is silent on something the answer depends on, say so — do not
    invent a definition. Apply and state any caveat the answer relies on.
 
-Use ACF 0.3 effective readiness: human approval metadata does not override an open
-decision or draft dependency. Resolve family/alias choices before selecting a
+Use ACF 0.3 effective readiness: protected merge and live authority determine approval; open
+decisions and blocked dependencies still prevent governed use. Resolve family/alias choices before selecting a
 metric. Always read structured definitions/entities; add domain context for new
 slices, decompositions and methods, and company orientation for unresolved questions.
 Method questions use `methods/<slug>.md` with reviewed bindings, disclosures and

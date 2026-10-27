@@ -11,8 +11,8 @@ interview agent's job, read-only, via the warehouse MCP):
           --platform snowflake -o .query-findings.json
 
 The interview agent (Stage 0) maps findings to interview questions and ACF stubs —
-all `status: draft`, tagged `# query-history-derived (<fingerprint>)` — which the
-analyst then confirms. NOTHING here is ground truth: the miner surfaces candidates
+without authored approval status, tagged `# query-history-derived (<fingerprint>)`,
+for analyst review and protected merge. NOTHING here is ground truth: the miner surfaces candidates
 and conflicts; it never writes a definition. Recurrence-after-canonicalization
 separates institutionalized logic (BI-service pool) from ad-hoc exploration; when
 several clusters compute different aggregations over the same tables, that conflict

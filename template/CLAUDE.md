@@ -12,8 +12,8 @@ complete answering and editing contract, and follow it from this directory.
 
 Start with per-metric YAML and entity definitions, resolve ambiguity, then use the
 relation-based prose ladder. Read root `methods/<slug>.md` for composed analyses.
-Use effective readiness, not just stored status: open decisions and draft
-references block governed use. Apply inherited filters, allowed dimensions,
+Use live approval and effective readiness: open decisions and blocked
+references block governed use. Do not write runtime eligibility into authored files. Apply inherited filters, allowed dimensions,
 ratio policy, method decisions and required disclosures.
 
 Form a reviewable interpretation before read-only execution; preserve existing

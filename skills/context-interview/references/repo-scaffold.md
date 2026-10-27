@@ -129,15 +129,15 @@ warehouse column monitoring. Every domain still needs a lineage pointer. Confirm
 fiscal boundaries and supported time tokens rather than guessing them. Encryption
 keys and credentials remain customer-controlled; never put private keys in config.
 
-## Draft-vs-confirmed discipline
+## Working-branch review and merge approval
 
 - Auto-extracted stubs are written proposed working-branch content.
-- A metric, method or seed becomes merge approval only after actual human
-  review and protected merge approval. Simulated answers remain proposed.
-- Drafts remain schema-valid. Draft dependencies and open decisions make their
-  consumers effectively draft even when stored status is confirmed. The harness
-  excludes these from confirmed evaluation; it measures off/on accuracy rather
-  than assuming a perfect baseline.
+- Metrics, methods and seeds gain approval only through protected human-reviewed
+  merge and live authority for the exact revision. Simulated answers remain proposed.
+- New authored objects omit approval-status fields and Markdown status comments.
+  Record unresolved questions as review notes and structured open decisions.
+  Runtime eligibility reflects unresolved decisions, blocked dependencies and
+  authority evidence; it is not a status to write into authored context.
 
 ### dbt draft
 

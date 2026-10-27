@@ -11,6 +11,11 @@ use. Explicit branch-test mode is proposed context only. Query/notebook result
 verification is separate from definition approval; retain source and review
 evidence. See the context-interview SPEC approval-through-merge contract.
 
+Never add `status: draft` or `status: confirmed` to YAML, Markdown frontmatter,
+HTML comments or ownership tables. Track interview progress in conversation and
+unresolved questions in review notes/open decisions. Runtime eligibility is not
+authored metadata. Preserve existing legacy fields only for explicit migration.
+
 
 # Context Interview
 
@@ -193,7 +198,7 @@ you enter it.
      knowingly, never because a glob matched.
    - **Analyst says continue → resume, don't scaffold** (the script refuses to overwrite
      anyway). Read `context.config.yaml` (which domains are wired),
-     `company/org-structure.md` (the Domain | Owner | Status roster), and count
+     `company/org-structure.md` (the Domain | Owner | Team roster), and count
      the remaining proposed working-branch content stubs. Open with a status summary and a
      choice instead of restarting Stage 1: *"Captured so far: billing
      (confirmed), scheduling (4 drafts open). Continue scheduling, or start a
@@ -307,7 +312,7 @@ maintains, and who owns each?" Cluster them. Each coherent cluster is a domain.
 When drafting metric expressions, use ACF 0.3 `any_of`/`all_of` for filter
 alternatives, `entity_filters` for conditions on entity groups, and `metric(name)`
 for domain-local metric arithmetic. Read back and confirm every component; edits
-reset confirmed metrics to draft. Require grain, inherit lineage for reference-only
+remain proposed on a working branch until reviewed merge; do not write status fields. Require grain, inherit lineage for reference-only
 arithmetic, and check dimension subsets and acyclic references. Keep placeholders
 under `parameters`; use `context.config.yaml: version: "0.3"`; legacy layouts require explicit migration first.
 
@@ -324,7 +329,7 @@ For composed analyses, author `methods/<slug>.md` with an owning domain, resolve
 metrics, parameters, decisions/`without_this`, output and qualitative checks.
 Review every decision and override, including stock/flow alignment where needed.
 Give each parameter a note and explain optional output columns in decisions.
-Governed entity references are dependencies; their draft status blocks the method.
+Governed entity references are dependencies; their unresolved decisions or live blocks also block the method.
 Declare referenced metrics explicitly and keep runtime literals in parameters,
 including in procedure steps. Illustrative worked examples may show bound values.
 Methods contain no runnable SQL/Python. Metrics, methods and seeds become approved only through protected human-reviewed

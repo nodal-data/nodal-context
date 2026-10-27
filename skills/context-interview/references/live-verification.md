@@ -147,7 +147,8 @@ the shareable "the system validated itself" artifact.
    answer key?"* (A legitimate rung-3 plain confirm — the truth anchor is the
    dashboard number the analyst just read, not your prose.)
 2. Write/upgrade the seed:
-   - `provenance: dashboard`, merge approval, the real `approver` and `confirmed_at`
+   - `provenance: dashboard`; preserve the real reviewer and date in result-verification
+     evidence. Omit authored approval fields; definition approval requires protected merge.
    - `expected.kind: value_at_snapshot`, `value: <dashboard number>`, `as_of: <date>`
    - `intent:` ← the confirmed assumptions (the disambiguation it got right)
    - `ir:` ← the decomposition the verified query actually used — `metric` (the
@@ -197,8 +198,9 @@ missing caveat or disambiguation. Harvest it the Stage-4 way:
   sql_shape` encodes the *correct* handling (`must_include` / `must_exclude`),
   with an `ir:` block recording the correct decomposition (relative
   `time_window` — the value isn't pinned, so the window must stay evergreen),
-  with actual `approver` and `confirmed_at` only after the analyst confirms that
-  handling. Unresolved explanations remain draft.
+  after the analyst reviews that handling. Record review evidence without adding
+  authored approval fields; protected merge grants approval. Keep unresolved
+  explanations as working-branch review notes.
 - Do **not** write the wrong SQL to `evals/verified/` or set `verified_query_file`.
   Leave the value unpinned until a re-run verifies it.
 

@@ -30,14 +30,15 @@ them all in one turn; that's a wall of line items no one can react to. Instead:
 1. **Elicit the list first (cheap, breadth-first).** Ask the analyst to just *name*
    the candidates — "List them; don't define them yet. We'll go through them together
    a couple at a time." Write each as a proposed working-branch content stub in the stage's output
-   file, using the no-invented-definitions placeholder: `_To be confirmed._` with a
+   file, using the no-invented-definitions placeholder: `_To be confirmed._` with
    working-branch review notes. These stubs are your scratchpad **and** your
    progress tracker.
 2. **Confirm 1–3 at a time — by selection.** Take one to three stubs; for each,
    ask that stage's probe (meaning + misconception, or the disambiguation),
    draft it, then run the SKILL.md confirmation ladder: evidence-backed
    alternates as a forced choice, otherwise the draft's most contested atom.
-   Flip `draft → confirmed` only on the analyst's pick or answer. Start with
+   Replace the unresolved placeholder with the analyst's answer and capture the
+   review evidence; do not add or flip an authored approval status. Start with
    one or two; go up to three only if the analyst is moving fast.
 3. **Write the seed right then.** Each confirmed item emits its eval seed *at the
    moment of confirmation* — small batches don't defer seeds, they make it natural to
@@ -177,10 +178,10 @@ Cluster the dashboards. For each cluster (domain):
 6. **Record ownership in two places, together.** You already asked who owns each
    dashboard at the top of this stage. When a domain's owner is confirmed, set
    `owner:` in its `domain.yaml` **and** add/update that domain's row in
-   `company/org-structure.md` (Domain | Owner | Team | Status). These must stay in
+   `company/org-structure.md` (Domain | Owner | Team). These must stay in
    sync — `org-structure.md` is the routing roster, `domain.yaml` is the per-domain
-   record. If the owner isn't known yet, write `_To be confirmed._` and leave the
-   row's status `draft`; don't guess.
+   record. If the owner isn't known yet, write `_To be confirmed._`; don't guess
+   or add a status column. Keep changes on the working branch for merge review.
 
 For each dashboard, ask: "What's the canonical question this dashboard answers, and
 what's the right answer as of a fixed date?" → a `dashboard`-provenance eval seed
