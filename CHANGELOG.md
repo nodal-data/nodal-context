@@ -2,6 +2,11 @@
 
 ## 1.7.1 — Unreleased
 
+- Correct adversarial-review regressions in CI revision identity and skip exits,
+  clearance inheritance, post-merge freshness, deterministic/clean exports, scoped
+  governed consumption, dbt lineage, method literals, merge approval history,
+  notebook rollback, routing, simulation and numeric snapshot row keys.
+
 - Replace authored definition approval with protected human-reviewed merge and
   revision-bound live authority checks. Keep branch testing explicitly unapproved.
 - Persist stale blocks independently of repair PRs; propagate through dependencies

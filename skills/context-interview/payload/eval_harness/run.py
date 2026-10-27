@@ -49,9 +49,9 @@ def _eval_domain(ncr, domain, status, model):
                 routing = {"relation": "unresolved", "blockers": ["IR extraction unavailable"]}
         context = ncr.context_for(domain, routing["relation"], routing.get("target"))
         if "matching" in ncr.capabilities and (routing.get("blockers") or routing["relation"] in ("ambiguous", "unresolved")):
-            context += "\n\nQuestion routing: " + str({"relation": routing["relation"],
+            context = "Question routing: " + str({"relation": routing["relation"],
                          "blockers": routing.get("blockers", []),
-                         "unsupported": routing.get("unsupported", [])}) + "\nClarify unresolved business semantics before a governed answer."
+                         "unsupported": routing.get("unsupported", [])}) + "\nClarify unresolved business semantics before a governed answer.\n\n" + context
         truncated |= len(context) > client.MAX_CONTEXT_CHARS
         off_answer = client.generate(seed.question, None, model)
         on_answer = client.generate(seed.question, context, model)

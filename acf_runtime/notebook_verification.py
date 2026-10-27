@@ -207,6 +207,7 @@ def confirm(root, report_path, *, seed_name, approver, confirmed_at, approved_sq
     if target.exists() or approval_path.exists():
         raise ValueError("seed or approval already exists; do not overwrite authored evidence")
     publication = None
+    publication_files = {}
     if approved_sql is not None:
         from .verified import VerifiedSQL
         from eval_harness.regression import read_only_sql
@@ -224,11 +225,20 @@ def confirm(root, report_path, *, seed_name, approver, confirmed_at, approved_sq
         plain, cipher, _ = manager.paths(query)
         if plain.exists() or cipher.exists():
             raise ValueError("approved query artifact already exists; review it without overwriting")
-        publication = manager.capture(query, payload)
+        try:
+            publication = manager.capture(query, payload)
+        except Exception:
+            # A failed ciphertext write may follow successful plaintext capture.
+            if plain.is_file() and not plain.is_symlink() and plain.read_bytes() == payload:
+                plain.unlink()
+            raise
+        publication_files = {p: p.read_bytes() for p in (plain, cipher) if p.is_file()}
         seed["verified_query_file"] = query
-    with target.open("x") as stream:
-        stream.write(yaml.safe_dump(seed, sort_keys=False, allow_unicode=True))
+    created_seed = False
     try:
+        with target.open("x") as stream:
+            created_seed = True
+            stream.write(yaml.safe_dump(seed, sort_keys=False, allow_unicode=True))
         confirmed_registry = load_context(root)
         if confirmed_registry.errors:
             raise ValueError("snapshot seed failed context validation")
@@ -237,7 +247,12 @@ def confirm(root, report_path, *, seed_name, approver, confirmed_at, approved_sq
             "seed_fingerprint": seed_fingerprint(confirmed_registry, confirmed_registry.nodes["seed:" + target.name]),
             "comparison_hash": digest(report), "sql_publication": publication})
     except Exception:
-        target.unlink()
+        if created_seed:
+            target.unlink(missing_ok=True)
+        # Only remove artifacts created by this attempt and still byte-identical.
+        for path, content in publication_files.items():
+            if path.is_file() and not path.is_symlink() and path.read_bytes() == content:
+                path.unlink()
         raise
     return target
 

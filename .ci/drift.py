@@ -152,14 +152,30 @@ def compute_current(referenced, manifests):
         if not path:
             unchecked_sources.append(source_id)
             continue
-        findings = dbt_extract.from_manifest(json.loads(Path(path).read_text()))
-        by_name = {m["name"]: m for m in findings["models"]}
+        manifest = json.loads(Path(path).read_text())
+        resources = {key: value for key, value in {**manifest.get("nodes", {}), **manifest.get("sources", {})}.items()
+                     if value.get("resource_type") in ("model", "seed", "snapshot", "source")}
+        aliases = {}
+        for key, value in resources.items():
+            aliases.setdefault(value["name"], []).append(key)
         sigs, absent = {}, []
         for model in sorted(referenced[source_id]):
-            if model in by_name:
-                sigs[model] = model_signature(by_name[model])
-            else:
-                absent.append(model)
+            candidates = [model] if model in resources else aliases.get(model, [])
+            if len(candidates) != 1:
+                absent.append(model)  # absent or ambiguous short name, never guess
+                continue
+            key = candidates[0]
+            value = resources[key]
+            tests = []
+            for test in manifest.get("nodes", {}).values():
+                if test.get("resource_type") != "test" or test.get("attached_node") != key:
+                    continue
+                meta = test.get("test_metadata") or {}
+                kind = dbt_extract._norm_test_name(meta.get("name"))
+                if kind in dbt_extract.KNOWN_TESTS:
+                    tests.append({"type": kind, "column": test.get("column_name"), "kwargs": meta.get("kwargs", {})})
+            sigs[model] = model_signature({"columns": [{"name": col.get("name", name)}
+                for name, col in (value.get("columns") or {}).items()], "tests": tests})
         current[source_id] = sigs
         if absent:
             missing_models[source_id] = absent

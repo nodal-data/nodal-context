@@ -31,6 +31,10 @@ def checked_workspace(path, base):
 
 def prepare(source, base):
     source, base = Path(source).resolve(), Path(base).resolve()
+    commit = subprocess.run(["git", "rev-parse", "--verify", "HEAD^{commit}"], cwd=source,
+                            capture_output=True, text=True, check=True).stdout.strip()
+    commit_bytes = subprocess.run(["git", "cat-file", "commit", commit], cwd=source,
+                                  capture_output=True, check=True).stdout
     files = subprocess.run(["git", "ls-files", "-z"], cwd=source, capture_output=True, check=True).stdout.split(b"\0")
     workspace = Path(tempfile.mkdtemp(prefix="nodal-regression-", dir=base))
     try:
@@ -56,6 +60,15 @@ def prepare(source, base):
             target = destination / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(original, target)
+        # Preserve the exact source identity without copying Git config, hooks,
+        # credentials, or excluded plaintext blobs. Only the commit object and
+        # detached HEAD are needed; live approval also checks all context bytes.
+        subprocess.run(["git", "-c", "init.templateDir=", "init", "-q", str(destination)], check=True)
+        copied = subprocess.run(["git", "hash-object", "-t", "commit", "-w", "--stdin"],
+                                cwd=destination, input=commit_bytes, capture_output=True, check=True).stdout.decode().strip()
+        if copied != commit:
+            raise ValueError("source revision changed during preparation")
+        (destination / ".git/HEAD").write_text(commit + "\n")
         return workspace
     except Exception:
         shutil.rmtree(workspace)
@@ -134,7 +147,7 @@ def main(argv=None):
                 label = "passed" if code == 0 else "failed" if code == 1 else "skipped/incomplete" if code == 3 else "configuration error"
                 summary.write("## Customer regression: " + label + "\n\n```json\n" + text + "\n```\n")
         # A skipped evaluation is displayed explicitly, rather than a numeric pass.
-        return 0 if code == 3 else code
+        return code
     except (OSError, ValueError, KeyError, subprocess.SubprocessError):
         print('{"status":"error","category":"regression_ci_error"}', file=sys.stderr)
         return 2

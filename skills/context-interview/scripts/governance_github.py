@@ -17,7 +17,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT if (ROOT / 'acf_runtime').is_dir() else ROOT / 'payload'))
-from acf_runtime.governance import append_event, context_files, digest, revision, validate_ledger, timestamp
+from acf_runtime.governance import append_event, context_files, digest, revision, validate_ledger, timestamp, object_digests, authority_request
 
 REF = "acf-governance"
 
@@ -149,7 +149,8 @@ def serve(repo, request):
     state, _ = read_store(repo)
     branch = state["approval_branch"]
     protection(repo, branch)  # live protection check; a branch name is never proof
-    runs = api(f"repos/{repo}/actions/workflows/context-drift.yml/runs?per_page=1").get("workflow_runs", [])
+    from urllib.parse import quote
+    runs = api(f"repos/{repo}/actions/workflows/context-drift.yml/runs?branch={quote(branch, safe='')}&per_page=1").get("workflow_runs", [])
     if (not runs or runs[0].get("status") != "completed" or
             str(runs[0]["id"]) != state.get("last_source_check_run")):
         raise ValueError("latest source check is pending, missing, or failed before publication")
@@ -190,7 +191,21 @@ def main(argv=None):
             with snapshot(args.root, sha) as committed:
                 if digest(context_files(committed)) != fingerprint:
                     raise ValueError("approval checkout differs from merge revision")
-            events = append_event(events, "approve", **approve(repo, args.branch, sha, fingerprint), recorded_at=now)
+            from acf_runtime.loader import load_context
+            registry = load_context(args.root, branch_test=True)
+            if registry.errors:
+                raise ValueError("approval context does not validate")
+            approvals, _ = validate_ledger(events)
+            ancestors = []
+            for prior in approvals:
+                result = subprocess.run(["git", "-C", str(args.root), "merge-base", "--is-ancestor", prior, sha],
+                                        capture_output=True, check=False)
+                if result.returncode == 0:
+                    ancestors.append(prior)
+                elif result.returncode != 1:
+                    raise ValueError("approval ancestry unavailable; fetch full history")
+            events = append_event(events, "approve", **approve(repo, args.branch, sha, fingerprint), recorded_at=now,
+                                  ancestors=ancestors, object_digests=object_digests(registry))
         elif args.action == "drift":
             if not args.report:
                 raise ValueError("drift requires a checked report")
@@ -221,7 +236,7 @@ def main(argv=None):
             registry = load_context(args.root, branch_test=True)
             if registry.errors or any(n.blocking_reasons for n in registry.nodes.values()):
                 raise ValueError("repair context has unresolved blockers")
-            sources = {source for node in registry.nodes.values() for source, _ in node.lineage}
+            sources = authority_request(registry)["sources"]
             checks = repair_checks(repo, args.checks, sha, blocks[args.block], state.get("freshness", {}).get(sha, {}), fingerprint, sources)
             events = append_event(events, "clear", block=args.block, revision=sha, reason=args.reason,
                 checks=checks, source_evidence=blocks[args.block]["source_evidence"],

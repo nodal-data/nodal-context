@@ -38,7 +38,8 @@ The reader also checks that the latest source workflow completed and published
 its state; pending checks or failed publication block use immediately.
 The reader always fetches live state; there is no offline approval fallback.
 Local copies must retain their approved Git commit and exact content. Exports
-carry `governance.json` identifying the revision, content hash, approval event,
+carry deterministic generated files (independent of build date and checkout name)
+and `governance.json` identifying the revision, content hash, approval event,
 ledger head and freshness evidence. They are snapshots, not perpetual approval:
 consumers must run `scripts/compile_skill.py APPROVED_SOURCE --verify-export EXPORT`
 (using the original `--name` override if any) to recheck the live authority and
@@ -53,16 +54,30 @@ mode, for ACF exports. Plain exported text cannot enforce revocation.
 publishing any repair proposal. It records target IDs, source evidence, revision
 and reason. Dependency propagation blocks metrics, methods, patterns and seeds.
 A source that cannot be checked blocks use too. Periodic source checks expire in
-24 hours; live authority responses expire in five minutes. Dispatch source
+24 hours; live authority responses expire in five minutes. Source checks run on
+each approval-branch push as well as dispatch and schedule, so a merge does not
+wait for the six-hour scheduled refresh. Dispatch source
 changes promptly; no system can detect changes that have not been reported.
 
 Merge the reviewed repair, run fresh applicable behavior/source checks, then run
 `context-approval` manually with the block ID, repair reason and passing checks
 URL. Its protected environment requires human approval. The clearance names the
 block and exact reviewed repair revision. It cannot clear a different block or
-approve an older revision. New unrelated revisions require explicit clearance;
-they never silently inherit a clearance. Preserve every event and source record.
+approve an older revision. A later protected merge inherits an existing clearance
+only when the authority proves Git ancestry and the affected definitions,
+dependencies, domain/company prose and configuration retain identical digests.
+Changes to that scope require fresh review and clearance. An unrelated merge
+never clears an uncleared block. Preserve every event and source record.
 Repeated detection can create additional blocks; each must be addressed.
+
+Consumers still reject missing approval/freshness evidence for the revision.
+With valid authority evidence, eval and export exclude blocked definitions and
+their dependents individually while retaining unrelated eligible definitions.
+Unstructured prose from affected domains is withheld; domains with no eligible
+definitions are omitted. Blocked seeds are excluded individually. Re-grading explicitly tests
+proposed context without granting approval. CI regression workspaces preserve
+the exact commit identity without copying Git credentials or plaintext SQL;
+skipped execution returns a nonzero check result.
 
 ## Authoring and tests
 

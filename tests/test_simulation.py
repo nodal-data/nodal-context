@@ -99,7 +99,24 @@ print("Synthetic host created ACF 0.3 drafts; no warehouse, dashboard or noteboo
     path.chmod(0o755)
 
 
+def check_statusless():
+    from acf_runtime.simulation import summarize
+    with tempfile.TemporaryDirectory() as directory:
+        room=Path(directory).resolve();source=marker(room);root=room/'context'
+        populate(root);handoff(source,root)
+        value=metric()
+        for field in ('status','approver','confirmed_at'):
+            value.pop(field,None)
+        write(root,'domains/sales/metrics/orders.yaml',value)
+        summary=summarize(root,source)
+        assert 'domains/sales/metrics/orders.yaml' in summary['draft_metrics']
+        attest_confirmation(source,root,'metric:sales.orders','actual-reviewer')
+        assert 'domains/sales/metrics/orders.yaml' in summarize(root,source)['draft_metrics']
+        assert not check_output(root,source)
+
+
 def run():
+    check_statusless()
     with tempfile.TemporaryDirectory() as directory:
         room = Path(directory).resolve(); source = marker(room)
         root = room / "analytics-context"

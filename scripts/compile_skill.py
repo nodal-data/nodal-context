@@ -80,8 +80,8 @@ def _company_name(repo: Path, override: str | None) -> str:
     for line in _read(repo / "company" / "overview.md").splitlines():
         if line.startswith("# "):
             return re.sub(r"\s*[—–-]+\s*overview\s*$", "", line[2:].strip(),
-                          flags=re.IGNORECASE) or repo.name
-    return repo.name
+                          flags=re.IGNORECASE) or "Analytics context"
+    return "Analytics context"
 
 
 def _slug(name: str) -> str:
@@ -169,14 +169,17 @@ HOW_TO_ANSWER = """\
    not invent a definition. State any caveat the answer relies on."""
 
 
-def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: bool):
+def _compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: bool):
     """-> (skill_dir, stats dict). Writes the skill folder under out_dir."""
     import yaml
     registry = load_context(repo, branch_test=True if include_drafts else None)
     if registry.errors:
         raise SystemExit("compile_skill: invalid ACF 0.3 context:\n" + "\n".join(map(str, registry.errors)))
-    if registry.governance["mode"] == "governed" and any(n.blocking_reasons for n in registry.nodes.values()):
+    if registry.governance["mode"] == "governed" and (not registry.governance["approved"] or registry.governance.get("freshness_state") == "unavailable"):
         raise SystemExit("compile_skill: governed export requires approved revision and live freshness evidence")
+    from acf_runtime.governance import eligible_domains, blocked_prose_domains
+    allowed_domains = eligible_domains(registry) if registry.governance["mode"] == "governed" else set(registry.domains)
+    hidden_prose = blocked_prose_domains(registry) if registry.governance["mode"] == "governed" else set()
     company = _company_name(repo, name)
     slug = f"{_slug(company)}-data-analyst"
     skill_dir = out_dir / slug
@@ -206,6 +209,9 @@ def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: b
     for d in sorted((repo / "domains").iterdir()) if (repo / "domains").is_dir() else []:
         if not d.is_dir() or d.name.startswith(("_", ".")):
             continue
+        if d.name not in allowed_domains:
+            stats["drafts_excluded"] += 1
+            continue
         dom = {**registry.domains[d.name], "status": registry.nodes["domain:" + d.name].effective_status}
         if _draft(dom) and not include_drafts:
             stats["drafts_excluded"] += 1
@@ -221,7 +227,7 @@ def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: b
             head.append(f"**Grain:** {str(dom['grain']).strip()}")
         if head:
             parts.append("\n".join(head))
-        if (ref := _read(d / "reference.md")):
+        if d.name not in hidden_prose and (ref := _read(d / "reference.md")):
             ref, skipped = render_reference(ref,
                 {n.id.rsplit("#", 1)[1]: n.effective_status for n in registry.nodes.values()
                  if n.kind == "pattern" and n.domain == d.name}, include_drafts=include_drafts)
@@ -251,9 +257,9 @@ def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: b
             parts.append("## Method: " + data["name"] +
                          (" _(draft — unconfirmed)_" if method.effective_status != "confirmed" else "") +
                          "\n\n```yaml\n" + yaml.safe_dump(data, sort_keys=False) + "```\n\n" + method.body)
-        if (reasoning := _read(d / "context.md")):
+        if d.name not in hidden_prose and (reasoning := _read(d / "context.md")):
             parts.append("## Reasoning context for new slices and methods\n\n" + reasoning)
-        if (issues := _read(d / "known-issues.md")):
+        if d.name not in hidden_prose and (issues := _read(d / "known-issues.md")):
             parts.append("## Known issues\n\n" + (_body_sans_title(issues) or issues))
         (refs_dir / f"{d.name}.md").write_text("\n\n".join(parts) + "\n")
         stats["domains"].append(d.name)
@@ -269,7 +275,8 @@ def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: b
                         "definitions and disambiguations |")
 
     # SKILL.md
-    today = datetime.date.today().isoformat()
+    from acf_runtime.governance import revision, digest, context_files
+    source_revision = revision(repo) or "sha256:" + digest(context_files(repo))
     drafts_note = (f"\n> {stats['drafts_excluded']} draft (unconfirmed) definition(s) "
                    "were excluded — confirm them in the repo and recompile."
                    if stats["drafts_excluded"] and not include_drafts else "")
@@ -286,7 +293,7 @@ description: "{description}"
 # {company} Data Analysis
 
 > **Compiled snapshot — not the source of truth.** Generated from
-> `{_git_stamp(repo)}` on {today} by `scripts/compile_skill.py`
+> `{source_revision}` by `scripts/compile_skill.py`
 > ([nodal-context](https://github.com/nodal-data/nodal-context)). The live,
 > reviewed context is the ACF repo (and its MCP endpoint, if served).
 > Approval provenance is in `governance.json`. This export is an offline snapshot; recheck the live authority before governed use. Branch-test exports are proposed context only.
@@ -310,10 +317,42 @@ description: "{description}"
 """
     (skill_dir / "SKILL.md").write_text(skill_md)
     import hashlib
-    proof = {**registry.governance, "format": "acf-export/1", "export_name": name, "export_files": {p.relative_to(skill_dir).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+    proof = {**registry.governance, "format": "acf-export/1", "export_name": company, "export_files": {p.relative_to(skill_dir).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
              for p in skill_dir.rglob("*") if p.is_file() and p.name != "governance.json"}}
     (skill_dir / "governance.json").write_text(json.dumps(proof, indent=2) + "\n")
     return skill_dir, stats
+
+
+def compile_skill(repo: Path, out_dir: Path, name: str | None, include_drafts: bool):
+    """Publish a fresh owned build; refuse to delete user-added or edited files."""
+    import hashlib
+    import json
+    import os
+    import tempfile
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".acf-build-", dir=out_dir) as work:
+        staged, stats = _compile_skill(Path(repo), Path(work), name, include_drafts)
+        destination = out_dir / staged.name
+        previous = Path(work) / "previous"
+        if destination.exists():
+            proof_path = destination / "governance.json"
+            if destination.is_symlink() or not proof_path.is_file() or proof_path.is_symlink():
+                raise ValueError("existing export is not an owned ACF build")
+            proof = json.loads(proof_path.read_text())
+            files = {p.relative_to(destination).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                     for p in destination.rglob("*") if p.is_file() and p != proof_path}
+            if (proof.get("format") != "acf-export/1" or files != proof.get("export_files") or
+                    any(p.is_symlink() for p in destination.rglob("*"))):
+                raise ValueError("existing export contains user changes; preserve it or use a new output directory")
+            os.replace(destination, previous)
+        try:
+            os.replace(staged, destination)
+        except Exception:
+            if previous.exists():
+                os.replace(previous, destination)
+            raise
+        return destination, stats
 
 
 def verify_export(repo, exported, name=None):

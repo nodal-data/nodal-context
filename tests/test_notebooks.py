@@ -12,6 +12,7 @@ import subprocess
 import sys
 import time
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -254,6 +255,18 @@ def run_tests(kernel=False):
         sql_receipt = strict_json((sql_directory / "answer/receipt.json").read_text())
         approved_sql = folder / "approved.sql"
         approved_sql.write_text(sql_receipt["answer"]["sql"])
+        # Publication failure rolls back this attempt's seed and SQL so the
+        # same name can be retried; pre-existing user artifacts are untouched.
+        with patch("acf_runtime.notebook_verification.private_json", side_effect=OSError("receipt unavailable")):
+            try:
+                confirm(root, sql_directory / "comparison.json", seed_name="sql-method",
+                        approver="fictional-test-owner", confirmed_at="2026-10-01", approved_sql=approved_sql)
+            except OSError:
+                pass
+            else:
+                raise AssertionError("receipt failure not exercised")
+        assert not (root / "evals/verified/sql-method.sql").exists()
+        assert not (root / "evals/seeds/sql-method.seed.yaml").exists()
         sql_seed = confirm(root, sql_directory / "comparison.json", seed_name="sql-method",
                           approver="fictional-test-owner", confirmed_at="2026-10-01", approved_sql=approved_sql)
         assert "verified_query_file: evals/verified/sql-method.sql" in sql_seed.read_text()

@@ -2,7 +2,8 @@
 # approval branch; nodal-governance-repair requires human review. See GOVERNANCE.md.
 name: context-approval
 on:
-  push: {}
+  push:
+    branches-ignore: [acf-governance]
   workflow_dispatch:
     inputs:
       block:
@@ -17,7 +18,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: acf-governance-${{ github.repository }}
+  group: acf-governance-${{ github.repository }}-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   record:

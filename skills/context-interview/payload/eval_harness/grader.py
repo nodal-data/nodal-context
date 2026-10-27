@@ -86,7 +86,7 @@ def compare_snapshot(actual, expected):
             if any(isinstance(v, (dict, list)) or (_numeric(v) and not _finite(v)) for v in values):
                 raise ValueError("comparison keys must be finite scalar values")
             # A string '1', boolean true, and integer 1 are distinct keys.
-            key = json.dumps([[type(v).__name__, v] for v in values], sort_keys=True)
+            key = tuple(("number", v) if _numeric(v) else (type(v).__name__, v) for v in values)
             if key in out:
                 raise ValueError("duplicate comparison key")
             out[key] = row

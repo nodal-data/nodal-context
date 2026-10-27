@@ -165,6 +165,8 @@ def check_method(registry, node):
     for field, clause in [(f"decisions/{d['id']}/rule", d["rule"]) for d in decisions] + [("body/Procedure", procedure)]:
         clause = re.sub(r"\[[^\]]*\]\([^)]*\)", "", clause)  # citation URLs are not runtime literals
         clause = re.sub(r"^\s*\d+\.\s+", "", clause, flags=re.M)
+        for identifier in ids:
+            clause = re.sub(r"(?<![\w-])" + re.escape(identifier) + r"(?![\w-])", "decision_ref", clause)
         for number in re.findall(r"(?:[<>=*/+\-]\s*)(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)\b", clause):
             if number not in allowed_numbers:
                 registry.readiness(node, "constant.undeclared", field,

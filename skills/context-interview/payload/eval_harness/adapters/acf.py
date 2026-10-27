@@ -21,10 +21,17 @@ def build_ncr(root, domains=None, *, branch_test=None):
     registry = load_context(root, branch_test=branch_test)
     if registry.errors:
         raise ValueError("invalid ACF context:\n" + "\n".join(map(str, registry.errors)))
-    if registry.governance["mode"] == "governed" and any(n.blocking_reasons for n in registry.nodes.values()):
+    if registry.governance["mode"] == "governed" and (not registry.governance["approved"] or registry.governance.get("freshness_state") == "unavailable"):
         raise ValueError("governed context unavailable: approval, freshness or dependencies blocked")
+    from acf_runtime.governance import blocked_prose_domains
+    hidden_prose = blocked_prose_domains(registry) if registry.governance["mode"] == "governed" else set()
     components = {}
     wanted = set(domains) if domains else set(registry.domains)
+    if registry.governance["mode"] == "governed":
+        from acf_runtime.governance import eligible_domains
+        wanted &= eligible_domains(registry)
+        if not wanted:
+            raise ValueError("governed context unavailable: selected domains are blocked")
     for domain in sorted(wanted & set(registry.domains)):
         node_ids = {n.id for n in registry.nodes.values() if n.domain == domain and n.kind in ("metric", "method", "entity", "domain")}
         node_ids.update(n.id for n in registry.nodes.values() if n.kind == "entity" and not n.domain)
@@ -38,7 +45,7 @@ def build_ncr(root, domains=None, *, branch_test=None):
         definitions, method_bodies = [], []
         for key in sorted(node_ids):
             node = registry.nodes[key]
-            if node.kind in ("evalseed", "pattern"):
+            if node.kind in ("evalseed", "pattern") or (registry.governance["mode"] == "governed" and node.blocking_reasons):
                 continue
             # Definitions may be visible for disambiguation, but never silently approved.
             definitions.append(f"# {key} (approval: {node.approval_state}; effective status: {node.effective_status})\n" +
@@ -51,12 +58,12 @@ def build_ncr(root, domains=None, *, branch_test=None):
             "definitions": "\n\n".join(definitions),
             "reference": "\n\n".join(render_reference(_read(root / "domains" / d / "reference.md"),
                 {n.id.rsplit("#", 1)[1]: n.effective_status for n in registry.nodes.values()
-                 if n.kind == "pattern" and n.domain == d})[0] for d in sorted(relevant_domains)),
-            "reasoning": "\n\n".join([*(_read(root / "domains" / d / "context.md") for d in sorted(relevant_domains)), *method_bodies]),
+                 if n.kind == "pattern" and n.domain == d})[0] for d in sorted(relevant_domains - hidden_prose)),
+            "reasoning": "\n\n".join([*(_read(root / "domains" / d / "context.md") for d in sorted(relevant_domains - hidden_prose)), *method_bodies]),
             "orientation": "\n\n".join(_read(root / "company" / name) for name in ("overview.md", "terminology.md")),
         }
     ncr = NCR(seeds=[seed_from_record(record) for record in registry.seed_records()
-                     if not domains or record["domain"] in wanted],
+                     if record["domain"] in wanted],
               definitions=registry.definitions(), context_components=components,
               capabilities={"matching", "methods", "coverage"},
               diagnostics=[vars(d) for d in registry.diagnostics])

@@ -46,12 +46,15 @@ def run_tests():
         generated_contexts.append(context) or {"outcome": "escalate", "sql": "",
         "reason": "unresolved_semantics", "explanation": "Clarify the time window."})
     client.judge = lambda *args: {"passed": False, "reason": "No answer"}
+    original_context_for = ncr.context_for
+    ncr.context_for = lambda *args: "x" * (client.MAX_CONTEXT_CHARS + 1000)
     try:
         measured = run._eval_domain(ncr, "session-financials", "confirmed", "fictional-test-model")
         routed = [row for row in measured["seeds"] if "routing" in row]
         assert routed and all(row["routing"] == "unresolved" for row in routed)
-        assert any(context and "unknown_time_token" in context for context in generated_contexts)
+        assert any(context and "unknown_time_token" in context[:client.MAX_CONTEXT_CHARS] for context in generated_contexts)
     finally:
+        ncr.context_for = original_context_for
         client.extract_ir, client.generate, client.judge = original_clients
 
     # unknown adapter errors

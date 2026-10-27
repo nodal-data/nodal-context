@@ -45,6 +45,39 @@ def timestamp(value):
     return dt
 
 
+def object_digests(registry):
+    """Bind clearance to affected definitions, their dependencies and shared prose."""
+    files = context_files(registry.root)
+    result = {}
+    for node in registry.nodes.values():
+        pending, members = [node.id], {}
+        domains = set()
+        while pending:
+            key = pending.pop()
+            if key in members or key not in registry.nodes:
+                continue
+            member = registry.nodes[key]
+            members[key] = {"data": member.data, "body": member.body, "lineage": sorted(member.lineage)}
+            domains.add(member.domain)
+            if member.domain:
+                pending.append("domain:" + member.domain)
+            pending.extend(member.dependencies)
+        prose = {path: value for path, value in files.items() if path.startswith("company/") or
+                 any(path.startswith(f"domains/{domain}/") and path.endswith(".md") for domain in domains if domain)}
+        # Configuration changes are conservative; a new source/calendar can
+        # change the meaning even when the authored object remains identical.
+        result[node.id] = digest({"members": members, "prose": prose, "config": registry.config})
+    return result
+
+
+def clearance_scope(approval, block):
+    objects = approval.get("object_digests", {})
+    targets = block["targets"]
+    if "*" in targets or any(target not in objects for target in targets):
+        return approval["content_digest"]
+    return digest({target: objects[target] for target in sorted(targets)})
+
+
 def validate_ledger(events):
     """Append-only hash chain. Clears name a block and reviewed repair evidence."""
     previous, blocks, approvals = None, {}, {}
@@ -59,10 +92,16 @@ def validate_ledger(events):
                     event.get("review") and event.get("checks") and event.get("protection")):
                 raise ValueError("approval requires revision, human review, checks and protection evidence")
             approvals[event["revision"]] = event
+            for block in blocks.values():
+                scope = clearance_scope(event, block)
+                if any(parent in event.get("ancestors", []) and scope == old_scope
+                       for parent, old_scope in block["clearances"].items()):
+                    block["cleared_revisions"].append(event["revision"])
+                    block["clearances"][event["revision"]] = scope
         elif kind == "block":
             if not event.get("reason") or not event.get("source_evidence") or not event.get("targets"):
                 raise ValueError("block requires targets, reason and source evidence")
-            blocks[event["id"]] = {**event, "cleared_revisions": []}
+            blocks[event["id"]] = {**event, "cleared_revisions": [], "clearances": {}}
         elif kind == "clear":
             block = blocks.get(event.get("block"))
             approval = approvals.get(event.get("revision"))
@@ -73,6 +112,7 @@ def validate_ledger(events):
             if event["revision"] in block["cleared_revisions"]:
                 raise ValueError("duplicate clearance")
             block["cleared_revisions"].append(event["revision"])
+            block["clearances"][event["revision"]] = clearance_scope(approval, block)
         else:
             raise ValueError("unknown governance event")
     return approvals, blocks
@@ -89,9 +129,12 @@ def append_event(events, kind, **fields):
 
 def authority_request(registry):
     files = context_files(registry.root)
+    sources = {source for n in registry.nodes.values() for source, _ in n.lineage}
+    for domain in registry.config.get("domains", {}).values():
+        sources.update(source for source, _ in registry._lineage((domain or {}).get("lineage")))
     return {"version": 1, "nonce": uuid.uuid4().hex, "revision": revision(registry.root),
             "content_digest": digest(files), "approval_branch": registry.config.get("approval_branch", "main"),
-            "sources": sorted({source for n in registry.nodes.values() for source, _ in n.lineage})}
+            "sources": sorted(sources)}
 
 
 def read_authority(request):
@@ -160,6 +203,21 @@ def apply_governance(registry, *, branch_test=False, authority=None):
         for node in registry.nodes.values():
             node.approval_state = "approved" if registry.governance["approved"] else "unavailable"
             node.local_blockers.add("governance:approval_or_freshness_unavailable")
+
+
+def blocked_prose_domains(registry):
+    """Unstructured prose cannot be split reliably around a blocked definition."""
+    return {n.domain for n in registry.nodes.values() if n.domain and n.blocking_reasons and n.kind != "evalseed"}
+
+
+def eligible_domains(registry):
+    domains = set(registry.domains)
+    for domain in list(domains):
+        owner = registry.nodes.get("domain:" + domain)
+        definitions = [n for n in registry.nodes.values() if n.domain == domain and n.kind in ("metric", "method", "entity")]
+        if (owner and owner.blocking_reasons) or (definitions and all(n.blocking_reasons for n in definitions)):
+            domains.discard(domain)
+    return domains
 
 
 def require_working_branch(root, branch="main"):

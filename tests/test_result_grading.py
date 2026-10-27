@@ -25,7 +25,8 @@ def run_tests():
     assert compare_value(1, 1, {"absolute": -1}).status == FAIL
     assert compare_value(1, 1, "invalid").status == FAIL
     assert compare_snapshot(rows, {"value": expected["value"]}).status == FAIL
-    assert compare_snapshot([{"id": 1.0}], {"value": [{"id": 1}], "key_columns": ["id"]}).status == FAIL
+    # Numeric row keys use the same equality as numeric snapshot values.
+    assert compare_snapshot([{"id": 1.0}], {"value": [{"id": 1}], "key_columns": ["id"]}).status == PASS
 
     seen = []
     def judge(evidence, obligation):

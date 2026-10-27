@@ -196,6 +196,9 @@ def lineage_impact(registry, changed_models):
             if not node.domain and changed_models:
                 roots.update(registry.nodes)
                 reasons.append("shared entity has no lineage; all context requires review: " + node.id)
+        # The config convenience map also owns lineage for the entire domain.
+        configured = registry.config.get("domains", {}).get(node.domain, {}) or {}
+        own |= registry._lineage(configured.get("lineage"))
         matched = own & changed_models
         if matched:
             roots.add(node.id)

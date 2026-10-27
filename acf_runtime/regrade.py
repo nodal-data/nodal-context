@@ -33,7 +33,7 @@ def fingerprints(root):
 
 
 def approved_history(root, seeds, reference="HEAD"):
-    """Nearest stored human-confirmed seed on this path, within 100 changes.
+    """Nearest stored human-confirmed seed on this path, within 100 ancestor revisions.
 
     Do not execute any code/schema from history, follow renames, or search past a
     newer approval with a different interpretation to recover an older match.
@@ -51,8 +51,11 @@ def approved_history(root, seeds, reference="HEAD"):
     except (ValueError, OSError, KeyError):
         pass
     legacy_test = registry.governance.get("mode") == "branch-test"
+    # Merge commits are often hidden by path-history simplification. Walk the
+    # revision DAG itself, newest first, then read the seed blob at each approval.
+    history = git(root, "rev-list", "--topo-order", "--max-count=100", revision).decode().splitlines()
     for node in seeds:
-        revisions = [revision, *git(root, "log", "-100", "--format=%H", revision, "--", node.path).decode().splitlines()]
+        revisions = [revision, *history]
         for current in dict.fromkeys(revisions):
             entry = git(root, "--literal-pathspecs", "ls-tree", "-z", current, "--", node.path).rstrip(b"\0")
             if not entry:
@@ -87,7 +90,8 @@ def check_seeds(root, previous, *, seed_ids=None, model=client.MODEL, provider=c
     if selected - {n.id for n in registry.seeds}:
         raise ValueError("unknown re-grade seed ID")
     initial = fingerprints(root)
-    ncr = build_ncr(root)
+    # Regrading is explicitly a test of proposed/stale content, never governed use.
+    ncr = build_ncr(root, branch_test=True)
     checks = []
     available = provider.available()
     for node in sorted(registry.seeds, key=lambda n: n.id):
@@ -165,7 +169,7 @@ def check_seeds(root, previous, *, seed_ids=None, model=client.MODEL, provider=c
     if fingerprints(root) != initial:
         raise ValueError("context changed during re-grading; fresh checks are required")
     evidence = {"version": 1, "checked_at": datetime.now(timezone.utc).isoformat(), "model": model,
-                "fingerprints": initial, "checks": checks}
+                "fingerprints": initial, "checks": checks, "mode": "branch-test"}
     report = public_report(evidence)
     return evidence, report
 

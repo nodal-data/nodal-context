@@ -186,16 +186,16 @@ def summarize(root, marker):
     result["validation_errors"] = [str(d) for d in registry.errors]
     result["context_valid"] = not registry.errors
     for node in registry.metrics + registry.methods:
-        if node.effective_status != "confirmed":
+        if node.approval_state != "approved" or node.blocking_reasons:
             result["draft_metrics" if node.kind == "metric" else "draft_methods"].append(node.path)
         for decision in node.data.get("open_decisions", []):
             result["open_decisions"].append({"object": node.id, **decision})
         if node.kind == "method":
             result["verification_work"].append({"object": node.id, "next":
-                "review_method_then_select_real_verification_case" if node.effective_status != "confirmed"
+                "review_method_then_select_real_verification_case" if node.approval_state != "approved" or node.blocking_reasons
                 else "select_case_and_inspect_real_execution_evidence"})
     for seed in registry.seeds:
-        if seed.data["expected"]["kind"] == "value_at_snapshot" and seed.effective_status != "confirmed":
+        if seed.data["expected"]["kind"] == "value_at_snapshot" and (seed.approval_state != "approved" or seed.blocking_reasons):
             result["verification_work"].append({"object": seed.id, "next": "independent_execution_and_human_review"})
     return result
 
@@ -211,11 +211,11 @@ def attest_confirmation(marker, root, identifier, reviewer):
     if registry.errors:
         raise ValueError("context must validate before recording human confirmation")
     node = registry.nodes.get(identifier)
-    if node is None or node.data.get("status") != "confirmed":
-        raise ValueError("confirmation target must be a confirmed context object")
+    if node is None:
+        raise ValueError("confirmation target must be a context object")
     if not isinstance(reviewer, str) or not reviewer.strip():
         raise ValueError("actual human reviewer required")
-    if node.kind in ("metric", "method", "evalseed") and node.data.get("approver") != reviewer:
+    if node.data.get("approver") and node.data["approver"] != reviewer:
         raise ValueError("reviewer must match the object's actual human approver")
     path = root / node.path
     with _state(marker) as (data, state):
@@ -244,10 +244,10 @@ def check_output(root, marker=None, *, require_content=False):
         return ["simulation state belongs to a different run"]
     for node in registry.nodes.values():
         receipts = [r for r in state["confirmations"] if r["root"] == str(root) and r["object"] == node.id]
-        if node.data.get("status") == "confirmed":
+        if node.approval_state == "approved" or node.data.get("status") == "confirmed":
             digest = hashlib.sha256((root / node.path).read_bytes()).hexdigest()
             if not any(r["sha256"] == digest and (node.kind not in ("metric", "method", "evalseed") or
-                       r["reviewer"] == node.data.get("approver")) for r in receipts):
+                       (not node.data.get("approver") or r["reviewer"] == node.data["approver"])) for r in receipts):
                 problems.append(f"simulator cannot confirm {node.id}; explicit matching human receipt is missing")
         elif any(node.data.get(k) for k in ("approver", "confirmed_at")):
             if not any(r["reviewer"] == node.data.get("approver") and
