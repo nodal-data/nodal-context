@@ -1,16 +1,15 @@
 # Changelog
 
-## 1.7.2 — Unreleased
+## 1.7.2 — 2026-10-27
+
+This release includes all changes since 1.6.4: the ACF 0.3 migration,
+merge-based approval, adversarial-review fixes and customer workflow relocation.
+Versions 1.7.0 and 1.7.1 were superseded before publication.
 
 - Move customer approval and drift workflows into the context template so they
   no longer execute in the package source repository. Fresh scaffolds and support
   upgrades still install both workflows under `.github/workflows/` in customer
   repositories, with their existing approval and freshness behavior unchanged.
-
-## 1.7.1 — 2026-10-27
-
-This release includes the ACF 0.3 migration and merge-based approval changes.
-Version 1.7.0 was superseded before publication.
 
 - Correct adversarial-review regressions in CI revision identity and skip exits,
   clearance inheritance, post-merge freshness, deterministic/clean exports, scoped
