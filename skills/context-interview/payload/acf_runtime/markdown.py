@@ -49,12 +49,13 @@ def pattern_span(text, anchor):
 STATUS = re.compile(r"^\s*(?:<!--\s*)?(?:acf:\s*)?status:\s*(draft|confirmed)(?:\s*-->)?\s*$", re.M)
 
 
-def pattern_status(section):
+def pattern_status(section, default="confirmed"):
     found = STATUS.search(prose(section))
-    return found.group(1) if found else "confirmed"
+    return found.group(1) if found else default
 
 
 def draft_pattern(text, anchor):
+    """Demote an explicit legacy marker; never add authored approval metadata."""
     start, end = pattern_span(text, anchor)
     section = text[start:end]
     if pattern_status(section) == "draft":
@@ -62,9 +63,7 @@ def draft_pattern(text, anchor):
     if (marker := STATUS.search(prose(section))):
         section = section[:marker.start()] + "<!-- acf: status: draft -->" + section[marker.end():]
     else:
-        # Put status after the opening anchor/heading, inside exactly this section.
-        first, separator, rest = section.partition("\n")
-        section = first + "\n<!-- acf: status: draft -->\n" + rest
+        return text
     return text[:start] + section + text[end:]
 
 

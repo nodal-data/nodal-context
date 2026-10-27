@@ -45,7 +45,7 @@ into your prompt.
 - Add a domain or correct a definition by **re-running the `context-interview`
   skill** — it resumes from `context.config.yaml` rather than starting over.
 - Review every change **by PR**. The bundled `.github/workflows/` validate the YAML,
-  flag unconfirmed `status: draft` entries, run the on/off eval delta, and detect
+  check unresolved decisions and dependencies, run the on/off eval delta, and detect
   drift when an upstream model changes.
 
 ## Push to GitHub

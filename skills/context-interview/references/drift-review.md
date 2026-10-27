@@ -18,7 +18,7 @@ review. A negative or unresolved seed can need review when new definitions make
 its question answerable. It must not retain a stale refusal merely because it has
 no metric IR.
 
-## Prepare and inspect status changes
+## Prepare and inspect review changes
 
 After the report identifies a real source change, prepare a patch:
 
@@ -30,9 +30,12 @@ python3 .ci/drift.py --manifest core=/path/to/manifest.json \
 Exit 1 indicates drift and can accompany a successfully prepared patch. Exit 2
 is a setup/validation failure. `--fail-on-unchecked` uses exit 3 for incomplete
 source coverage when no drift was otherwise found. Preparation writes only
-ignored local plan/history files. It changes confirmed affected objects to draft
-in the proposed patch, including named query patterns. It preserves comments,
-method prose and earlier human approval metadata as historical attribution.
+ignored local plan/history files. For legacy objects that already have authored
+status fields or explicit pattern markers, it can propose a legacy status patch.
+Status-free definitions and unmarked patterns remain status-free; do not add
+approval fields to them. Live authority records stale blocks independently of
+any proposed patch. Preparation preserves comments, method prose and earlier
+human approval metadata as historical attribution.
 It does not rewrite a business definition, remove a dimension, or refresh the
 lineage baseline.
 
@@ -49,7 +52,7 @@ separate apply command makes the write explicit and reviewable. Source/schema
 changes after preparation reject application. Interrupted writes can be resumed
 with the same command; conflicting edits are preserved. A completed application
 is idempotent. Do not delete a pending journal to force conflicting changes.
-Application is a local status change, not a commit, PR, push or publication.
+Application is a local legacy patch, not approval, clearance, a commit or publication.
 
 For authored context changes, supply `--changed-files ... --base-root /path/to/base`
 instead of manifest arguments. Base and head graphs preserve impact from removed
@@ -61,10 +64,13 @@ never executing code from the base revision.
 ## Automated review publication
 
 The trusted default-branch `context-drift` workflow collects configured dbt
-manifests, prepares the same status-only patch, and opens or updates one draft PR
+manifests, records stale blocks in the authority ledger, prepares any applicable
+legacy patch, and opens or updates one draft PR
 per source-change batch. Its branch is `nodal/context-drift-<batch>`. The PR lists
 affected objects, source changes and the batched Stage 5 snapshot review. This is
-an unmerged proposal: default-branch status and the lineage baseline do not change.
+an unmerged proposal: authored definitions and the lineage baseline do not change.
+Live authority blocks take effect before the repair proposal is merged; a patch
+is not required to revoke eligibility.
 
 `.ci/collect_manifests.py` emits a JSON map consumed by `--manifest-map`; it does
 not emit shell arguments. Dispatch manifests must belong to configured dbt

@@ -136,7 +136,10 @@ def run():
                 + "Without this: second rationale\n```sql\nSELECT distinct id FROM orders\n```\n")
         start, end = pattern_span(text, "pattern-first")
         assert "second rationale" not in text[start:end]
-        changed = draft_pattern(text, "pattern-first")
+        assert draft_pattern(text, "pattern-first") == text
+        legacy_text = text[:start] + text[start:end].replace(
+            "Without this:", "<!-- acf: status: confirmed -->\nWithout this:", 1) + text[end:]
+        changed = draft_pattern(legacy_text, "pattern-first")
         assert changed.count("status: draft") == 1
         a, b = pattern_span(changed, "pattern-first"); assert pattern_status(changed[a:b]) == "draft"
         a, b = pattern_span(changed, "pattern-second"); assert pattern_status(changed[a:b]) == "confirmed"
@@ -150,6 +153,14 @@ def run():
                 write(root, f"domains/sales/metrics/{name}.yaml", value)
             registry = load_context(root)
             assert not registry.errors, list(map(str, registry.errors))
+            pattern = "pattern:domains/sales/reference.md#pattern-first"
+            assert "status" not in registry.nodes[pattern].data
+            # A legacy metric can still be demoted, but its unmarked reference
+            # must not acquire an authored approval-status comment.
+            edits = drift.status_edits(registry, {pattern, "metric:sales.first"})
+            assert not any(e["path"].endswith("reference.md") for e in edits)
+            (root / "domains/sales/reference.md").write_text(legacy_text)
+            registry = load_context(root)
             impact = cascade([registry], {"pattern:domains/sales/reference.md#pattern-first"})
             preview = drift.prepare(root, impact); apply(root, preview)
             registry = load_context(root)

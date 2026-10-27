@@ -68,8 +68,8 @@ SELECT ...
   is allowed ONLY under "Common query patterns", and only where the exact query
   form is the hard-won knowledge — pattern, not paste: real model/column names,
   `<placeholders>` for parameter values, each led by a `Without this:` line naming
-  the failure it prevents, a handful per domain, analyst-confirmed (drafts marked
-  a working-branch review note), and **never mined from query logs** — a pattern comes
+  the failure it prevents, a handful per domain, reviewed with the analyst (unresolved questions recorded
+  as working-branch review notes, never approval-status comments), and **never mined from query logs** — a pattern comes
   from the interview or a Stage-5 verified match. Full rule: `SPEC.md` "Query
   patterns". Runnable approved SQL stays in ignored plaintext sidecars; configured
   ciphertext travels separately as an answer key. Neither is answering context.
@@ -80,8 +80,9 @@ SELECT ...
   expression for window functions or other unsupported constructs.
 - **Keep rationales aligned.** Name expression metrics in reference routing.
   Map each `Without this:` to a filter/ratio reason or method decision. Only use
-  models in domain lineage; draft patterns must be marked before their content
-  and must not be compiled as confirmed guidance. Semantic lint warnings require
+  models in domain lineage. Record unresolved pattern decisions on the referring
+  metric; live approval and dependency readiness govern compilation. Never add
+  a Markdown approval-status marker. Semantic lint warnings require
   review; no warning is not proof of agreement.
 - **Name the aliases.** If a concept is `client_status` in one table and
   `weekly_status` in another, say so — alias confusion is a silent failure.

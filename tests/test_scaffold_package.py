@@ -1,5 +1,6 @@
 """Manifest, synchronization, and repository/installed scaffold tests."""
 import importlib
+import re
 import shutil
 import stat
 import subprocess
@@ -119,6 +120,12 @@ def run():
         result = run_command(SCRIPTS / "scaffold.py", target)
         assert result.returncode == 0, result.stderr + result.stdout
         check_customer_workflows(target)
+        for path in target.rglob("*.md"):
+            # New authored Markdown must not inherit legacy approval markers.
+            if path.parts[-2] in ("company", "_domain-template", "methods"):
+                assert not re.search(r"(?:<!--\s*(?:acf:\s*)?)?status:\s*(draft|confirmed)", path.read_text()), path
+        roster = (target / "company/org-structure.md").read_text()
+        assert "| Status |" not in roster
         for path in (
             "SPEC.md",
             "scripts/compile_skill.py",

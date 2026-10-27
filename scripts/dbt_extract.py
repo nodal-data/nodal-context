@@ -6,8 +6,8 @@
   Fallback (bare clone, can't produce a manifest):
       python3 scripts/dbt_extract.py --source path/to/dbt_project_dir
 
-The interview agent (Stage 0) maps this summary to ACF stubs — all `status: draft`,
-tagged `# dbt-derived` — which the analyst then confirms. NOTHING here is ground
+The interview agent (Stage 0) maps this summary to ACF stubs without authored
+approval status, tagged `# dbt-derived`, for analyst review and protected merge. NOTHING here is ground
 truth: dbt descriptions are often stale/aspirational. The `unavailable` list tells
 the agent what dbt did NOT provide, so it elicits those by hand instead of skipping.
 

@@ -180,6 +180,8 @@ def run():
     with tempfile.TemporaryDirectory() as directory:
         root=Path(directory); setup(root)
         text='# Reference\n\n<a id="pattern-old"></a>\n### Old\nWithout this: wrong join\n```python\n# Fake heading\nstatus: confirmed\n```\n\n<a id="pattern-good"></a>\n### Good\nWithout this: correct join\nKEEP_GOOD\n'
+        assert draft_pattern(text,'pattern-old') == text  # fenced status is not authored metadata
+        text=text.replace('### Old\n', '### Old\n<!-- acf: status: confirmed -->\n')
         text=draft_pattern(text,'pattern-old')
         a,b=pattern_span(text,'pattern-old'); assert 'status: confirmed' in text[a:b] and 'KEEP_GOOD' not in text[a:b]
         rendered,count=render_reference(text); assert count==1 and 'Fake heading' not in rendered and 'KEEP_GOOD' in rendered
