@@ -145,7 +145,7 @@ def run():
     merge_history()
     real_ci_regression()
     import yaml
-    workflow=yaml.safe_load((ROOT/'.github/workflows/context-drift.yml').read_text())
+    workflow=yaml.safe_load((ROOT/'template/.github/workflows/context-drift.yml').read_text())
     triggers=workflow.get('on', workflow.get(True))
     assert 'push' in triggers and 'acf-governance' in triggers['push']['branches-ignore']
     assert '${{ github.ref }}' in workflow['concurrency']['group']

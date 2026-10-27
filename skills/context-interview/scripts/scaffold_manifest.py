@@ -48,7 +48,7 @@ ARTIFACTS = (
 
     Artifact("scripts/governance_github.py", "scripts/governance_github.py", "scripts/governance_github.py"),
     Artifact("scripts/migrate_approval.py", "scripts/migrate_approval.py", "scripts/migrate_approval.py"),
-    Artifact(".github/workflows/context-approval.yml", "payload/.github/workflows/context-approval.yml", ".github/workflows/context-approval.yml"),
+    Artifact("template/.github/workflows/context-approval.yml", "payload/template/.github/workflows/context-approval.yml", ".github/workflows/context-approval.yml"),
     Artifact("template/GOVERNANCE.md", "payload/template/GOVERNANCE.md", "GOVERNANCE.md", upgrade=False),
     # Fresh-only authoring scaffold. These rows deliberately retain dot paths.
     Artifact("template/.gitignore", "payload/template/.gitignore", ".gitignore", upgrade=False),
@@ -91,8 +91,8 @@ ARTIFACTS = (
         ".github/workflows/eval-delta.yml",
     ),
     Artifact(
-        ".github/workflows/context-drift.yml",
-        "payload/.github/workflows/context-drift.yml",
+        "template/.github/workflows/context-drift.yml",
+        "payload/template/.github/workflows/context-drift.yml",
         ".github/workflows/context-drift.yml",
     ),
     Artifact(

@@ -26,11 +26,29 @@ def run_command(script, *args):
     )
 
 
+CUSTOMER_WORKFLOWS = ("context-approval.yml", "context-drift.yml")
+
+
+def check_customer_workflows(target):
+    for name in CUSTOMER_WORKFLOWS:
+        expected = ROOT / "template/.github/workflows" / name
+        installed = target / ".github/workflows" / name
+        assert installed.read_bytes() == expected.read_bytes(), name
+
+
 def run():
     manifest = importlib.import_module("scaffold_manifest")
     sync = importlib.import_module("sync_skill_payload")
 
     assert manifest.ARTIFACTS
+    # Shipping customer governance must not activate it in the package repo.
+    active_workflows = list((ROOT / ".github/workflows").glob("*.y*ml"))
+    for workflow in active_workflows:
+        assert yaml.safe_load(workflow.read_text()).get("name") not in {
+            "context-approval", "context-drift"
+        }, workflow
+    for name in CUSTOMER_WORKFLOWS:
+        assert not (ROOT / ".github/workflows" / name).exists()
     bundle_destinations = [a.skill_source for a in manifest.ARTIFACTS]
     assert len(bundle_destinations) == len(set(bundle_destinations))
     assert any(a.target == "SPEC.md" for a in manifest.ARTIFACTS)
@@ -100,6 +118,7 @@ def run():
         target = td / "repo-mode"
         result = run_command(SCRIPTS / "scaffold.py", target)
         assert result.returncode == 0, result.stderr + result.stdout
+        check_customer_workflows(target)
         for path in (
             "SPEC.md",
             "scripts/compile_skill.py",
@@ -123,8 +142,11 @@ def run():
         baseline = target / ".ci/lineage-baseline.json"
         baseline.write_text('{"customer": true}\n')
         (target / ".ci/validate.py").write_text("stale")
+        for name in CUSTOMER_WORKFLOWS:
+            (target / ".github/workflows" / name).write_text("stale customer workflow")
         result = run_command(SCRIPTS / "scaffold.py", "--upgrade", target)
         assert result.returncode == 0, result.stderr + result.stdout
+        check_customer_workflows(target)
         assert authored.read_text() == "customer-authored"
         assert baseline.read_text() == '{"customer": true}\n'
 
@@ -177,6 +199,7 @@ def run():
         installed_target = td / "installed-output"
         result = run_command(isolated / "scripts/scaffold.py", installed_target)
         assert result.returncode == 0, result.stderr + result.stdout
+        check_customer_workflows(installed_target)
         assert (installed_target / "SPEC.md").is_file()
         converter = subprocess.run(
             [sys.executable, str(isolated / "scripts/split_metrics.py"), "--help"],

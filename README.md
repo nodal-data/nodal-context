@@ -424,6 +424,11 @@ nodal-context/
 └── .codex-plugin/             # Codex plugin metadata
 ```
 
+Customer-only approval and drift workflows are maintained in
+`template/.github/workflows/`. Scaffolding and support upgrades install them into
+the customer's `.github/workflows/`; they do not run in this package repository.
+The artifact manifest in `scripts/scaffold_manifest.py` defines those mappings.
+
 ### Skill eval suite
 
 `quality/plugin-evals/` holds a Claude Code plugin eval suite for the skills.
