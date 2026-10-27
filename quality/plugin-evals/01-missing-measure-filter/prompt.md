@@ -29,7 +29,7 @@ analytical_plan:
       authority: confirmed
       used: true
     - claim: "Every fct_revenue query must filter exactly one measure_name; summing across measures double-counts the same dollars five ways."
-      source: "domains/revenue/metrics.yaml (expression.mandatory_filters)"
+      source: "domains/revenue/metrics/recognized_revenue.yaml (expression.mandatory_filters)"
       authority: confirmed
       used: true
   sources:

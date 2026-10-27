@@ -3,6 +3,15 @@ name: context-interview
 description: Interview an analyst to build or improve an ACF analytics-context repo, including metrics, entities, caveats, eval seeds, and a five-question test drive. Use for context-layer creation or correction. Do not use for dbt code or continuous eval-harness operation.
 ---
 
+Approval contract: new and changed context stays on a named working branch and
+has no authored approval status. Human-reviewed protected merge grants definition
+approval; consult the live authority through the runtime for the exact revision
+and freshness. Missing/expired evidence or stale dependencies blocks governed
+use. Explicit branch-test mode is proposed context only. Query/notebook result
+verification is separate from definition approval; retain source and review
+evidence. See the context-interview SPEC approval-through-merge contract.
+
+
 # Context Interview
 
 You are conducting a structured interview with a data analyst to build their
@@ -21,7 +30,7 @@ down the answers in a format an agent can query and a team can review.
 
 - **Confirm, don't author.** Auto-extract schema/dbt as a *draft to react to*, then
   let the analyst correct it. Never write a definition the analyst hasn't confirmed;
-  mark anything unconfirmed `status: draft`. The confirmation act itself follows
+  mark anything unconfirmed proposed working-branch content. The confirmation act itself follows
   "Selection beats confirmation" below — the analyst chooses among real readings or
   answers a contested atom; they don't rubber-stamp your paragraph.
 - **One domain at a time, value each round.** After each domain is captured, run
@@ -67,7 +76,7 @@ down the answers in a format an agent can query and a team can review.
   ladder. Rejected options are harvested, not discarded — see
   `references/eval-seed-harvesting.md`.
 - **Work long lists in small batches.** When a stage yields many items (terms,
-  entities, caveats), elicit the list first as `status: draft` stubs, then confirm
+  entities, caveats), elicit the list first as proposed working-branch content stubs, then confirm
   1–3 at a time with a visible progress count — never hand the analyst a wall of
   items to define at once. See "Working a long list" in `references/interview-flow.md`.
 - **Capture the disambiguation, not just the answer.** The eval seed needs the
@@ -98,7 +107,7 @@ the degraded path and continue normally. Never write or repair this file; only
 the explicitly invoked `setup-nodal` skill may do that. Never expose raw
 authentication errors or secrets in context files or reports.
 
-## The interview proceeds in six stages
+## The interview proceeds in seven stages
 
 Run them in order, but let the analyst jump around. Each stage has its own
 reference file — read it when you enter the stage. Don't load all of them up front.
@@ -110,18 +119,23 @@ reference file — read it when you enter the stage. Don't load all of them up f
 | 2. Domains | Discover domains *from dashboards*, capture each | `references/interview-flow.md` |
 | 3. Entities | Disambiguate the terms that map to data values | `references/interview-flow.md` |
 | 4. Caveats | The wrong-answer modes a senior analyst warns about | `references/interview-flow.md` |
-| 5. Verify | Answer live (off vs on), confirm vs dashboard, harvest seeds | `references/live-verification.md` |
+| 5. Verify | Answer live, compare with dashboard or independently rerun notebook, harvest seeds | `references/live-verification.md`, `references/notebook-verification.md` |
+| 6. Observed demand | Review queued questions, resolve gaps, retain equivalent phrasings, and import methods from notebooks on request | `references/observed-demand.md` |
 
 At every stage from 1 onward, emit eval seeds per
 `references/eval-seed-harvesting.md`. Stage 5 runs at each domain's close (see
 "Closing each domain") — it's where the analyst sees the context pay off.
+Stage 6 is also a resumable entry point for an existing repo. Queue presence
+does not authorize edits: present interpretation choices and a concrete preview
+before applying the corresponding reviewed changes. Derived definitions and
+new seeds remain draft until the normal human confirmation process completes.
 
 ## Two depths: full interview or test drive
 
 The stages above are the full interview. There is one other traversal — the
 **test drive** (`references/test-drive.md`): the same state machine at a hard
 ~30-minute, five-question budget for ONE domain, ending with a small live check
-and everything unasked left as `status: draft` stubs. It's the fastest way to
+and everything unasked left as proposed working-branch content stubs. It's the fastest way to
 see the whole loop work on the analyst's own data — interview, context, live
 delta — before they commit real time. Offer the choice right after Stage 0
 setup: *"Full interview for this domain, or a 30-minute test drive — five core
@@ -137,11 +151,15 @@ you enter it.
 
 ### Stage 0 — Setup (do this first, silently where possible)
 
-0. **Mode check (testing).** Look for a `.sim-analyst.json` marker at the repo root.
+0. **Mode check (testing).** Read the explicit simulation marker path from the
+   launch prompt when supplied; otherwise look for `.sim-analyst.json` at the
+   current project/context repo root. Keep its location across directory changes.
    If it exists, you're in **simulated-analyst mode** — read
    `references/simulated-analyst.md` and follow it for every question in all stages (a
    subagent answers from a brief; you escalate to the human only when it's not
-   confident). If the marker is absent, ignore this and run the normal human interview.
+   confident; non-interactive runs record the pending question and pause).
+   Simulator-only objects always remain draft with no invented approval metadata.
+   If the marker is absent, ignore this and run the normal human interview.
 1. Resolve resources from the directory containing the actually loaded
    `SKILL.md`; do not assume an environment variable or repository checkout.
    Read its bundled `references/SPEC.md`. After scaffolding, switch to the
@@ -176,7 +194,7 @@ you enter it.
    - **Analyst says continue → resume, don't scaffold** (the script refuses to overwrite
      anyway). Read `context.config.yaml` (which domains are wired),
      `company/org-structure.md` (the Domain | Owner | Status roster), and count
-     the remaining `status: draft` stubs. Open with a status summary and a
+     the remaining proposed working-branch content stubs. Open with a status summary and a
      choice instead of restarting Stage 1: *"Captured so far: billing
      (confirmed), scheduling (4 drafts open). Continue scheduling, or start a
      new domain?"* Follow "Updating an existing repo" in
@@ -188,11 +206,14 @@ you enter it.
    - **Analyst says fresh → scaffold** — only after they explicitly said so, and
      never into a directory that already contains a `context.config.yaml`:
      resolve `scripts/scaffold.py` from this loaded skill directory and run it
-     with the confirmed target. The script copies the template (end-user
+     with the confirmed target. In simulated mode, also pass
+     `--sim-marker /absolute/path/.sim-analyst.json` so the marker follows the
+     interview into its generated repo. The script copies the template (end-user
      `README.md`, consumption-first `CLAUDE.md`, and `AGENTS.md`) **plus** the CI support set
      (`.github/workflows/`, `.ci/`, `schemas/`, `SPEC.md`, context-repo-local
-     scripts, and `eval_harness/`) and self-checks the result. **Confirm the self-check
-     passes before continuing.** Then `git init -b main` + an initial commit — see
+     scripts, `acf_runtime/` and `eval_harness/`) and self-checks the result. **Confirm the self-check
+     passes before continuing.** Initialize a fresh repo with `git init -b main`;
+     commit only when requested — see
      `references/repo-scaffold.md` for details.
 3. Ask one breadth-first question: *"Which data platforms do your dashboards run on
    — just one warehouse, or a mix (e.g. Snowflake + BigQuery + Postgres)?"* Record
@@ -215,7 +236,7 @@ you enter it.
      needed) and read `target/manifest.json`, or fall back to parsing dbt source
      files. It yields grain evidence (uniqueness tests), real table names, value sets
      (`accepted_values`), join paths (`relationships`), dashboards (`exposures`), and
-     the model dependency graph — each drafted as `status: draft` tagged
+     the model dependency graph — each drafted as proposed working-branch content tagged
      `# dbt-derived`. It also reports what dbt did *not* provide, so you elicit those
      by hand instead of faking them. The local clone path is for extraction only —
      never persist it into `context.config.yaml`: derive the durable `repo:` from
@@ -237,7 +258,7 @@ you enter it.
      the rows into `.query-findings.json`. Recurring BI-service clusters become
      Stage-2 dashboard-catalog candidates; conflicting calculations over the same
      tables are interview *questions*, never answers. Everything drafted from it
-     is `status: draft`, tagged `# query-history-derived`. The step ends in
+     is proposed working-branch content, tagged `# query-history-derived`. The step ends in
      exactly one of four outcomes, each recorded in the step-6 disposition
      report:
      - probe succeeded → **mined**: run Phase A+B now;
@@ -253,7 +274,7 @@ you enter it.
      A probe that was down when you first read this bullet does not retire it —
      the condition gets re-checked, not the step skipped.
    - existing BI/dashboard titles if reachable.
-   Write these into `context.config.yaml` (lineage sources) and as `status: draft`
+   Write these into `context.config.yaml` (lineage sources) and as proposed working-branch content
    stubs. Tell the analyst: "I pulled a rough draft from your dbt project and schema.
    We'll correct it together — don't trust any of it yet." Never auto-assign a
    source's `warehouse:` from connection metadata without the analyst confirming it.
@@ -283,12 +304,32 @@ misunderstands. See `references/interview-flow.md` §1.
 A domain is *how the company already thinks about a slice of the business.* The
 best proxy is the dashboard catalog. Ask: "What are the dashboards your team
 maintains, and who owns each?" Cluster them. Each coherent cluster is a domain.
-When drafting metric expressions, use ACF 0.2 `any_of`/`all_of` for filter
+When drafting metric expressions, use ACF 0.3 `any_of`/`all_of` for filter
 alternatives, `entity_filters` for conditions on entity groups, and `metric(name)`
-for same-file metric arithmetic. Read back and confirm every component; edits
+for domain-local metric arithmetic. Read back and confirm every component; edits
 reset confirmed metrics to draft. Require grain, inherit lineage for reference-only
 arithmetic, and check dimension subsets and acyclic references. Keep placeholders
-under `parameters`; set `context.config.yaml: version` to 0.2 on adoption.
+under `parameters`; use `context.config.yaml: version: "0.3"`; legacy layouts require explicit migration first.
+
+Write each metric to `domains/<domain>/metrics/<name>.yaml`, with `name` matching
+the filename. Share repeated domain-local lineage, filters and parameters through
+`_shared.yaml`; consumers expand these before validation/matching. Use
+`metric(domain.name)` for explicit cross-domain composition. Ratios declare
+`zero_denominator` and a rationale. Inexpressible components name the unsupported
+construct and point to a confirmed anchored pattern or root method. Resolve
+family/alias choices and explicit open decisions with the human; never infer an
+approval from metadata or silently choose a family default.
+
+For composed analyses, author `methods/<slug>.md` with an owning domain, resolved
+metrics, parameters, decisions/`without_this`, output and qualitative checks.
+Review every decision and override, including stock/flow alignment where needed.
+Give each parameter a note and explain optional output columns in decisions.
+Governed entity references are dependencies; their draft status blocks the method.
+Declare referenced metrics explicitly and keep runtime literals in parameters,
+including in procedure steps. Illustrative worked examples may show bound values.
+Methods contain no runnable SQL/Python. Metrics, methods and seeds become approved only through protected human-reviewed
+merge. Keep changed interpretations on working branches and retain prior attribution
+as review history. Missing or stale authority evidence blocks governed use.
 
 For each domain capture `domain.yaml` (tables, grain, dashboards, **lineage
 pointer**, **owner**), a narrative `context.md`, and — the important one — a
@@ -324,15 +365,32 @@ dashboard they trust. When a browser MCP binding is available, the `dashboard-ve
 skill reads the dashboard (tier-tagged capture + filter state) and the analyst
 blesses the capture instead of reading numbers aloud; the reconciliation report it
 yields is the shareable proof. A match becomes a `value_at_snapshot` / `dashboard` seed; the
-blessed SQL is written to a gitignored sidecar (`evals/verified/<name>.sql`) that the
-seed's `verified_query_file` points at — never committed. A mismatch is harvested back
+blessed SQL is captured and encrypted in the same operation via
+`scripts/verified.py capture` (`references/verified-sql.md`). The seed's
+`verified_query_file` points at ignored plaintext `evals/verified/<name>.sql`;
+only `.sql.age`/`.sql.sops` ciphertext is eligible for commit. Report local-only
+mode or encryption failure explicitly. A mismatch is harvested back
 into the context (a caveat + a `correction` seed). Print the off→on→truth delta so the
 analyst sees the payoff. This is the free "see the aha once" runner — not the
 formal/continuous harness. See `references/live-verification.md`.
 
+For a notebook-derived method, use `references/notebook-verification.md`: statically
+import a draft with `scripts/import_notebook.py`, review its decisions with the
+analyst, then rerun the source notebook and independently generate and execute a
+method-based answer against identical pinned inputs. Use fresh answer context
+without the notebook implementation, reference output or expected seed values.
+Compare keyed results, disclosures and method checks. Only a real human-confirmed
+match promotes a notebook snapshot seed. Missing execution is blocked/skipped;
+static import and simulated-analyst answers never count as execution evidence.
+Return here after Stage 6 method review without restarting the interview. If the
+analyst defers verification, retain a local candidate case with the source pointer,
+question, known bindings and missing prerequisites; do not invent snapshot values.
+The reusable method retains its decisions and checks. Numerical expectations live
+in a separate method-targeted snapshot seed, graded on both numbers and behavior.
+
 ## Closing each domain
 
-When a domain's `reference.md`, `metrics.yaml`, seeds, and entity coverage
+When a domain's `reference.md`, `metrics/*.yaml`, seeds, and entity coverage
 (subject entities in `entities/<group>.yaml`, domain statuses in the domain's
 `entities.yaml`) exist:
 
@@ -340,22 +398,38 @@ When a domain's `reference.md`, `metrics.yaml`, seeds, and entity coverage
    anything that fails.
 2. Summarize what you captured and what's still `draft`. Confirm the domain's owner
    is recorded in both `domain.yaml` and `company/org-structure.md` (they must agree).
-3. Offer: "Want to see the context working — I'll answer a few of this domain's
-   questions with and without it, live, and you check them against your dashboard?"
-   If yes, run **Stage 5 — Live Verification** (`references/live-verification.md`):
-   the in-session off/on/truth pass. The formal/continuous delta at scale, drift,
-   and the hosted "perfect" baseline remain the harness (`eval_harness/INTERFACE.md`).
-4. Open a PR (or stage the diff) so the team reviews before it becomes trusted.
+3. Offer Stage 5 verification against the analyst's selected reference: a trusted
+   dashboard (`references/live-verification.md`) or a notebook-derived method
+   (`references/notebook-verification.md`). Dashboard verification uses the
+   in-session off/on/truth pass; notebook verification compares a fresh reference
+   run with an independent method answer. The formal/continuous delta at scale, drift,
+   and historical measurement remain separate harness/service concerns
+   (`eval_harness/INTERFACE.md`). Missing evidence never becomes a perfect score.
+4. Review the resulting diff with the analyst. Create a PR, commit or push only
+   when the user has requested that action. Repository review does not replace
+   the human confirmation of each definition.
+
+### Stage 6 — Observed demand and imported methods
+
+Use `references/observed-demand.md` to review the local queue in priority order,
+present semantic choices, and prepare/apply resumable edits. Equivalent questions
+may become reviewed variants; new slices or definitions stay draft pending their
+own confirmation. Correct declines use negative seeds. Dismissed observations
+do not create seeds. Keep queues and history local. Notebook import is static
+drafting; its independent result check remains Stage 5, even when discovered here.
+Stage 6 can be entered directly on an existing repo. It does not expand the
+five-question test drive or silently ingest every observed question.
 
 ## Pausing a session
 
 When the analyst wants to stop — mid-domain is fine — leave the repo in a state a
 future session (or a teammate) can pick up cold:
 
-1. **Commit everything, drafts included.** Draft stubs are the resume queue, not
-   scratch — a stub lost to an uncommitted working tree is a question that gets
-   re-asked. Use a message that names where work stopped, e.g.
-   `wip: scheduling domain — 4 entity drafts open`.
+1. **Preserve authored work, drafts included.** Draft stubs and local review
+   journals support resume. If the user requested a commit, inspect and commit
+   only the intended authored/support paths with a message naming where work
+   stopped, e.g. `wip: scheduling domain — 4 entity drafts open`. Otherwise leave
+   a reviewable working-tree diff. Never include raw queues, briefs or run evidence.
 2. **Print a two-line status:** confirmed domains, then open drafts by domain.
    This is the same summary resume mode (Stage 0) opens with.
 3. If a GitHub remote exists, offer to push so a teammate can continue from a
@@ -364,8 +438,8 @@ future session (or a teammate) can pick up cold:
 ## Wrap-up: hand the repo off to GitHub
 
 Once the analyst is done for the session, offer to put the repo on GitHub so the team
-can review by PR and the CI workflows run. Ask first — pushing the team's context is
-their call, not yours.
+can review by PR and the CI workflows run. Publishing requires their instruction;
+preserve explicit authorization already given in this session.
 
 - Check `gh auth status`. If it succeeds, offer: *"Want me to create the GitHub repo
   and push? I'll run `gh repo create <name> --private --source . --push`."* Run it
@@ -376,9 +450,9 @@ their call, not yours.
   git remote add origin git@github.com:<your-org>/<repo>.git
   git push -u origin main
   ```
-- Either way the local `git init -b main` + initial commit from Stage 0 already
-  exists, so there is always something to push (if the repo somehow sits on
-  `master`, rename first: `git branch -m master main`). Point the analyst at the
+- Before an authorized push, inspect the repository and reviewed paths; create
+  the necessary initial commit only within that authorization. Preserve an
+  existing branch and unrelated edits. Point the analyst at the
   repo's `README.md` for how their team then uses it with Claude Code, then move
   straight into the sharing offer below — with the actual links pasted, not just a
   pointer to `SHARING.md`.
@@ -451,14 +525,15 @@ user-facing block in the full-interview close.
 
 - You don't write SQL transformations or dbt models. (Stage 5 answering agents may
   issue **read-only** SELECTs against the warehouse to verify a number — never
-  DDL/DML. Runnable SQL lives in a seed's gitignored `evals/verified/` sidecar,
-  never in a committed seed. The one place SQL enters a *context* file is a
+  DDL/DML. Runnable approved SQL has an ignored plaintext sidecar and, when
+  configured, a committed encrypted counterpart; neither enters answer prompts
+  or a seed body. The one place SQL enters a *context* file is a
   confirmed, pattern-not-paste block under `reference.md` "Common query patterns"
   — `references/reference-doc-skeleton.md` draws the line.)
-- You don't compute the formal/continuous delta or maintain the hosted "perfect"
-  baseline — that's the harness. You *do* run the one-shot live verification (Stage 5).
+- You don't maintain continuous eval history or invent a perfect baseline. You
+  run the one-shot live verification (Stage 5); harness checks remain separate.
 - You don't invent a definition to fill a gap. Leave
-  `_To be confirmed by [owner]._` and mark `status: draft`.
+  `_To be confirmed by [owner]._` and mark proposed working-branch content.
 - You don't put numbers in context files.
 
 ## Guardrail: a confirmation loop, not an extraction — and not a rubber stamp

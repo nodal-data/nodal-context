@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nodaldata.io/acf/observed.schema.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "asked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ir": {
+      "$ref": "#/$defs/partialIR"
+    },
+    "metric_candidates": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "relation": {
+      "enum": [
+        "unresolved",
+        "ambiguous",
+        "equivalent",
+        "same_metric_new_slice",
+        "decomposes",
+        "related_only"
+      ]
+    },
+    "nearest_seeds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "linked",
+        "promoted",
+        "declined"
+      ]
+    },
+    "destinations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "disposition": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "id",
+    "text",
+    "asked_at",
+    "count",
+    "status"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"enum": ["linked", "promoted", "declined"]}}, "required": ["status"]},
+      "then": {"required": ["destinations", "disposition"]}
+    },
+    {
+      "if": {"properties": {"status": {"enum": ["linked", "promoted"]}}, "required": ["status"]},
+      "then": {"properties": {"destinations": {"minItems": 1}}}
+    }
+  ],
+  "$defs": {
+    "partialIR": {
+      "type": "object",
+      "properties": {
+        "metric": {"type": ["string", "null"], "minLength": 1},
+        "method": {"type": ["string", "null"], "minLength": 1},
+        "metrics": {"$ref": "ir.schema.json#/properties/metrics"},
+        "dimensions": {"$ref": "ir.schema.json#/properties/dimensions"},
+        "filters": {"$ref": "ir.schema.json#/properties/filters"},
+        "grain": {"$ref": "ir.schema.json#/properties/grain"},
+        "parameters": {"$ref": "ir.schema.json#/properties/parameters"},
+        "time_window": {"$ref": "ir.schema.json#/properties/time_window"},
+        "parts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/partialIR"}}
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -67,14 +67,18 @@ def run_tests():
             "  - name: plan_tier\n    description: TBD.\n    status: draft\n")
         (repo / "domains" / "billing" / "domain.yaml").write_text(
             "name: billing\nsummary: Invoices and collections.\nstatus: confirmed\n"
-            "grain: one row per invoice\ntables: {canonical: FCT_INVOICES}\n")
+            "grain: one row per invoice\ntables: {canonical: FCT_INVOICES}\nlineage: []\n")
         (repo / "domains" / "billing" / "reference.md").write_text(
             "# Billing Reference\n- IF question is about refunds → DO NOT use FCT_INVOICES.")
-        (repo / "domains" / "billing" / "metrics.yaml").write_text(
-            "metrics:\n"
-            "  - name: collection_rate\n    definition: Collected over billed.\n"
-            "    status: confirmed\n    caveats: [exclude invoices <30 days old]\n"
-            "  - name: dso\n    definition: TBD.\n    status: draft\n")
+        (repo / "domains" / "billing" / "metrics").mkdir()
+        (repo / "context.config.yaml").write_text(
+            "version: '0.3'\nwarehouse: snowflake\nlineage_sources: []\n")
+        (repo / "domains" / "billing" / "metrics" / "collection_rate.yaml").write_text(
+            "name: collection_rate\ndefinition: Collected over billed.\n"
+            "status: confirmed\napprover: fictional-test-owner\nconfirmed_at: '2026-10-01'\n"
+            "caveats: [exclude invoices <30 days old]\n")
+        (repo / "domains" / "billing" / "metrics" / "dso.yaml").write_text(
+            "name: dso\ndefinition: TBD.\nstatus: draft\n")
         skill_dir, stats = compile_skill.compile_skill(repo, td / "out2", None, False)
         assert stats["domains"] == ["billing"] and stats["drafts_excluded"] == 2
         ents = (skill_dir / "references" / "entities.md").read_text()

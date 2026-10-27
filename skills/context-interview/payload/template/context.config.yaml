@@ -1,19 +1,20 @@
 # context.config.yaml — repo metadata + the domain↔lineage map that makes
 # "context lives apart from lineage" safe. Every domain MUST carry a lineage
 # pointer so drift detection can fire when an upstream model changes.
-version: 0.2
+version: '0.3'
+approval_branch: main           # protected human-reviewed merge authority
 warehouse: snowflake            # default platform; a per-source `warehouse:` overrides it
                                 # (snowflake | bigquery | databricks | postgres | ...)
 
 lineage_sources:
-  - id: dbt_core
-    type: dbt                   # dbt | sqlmesh | raw_sql | none
-    repo: github.com/your-org/your-dbt
+- id: dbt_core
+  type: dbt                     # dbt | sqlmesh | raw_sql | none
+  repo: github.com/your-org/your-dbt
     # If the dbt repo runs the sender workflow (dbt-repo/notify-context-repo.yml) —
     # the norm, since target/ is usually gitignored on main — use its published
     # branch instead: `ref: dbt-manifest`, `manifest_path: manifest.json`.
-    ref: main
-    manifest_path: target/manifest.json
+  ref: main
+  manifest_path: target/manifest.json
   # Multiple warehouses / clouds? Tag the non-default source(s) with `warehouse:`,
   # e.g. a second platform — entries without `warehouse:` inherit the default above:
   # - id: dbt_bq_marketing
@@ -28,3 +29,17 @@ domains: {}                     # filled in per domain during the interview, e.g
   #   lineage:
   #     - source: dbt_core
   #       models: [fct_session_financials, dim_client]
+time_tokens:
+  calendar:
+  - last_month
+  - last_quarter
+  - current_billing_period
+  - all_time
+  fiscal: []
+variants:
+  max_per_seed: 20
+verified_sql:
+  encryption: none              # explicit local-only mode until the owner configures public recipients
+  decrypt_to: evals/verified/
+  # For portable keys use age or sops, with public age recipients supplied by the owner.
+  # Private identities stay in customer-managed files/CI secrets, never this config.

@@ -1,0 +1,27 @@
+question: Customer retention for the acquisition cohort last year?
+intent: Customer retention for the acquisition cohort last year?
+domain: customers
+provenance: generated
+expected:
+  kind: sql_shape
+  must_include:
+  - Count distinct canonical customers.
+  - Freeze cohort membership.
+  - Disclose incomplete follow-up.
+  must_exclude:
+  - Add customers acquired during follow-up to the original cohort.
+ir:
+  method: cohort-retention
+  metrics:
+  - new_customers
+  - active_customers
+  parameters:
+    base_window: <base_window>
+    followup_window: <followup_window>
+    as_of_date: <as_of_date>
+    cohort_anchor: acquisition
+  time_window: last_year
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

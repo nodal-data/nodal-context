@@ -1,39 +1,29 @@
 # CLAUDE.md
 
-This repo is the **business context layer** for [company]'s analytical data, in
-Analytics Context Format (ACF). When you are run from this directory, use it to
-answer data questions accurately — don't write SQL from raw schema alone.
+Read [GOVERNANCE.md](GOVERNANCE.md) for protected merge approval, live stale-state
+checks, explicit branch testing and legacy conversion. New definitions omit
+authored approval status; interview confirmation is evidence for review.
+
+
+This is [company]'s ACF 0.3 business context repository. Read `AGENTS.md` for the
+complete answering and editing contract, and follow it from this directory.
 
 ## Answering a data question
 
-1. Read `company/terminology.md` for what the company's terms mean.
-2. Identify the domain the question belongs to; read
-   `domains/<domain>/reference.md` **first** — it routes the query.
-3. Honor every `IF … DO NOT …` routing trigger and `caveats` you find. These encode
-   the silent-failure modes a senior analyst would warn about. When a "Common query
-   patterns" block matches the question, start your SQL from its form.
-4. Before computing a metric, read `domains/<domain>/metrics.yaml` and honor its
-   `parameters` and `caveats`. When a **confirmed** metric carries an
-   `expression:` block, build the query from it — its `measure`, every
-   `mandatory_filters` entry, and only `allowed_dimensions` slices — don't
-   re-derive the metric from schema. For ambiguous terms, check `entities/*.yaml`
-   (cross-domain) then `domains/<domain>/entities.yaml` (domain-specific).
-5. Issue **read-only** SQL (SELECT only — never DDL/DML) via the warehouse MCP
-   server only. (No warehouse MCP configured? See `README.md`.)
-6. If the context is silent on something the answer depends on, **say so** — do not
-   invent a definition. A flagged gap is more useful than a confident wrong answer.
+Start with per-metric YAML and entity definitions, resolve ambiguity, then use the
+relation-based prose ladder. Read root `methods/<slug>.md` for composed analyses.
+Use effective readiness, not just stored status: open decisions and draft
+references block governed use. Apply inherited filters, allowed dimensions,
+ratio policy, method decisions and required disclosures.
 
-If the answer depends on a caveat the context names, apply it and state it in your
-answer (e.g. "excluding sessions under 45 days, per the collection-rate caveat").
+Form a reviewable interpretation before read-only execution; preserve existing
+session approval. If execution or a required check is unavailable, say so. Do not
+invent business meanings, result values, credentials or human confirmations.
+Never use seed expectations, variants or verified SQL as answer-generation input.
 
-## Editing this repo
-
-Adding or correcting context (not answering a question)? You can edit this repo
-directly — it does **not** require a Nodal source checkout. Follow `AUTHORING.md`: only a
-human owner flips `status: draft → confirmed`, keep statistics and schema out (SQL
-only as confirmed `reference.md` query patterns — see `AUTHORING.md`), and
-run `python3 .ci/validate.py` before committing (CI runs the same check). For a
-**brand-new domain**, re-running the `context-interview` skill is the recommended —
-not required — path; it drafts from your dbt models and harvests eval seeds for you.
-
-To share this context with your team over MCP, see `SHARING.md`.
+For edits, follow `AUTHORING.md` or invoke the installed `context-interview` skill.
+The interview has stages 0–6; its quick test drive remains five core questions.
+Static notebook imports and simulated-analyst answers stay draft. Only independent
+execution evidence plus human review can confirm a notebook snapshot. Run the
+local validator before proposing a commit. Commit/push/publication require the
+user's instruction. See `SHARING.md` before serving this repo to a team.

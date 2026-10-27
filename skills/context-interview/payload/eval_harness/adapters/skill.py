@@ -63,7 +63,25 @@ def _skill_dir(root: Path) -> Path:
 
 
 def _build_from_dir(skill_dir: Path, domains) -> NCR:
+    # Recognize ACF exports without changing the generic skill/NCR contract.
+    import json
+    import os
+    proof_path = skill_dir / "governance.json"
+    proposed = False
+    if proof_path.is_file():
+        proof = json.loads(proof_path.read_text())
+        if proof.get("format") == "acf-export/1":
+            if os.environ.get("ACF_BRANCH_TEST") == "1":
+                proposed = True
+            else:
+                source = os.environ.get("ACF_EXPORT_SOURCE")
+                if not source:
+                    raise ValueError("ACF export requires a live-approved source checkout (ACF_EXPORT_SOURCE), or explicit branch-test mode")
+                from scripts.compile_skill import verify_export
+                verify_export(Path(source), skill_dir)
     meta, body = _split_frontmatter(_read(skill_dir / "SKILL.md"))
+    if proposed:
+        body = "BRANCH TEST: proposed exported context; no approval or freshness claim.\n" + body
     name = str(meta.get("name") or skill_dir.name)
     shared = [f"# Skill: {name}\n{body}" if body else ""]
 

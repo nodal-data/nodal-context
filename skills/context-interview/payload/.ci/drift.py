@@ -6,13 +6,20 @@ context describes. This script computes the current column-set and test-set for 
 referenced model (via scripts/dbt_extract.py) and diffs them against a committed
 baseline (.ci/lineage-baseline.json). When a model's columns or tests change — or the
 model disappears — the context written about it may now be stale, so we list the
-affected domains and their context files and exit non-zero. CI turns that into an issue.
+affected objects and transitive consumers and exits non-zero. Reporting is read-only.
+--prepare-patch writes a status-only proposal under ignored .nodal/drift; explicit
+--apply-plan with its digest persists drafts and can resume an interrupted write.
+Human approval metadata and the lineage baseline are preserved by status changes.
 
   # Establish/refresh the baseline (run once, then commit .ci/lineage-baseline.json):
   python .ci/drift.py --update-baseline --manifest dbt_core=target/manifest.json
 
   # Check for drift (CI default; exit 1 = drift found, exit 0 = clean):
   python .ci/drift.py --manifest dbt_core=target/manifest.json --out drift-report.md
+
+  # Prepare, inspect, then explicitly apply exactly that status-only preview:
+  python .ci/drift.py --manifest dbt_core=target/manifest.json --prepare-patch --json-out .nodal/drift-report.json
+  python .ci/drift.py --apply-plan .nodal/drift/RUN_ID/plan.json --sha256 REVIEWED_DIGEST
 
 Each `--manifest SOURCE_ID=PATH` supplies one lineage source's manifest (run
 `dbt parse` in that repo first — no warehouse needed). A referenced source with no
@@ -33,13 +40,16 @@ from pathlib import Path
 
 # Reuse the manifest parser that already maps dbt -> column/test signal.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import dbt_extract  # noqa: E402
+from acf_runtime.loader import load_context
+from acf_runtime.impact import lineage_impact, path_impact
+from acf_runtime.drift import prepare, apply, render_impact
 
 BASELINE_VERSION = 1
 # Context files a domain may carry; we list whichever exist next to a drifted model.
 DOMAIN_FILES = (
     "domain.yaml",
-    "metrics.yaml",
     "entities.yaml",
     "reference.md",
     "known-issues.md",
@@ -95,11 +105,12 @@ def load_config(path):
       domains    : {domain_name: [(source_id, [model, ...]), ...]}
       referenced : {source_id: set(model_names)}  (union across all domains)
     """
-    try:
-        import yaml
-    except ImportError:
-        _die("context.config.yaml parsing needs PyYAML (pip install pyyaml)")
-    cfg = yaml.safe_load(Path(path).read_text()) or {}
+    if Path(path).name != "context.config.yaml":
+        raise ValueError("drift requires the canonical context.config.yaml")
+    registry = load_context(Path(path).resolve().parent)
+    if registry.errors:
+        raise ValueError("ACF 0.3 context must validate before drift analysis: " + ", ".join(sorted({d.code for d in registry.errors})))
+    cfg = registry.config
     domains, referenced = {}, {}
     for name, spec in (cfg.get("domains") or {}).items():
         entries = []
@@ -112,6 +123,16 @@ def load_config(path):
             referenced.setdefault(source_id, set()).update(models)
         if entries:
             domains[name] = entries
+    # Per-object and transitive lineage is authoritative even when the config's
+    # optional domain convenience map was never populated.
+    for node in registry.nodes.values():
+        for source, model in node.lineage:
+            referenced.setdefault(source, set()).add(model)
+            if node.domain:
+                domains.setdefault(node.domain, [])
+                pair = (source, [model])
+                if not any(s == source and model in models for s, models in domains[node.domain]):
+                    domains[node.domain].append(pair)
     return domains, referenced
 
 
@@ -131,14 +152,30 @@ def compute_current(referenced, manifests):
         if not path:
             unchecked_sources.append(source_id)
             continue
-        findings = dbt_extract.from_manifest(json.loads(Path(path).read_text()))
-        by_name = {m["name"]: m for m in findings["models"]}
+        manifest = json.loads(Path(path).read_text())
+        resources = {key: value for key, value in {**manifest.get("nodes", {}), **manifest.get("sources", {})}.items()
+                     if value.get("resource_type") in ("model", "seed", "snapshot", "source")}
+        aliases = {}
+        for key, value in resources.items():
+            aliases.setdefault(value["name"], []).append(key)
         sigs, absent = {}, []
         for model in sorted(referenced[source_id]):
-            if model in by_name:
-                sigs[model] = model_signature(by_name[model])
-            else:
-                absent.append(model)
+            candidates = [model] if model in resources else aliases.get(model, [])
+            if len(candidates) != 1:
+                absent.append(model)  # absent or ambiguous short name, never guess
+                continue
+            key = candidates[0]
+            value = resources[key]
+            tests = []
+            for test in manifest.get("nodes", {}).values():
+                if test.get("resource_type") != "test" or test.get("attached_node") != key:
+                    continue
+                meta = test.get("test_metadata") or {}
+                kind = dbt_extract._norm_test_name(meta.get("name"))
+                if kind in dbt_extract.KNOWN_TESTS:
+                    tests.append({"type": kind, "column": test.get("column_name"), "kwargs": meta.get("kwargs", {})})
+            sigs[model] = model_signature({"columns": [{"name": col.get("name", name)}
+                for name, col in (value.get("columns") or {}).items()], "tests": tests})
         current[source_id] = sigs
         if absent:
             missing_models[source_id] = absent
@@ -180,7 +217,8 @@ def build_baseline(current):
 
 def _domain_files(repo_root, domain):
     d = repo_root / "domains" / domain
-    return [f"domains/{domain}/{f}" for f in DOMAIN_FILES if (d / f).exists()]
+    return [f"domains/{domain}/{f}" for f in DOMAIN_FILES if (d / f).exists()] + [
+        p.relative_to(repo_root).as_posix() for p in sorted((d / "metrics").glob("*.yaml"))]
 
 
 def _model_lines(rec):
@@ -261,25 +299,41 @@ def build_report(domains, changes, missing_models, unchecked_sources, repo_root)
 
 # ----- main -------------------------------------------------------------------
 
-def _parse_manifest_args(pairs):
+def _parse_manifest_args(pairs, map_path=None):
     manifests = {}
+    if map_path:
+        from eval_harness.execution import strict_json
+        manifests = strict_json(Path(map_path).read_text())
+        if not isinstance(manifests, dict) or not all(
+                isinstance(key, str) and key and isinstance(path, str) and path
+                for key, path in manifests.items()):
+            raise ValueError("--manifest-map must contain a JSON source-ID to path object")
     for pair in pairs or []:
         if "=" not in pair:
             _die(f"--manifest expects SOURCE_ID=PATH, got {pair!r}")
         source_id, path = pair.split("=", 1)
+        if not source_id.strip() or not path.strip() or source_id.strip() in manifests:
+            raise ValueError("manifest source IDs and paths must be nonempty; supply each source once")
         manifests[source_id.strip()] = path.strip()
     return manifests
+
+
+def _write_output(path, text):
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(text)
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--config", default="context.config.yaml",
+    ap.add_argument("--config",
                     help="path to context.config.yaml (default: ./context.config.yaml)")
-    ap.add_argument("--baseline", default=".ci/lineage-baseline.json",
+    ap.add_argument("--baseline",
                     help="path to the committed baseline JSON")
     ap.add_argument("--manifest", action="append", metavar="SOURCE_ID=PATH",
                     help="manifest for one lineage source; repeatable")
+    ap.add_argument("--manifest-map", help="JSON source-ID to path map from collect_manifests.py")
     ap.add_argument("--update-baseline", action="store_true",
                     help="write the current state to --baseline and exit 0")
     ap.add_argument("--fail-on-unchecked", action="store_true",
@@ -287,22 +341,60 @@ def main(argv=None):
     ap.add_argument("--out", help="also write the markdown report here")
     ap.add_argument("--repo-root", default=".",
                     help="repo root used to locate domains/ context files")
+    ap.add_argument("--json-out", help="write structured impact and optional patch metadata")
+    ap.add_argument("--prepare-patch", action="store_true", help="prepare status-only patch under ignored .nodal/drift; no authored writes")
+    ap.add_argument("--apply-plan", help="explicitly apply/resume a prepared repo-relative .nodal/drift/<id>/plan.json")
+    ap.add_argument("--sha256", help="exact reviewed plan digest required with --apply-plan")
+    ap.add_argument("--changed-files", nargs="*", help="analyze authored context changes instead of upstream manifests")
+    ap.add_argument("--base-root", help="base context directory for authored deletion/rename impact")
     args = ap.parse_args(argv)
 
-    repo_root = Path(args.repo_root)
+    repo_root = Path(args.repo_root).resolve()
+    args.config = args.config or str(repo_root / "context.config.yaml")
+    args.baseline = args.baseline or str(repo_root / ".ci/lineage-baseline.json")
+    if Path(args.config).resolve() != repo_root / "context.config.yaml":
+        raise ValueError("--config must identify the selected context root's context.config.yaml")
+    if args.apply_plan:
+        if not args.sha256 or args.update_baseline or args.prepare_patch or args.changed_files is not None:
+            raise ValueError("--apply-plan requires --sha256 and cannot be combined with detection/baseline mutation")
+        result = apply(repo_root, args.apply_plan, args.sha256)
+        print(json.dumps(result, indent=2))
+        return 0
+    if args.changed_files is not None:
+        if args.update_baseline or args.manifest or args.manifest_map:
+            raise ValueError("authored-change impact is separate from lineage baseline/manifest operations")
+        impact = path_impact(repo_root, args.changed_files, base_root=args.base_root)
+        registry = load_context(repo_root)
+        affected = {item["id"] for item in impact["objects"]}
+        impact["snapshot_batch"] = sorted(n.id for n in registry.seeds if n.id in affected
+                                           and n.data["expected"]["kind"] == "value_at_snapshot")
+        report = render_impact(impact)
+        result = {"impact": impact, "status": "reported_not_applied"}
+        if args.prepare_patch:
+            if impact["fallback"]:
+                raise ValueError("cannot prepare a precise patch from unresolved base/head graphs")
+            result["patch"] = prepare(repo_root, impact, source_changes={"paths": sorted(args.changed_files)})
+        if args.out:
+            _write_output(args.out, report)
+        if args.json_out:
+            _write_output(args.json_out, json.dumps(result, indent=2) + "\n")
+        print(report)
+        if result.get("patch"):
+            print(json.dumps(result["patch"], indent=2))
+        return 1 if impact["objects"] else 0
     domains, referenced = load_config(args.config)
     if not referenced:
         _die(f"no domain lineage found in {args.config}; nothing to reconcile")
 
-    manifests = _parse_manifest_args(args.manifest)
+    manifests = _parse_manifest_args(args.manifest, args.manifest_map)
     current, missing_models, unchecked = compute_current(referenced, manifests)
     for s in unchecked:
         _warn(f"source {s!r} referenced but no manifest supplied; drift not evaluated")
 
     if args.update_baseline:
-        if unchecked:
-            _warn("writing baseline with unchecked sources omitted — supply all "
-                  "manifests for a complete baseline")
+        if unchecked or missing_models:
+            raise ValueError("baseline unchanged: supply all referenced models/sources before explicitly updating it")
+        Path(args.baseline).parent.mkdir(parents=True, exist_ok=True)
         Path(args.baseline).write_text(
             json.dumps(build_baseline(current), indent=2, sort_keys=True) + "\n")
         print(f"drift: baseline written to {args.baseline}")
@@ -313,12 +405,37 @@ def main(argv=None):
         _die(f"baseline {args.baseline} not found; create it once with "
              "--update-baseline and commit it")
     baseline = json.loads(baseline_path.read_text())
+    if not isinstance(baseline, dict) or baseline.get("version") != BASELINE_VERSION or not isinstance(baseline.get("sources"), dict):
+        raise ValueError("unsupported or malformed lineage baseline")
 
     changes = diff_signatures(baseline, current)
     report, drifted = build_report(domains, changes, missing_models, unchecked, repo_root)
+    registry = load_context(repo_root)
+    if registry.errors:
+        raise ValueError("context graph is invalid; cannot compute object-level drift")
+    changed_models = {(source, model) for source, models in changes.items() for model in models}
+    changed_models.update((source, model) for source, models in missing_models.items() for model in models)
+    impact = lineage_impact(registry, changed_models)
+    report += "\n" + render_impact(impact)
+    result = {"impact": impact, "status": "reported_not_applied", "unchecked_sources": unchecked}
+    if args.prepare_patch and drifted:
+        result["patch"] = prepare(repo_root, impact, source_changes={"changes": changes, "missing_models": missing_models})
+    from acf_runtime.governance import digest
+    result["source_evidence"] = {}
+    for source, path in manifests.items():
+        if source not in unchecked:
+            raw = Path(path).read_bytes()
+            import hashlib
+            fingerprint = hashlib.sha256(raw).hexdigest()
+            result["source_evidence"][source] = {"status": "checked", "revision": "sha256:" + fingerprint, "digest": fingerprint}
+    result["changes"] = changes
+    if args.json_out:
+        _write_output(args.json_out, json.dumps(result, indent=2) + "\n")
     print(report)
+    if result.get("patch"):
+        print(json.dumps(result["patch"], indent=2))
     if args.out:
-        Path(args.out).write_text(report)
+        _write_output(args.out, report)
     if drifted:
         return 1
     if unchecked and args.fail_on_unchecked:
@@ -327,4 +444,8 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except (ValueError, OSError) as exc:
+        print(f"drift: ERROR: {exc}", file=sys.stderr)
+        raise SystemExit(2)

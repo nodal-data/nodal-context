@@ -1,0 +1,23 @@
+name: renewal_rate
+definition: Renewed terms divided by renewed plus churned terms ending in the selected window.
+aliases:
+- term retention
+- term renewal rate
+grain: decided subscription term
+temporal_kind: rate
+lineage: inherit
+expression:
+  measure: metric(renewed_terms) / (metric(renewed_terms) + metric(churned_terms))
+  mandatory_filters: []
+  allowed_dimensions:
+  - plan
+  - segment
+  ratio:
+    zero_denominator:
+    reason: An empty decided population has no rate.
+caveats:
+- Undecided and test terms are excluded. The period is the predecessor term end date.
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

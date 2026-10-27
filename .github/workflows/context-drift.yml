@@ -11,30 +11,42 @@
 #     Tiny manifests may instead ride inline as
 #     client_payload.manifests = {source_id: "<base64 manifest.json>"} — but note
 #     GitHub caps dispatch payloads at ~64 KB, which real manifests quickly exceed.
-#   - A weekly cron is the safety net if nothing dispatches.
+#   - A six-hour cron is the safety net if nothing dispatches.
 #   - workflow_dispatch lets you run it by hand.
 name: context-drift
 on:
+  push:
+    branches-ignore: [acf-governance]  # immediately refresh source evidence for each approval-branch merge
   repository_dispatch:
     types: [lineage-changed]
   schedule:
-    - cron: '0 7 * * 1'          # weekly safety net (Mondays 07:00 UTC)
+    - cron: '0 */6 * * *'          # six-hour safety net; evidence expires after 24 hours
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
   issues: write
+
+concurrency:
+  group: acf-governance-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   drift:
+    if: github.ref == format('refs/heads/{0}', (vars.ACF_APPROVAL_BRANCH || 'main'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ (vars.ACF_APPROVAL_BRANCH || 'main') }}
+          persist-credentials: false
+          fetch-depth: 0  # prior human seed approval is data, never executed code
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install pyyaml
+      - run: pip install pyyaml jsonschema ruamel.yaml anthropic
 
       # Gather each lineage source's manifest (dispatch payload first, else clone the
       # dbt repo named in context.config.yaml using DBT_REPO_TOKEN). Sources we can't
@@ -44,8 +56,8 @@ jobs:
         env:
           DBT_REPO_TOKEN: ${{ secrets.DBT_REPO_TOKEN }}
         run: |
-          python .ci/collect_manifests.py --out-dir .manifests > manifest-args.txt
-          echo "manifest args: $(cat manifest-args.txt)"
+          mkdir -p .nodal/manifests
+          python .ci/collect_manifests.py --out-dir .nodal/manifests > .nodal/manifests/map.json
 
       # Diff column/test sets vs the committed baseline. Exit 1 == drift, exit 3 ==
       # no drift but a source could not be acquired (a silent false negative unless we
@@ -54,46 +66,55 @@ jobs:
         id: drift
         run: |
           set +e
-          python .ci/drift.py $(cat manifest-args.txt) --fail-on-unchecked --out drift-report.md
+          python .ci/drift.py --manifest-map .nodal/manifests/map.json --fail-on-unchecked --prepare-patch --json-out .nodal/drift-report.json --out .nodal/drift-report.md
           echo "rc=$?" >> "$GITHUB_OUTPUT"
 
-      # Optional BYO-key step: if ANTHROPIC_API_KEY is configured, draft status:draft
-      # ACF edits from the report. Runs in the customer's own runner with their key —
-      # zero LLM cost to Nodal, no data leaves the repo. Skipped when the secret is unset.
-      - name: Suggest draft edits (optional)
-        if: steps.drift.outputs.rc == '1' && env.ANTHROPIC_API_KEY != ''
+      # Publish revocation before any repair PR. Separate ref, no merge needed.
+      - name: Record immediate stale state and source check evidence
+        if: steps.drift.outputs.rc == '0' || steps.drift.outputs.rc == '1' || steps.drift.outputs.rc == '3'
         env:
+          GH_TOKEN: ${{ secrets.ACF_GOVERNANCE_TOKEN }}
+          ACF_GOVERNANCE_REPOSITORY: ${{ github.repository }}
+          ACF_GOVERNANCE_WRITER: ${{ vars.ACF_GOVERNANCE_WRITER }}
+          APPROVAL_BRANCH: ${{ vars.ACF_APPROVAL_BRANCH || 'main' }}
+        run: python scripts/governance_github.py drift --branch "$APPROVAL_BRANCH" --report .nodal/drift-report.json
+
+      - name: Prepare checked publication
+        id: prepare
+        if: steps.drift.outputs.rc == '0' || steps.drift.outputs.rc == '1' || steps.drift.outputs.rc == '3'
+        env:
+          DEFAULT_BRANCH: ${{ (vars.ACF_APPROVAL_BRANCH || 'main') }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          pip install anthropic
-          python .ci/suggest.py --report drift-report.md --out drift-suggestions.md
+          python .ci/prepare_drift_publication.py --base-ref "$DEFAULT_BRANCH" \
+            --github-output "$GITHUB_OUTPUT" --github-summary "$GITHUB_STEP_SUMMARY"
 
-      - name: Open or update drift issue
-        if: steps.drift.outputs.rc == '1' || steps.drift.outputs.rc == '3'
+      # Legacy conversion patches and the affected list may be published. Never
+      # upload .nodal wholesale: plans and executor evidence remain private.
+      - name: Retain review patch
+        id: patch
+        if: steps.prepare.outputs.publish == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: context-drift-review
+          path: |
+            .nodal/drift-publication/status.patch
+            .nodal/drift-publication/affected.md
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Open or update drift PR, or issue fallback
+        if: steps.prepare.outputs.publish == 'true'
         uses: actions/github-script@v7
+        env:
+          DRIFT_ARTIFACT_URL: ${{ steps.patch.outputs.artifact-url }}
         with:
           script: |
             const fs = require('fs');
-            const suggestions = fs.existsSync('drift-suggestions.md')
-              ? '\n\n' + fs.readFileSync('drift-suggestions.md', 'utf8') : '';
-            const body = fs.readFileSync('drift-report.md', 'utf8') + suggestions
-              + '\n\n_Filed automatically by the context-drift workflow._';
-            const title = '${{ steps.drift.outputs.rc }}' === '1'
-              ? 'Context drift detected'
-              : 'Context drift: lineage sources unchecked';
-            const { owner, repo } = context.repo;
-            const existing = await github.rest.issues.listForRepo({
-              owner, repo, state: 'open', labels: 'context-drift', per_page: 1,
-            });
-            if (existing.data.length) {
-              await github.rest.issues.update({
-                owner, repo, issue_number: existing.data[0].number, title, body,
-              });
-            } else {
-              await github.rest.issues.create({
-                owner, repo, title, body, labels: ['context-drift'],
-              });
-            }
+            const publish = require('./.ci/publish_drift.cjs');
+            const payload = JSON.parse(fs.readFileSync('.nodal/drift-publication/publication.json', 'utf8'));
+            await publish({github, context, core, payload, artifactUrl: process.env.DRIFT_ARTIFACT_URL});
 
       - name: Fail the check if drift was found or a source went unchecked
         if: steps.drift.outputs.rc != '0'

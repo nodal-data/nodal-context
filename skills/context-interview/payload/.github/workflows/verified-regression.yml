@@ -1,0 +1,74 @@
+# Explicit customer execution only. Never run this on pull_request or on PR code
+# via pull_request_target. The default-branch checkout and protected environment
+# are the trust boundary for decryption keys and customer authentication.
+name: verified-regression
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    env:
+      ACF_GOVERNANCE_COMMAND: ${{ vars.ACF_GOVERNANCE_COMMAND }}
+      ACF_GOVERNANCE_REPOSITORY: ${{ github.repository }}
+      ACF_GOVERNANCE_WRITER: ${{ vars.ACF_GOVERNANCE_WRITER }}
+    if: github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ${{ vars.NODAL_REGRESSION_RUNNER || 'ubuntu-latest' }}
+    environment: nodal-regression
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install local validation and SQL parsing dependencies
+        run: python -m pip install jsonschema pyyaml sqlglot
+      # Install/authorize the customer's executor on this runner through the
+      # customer's own provisioning. No warehouse connector or credential setup
+      # is bundled. Commands below are argv JSON, not shell snippets.
+      - name: Check customer execution configuration
+        id: configured
+        env:
+          EXECUTOR: ${{ vars.NODAL_REGRESSION_EXECUTOR }}
+        run: |
+          if [ -z "$EXECUTOR" ]; then
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo 'Customer regression skipped: NODAL_REGRESSION_EXECUTOR is unconfigured. No regression pass was measured.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check configured crypto tools
+        if: steps.configured.outputs.enabled == 'true'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          import yaml
+          config = yaml.safe_load(Path('context.config.yaml').read_text())
+          backend = config.get('verified_sql', {}).get('encryption', 'none')
+          if backend != 'none' and not shutil.which(backend):
+              print('Crypto executable unavailable; affected seeds will be reported skipped. Provision the configured age or SOPS executable on the customer runner.')
+          PY
+      - name: Prepare owned temporary checkout
+        if: steps.configured.outputs.enabled == 'true'
+        id: workspace
+        run: python .ci/regression_ci.py prepare >> "$GITHUB_OUTPUT"
+      - name: Run customer regression
+        if: steps.configured.outputs.enabled == 'true'
+        env:
+          NODAL_REGRESSION_EXECUTOR: ${{ vars.NODAL_REGRESSION_EXECUTOR }}
+          NODAL_REGRESSION_JUDGE: ${{ vars.NODAL_REGRESSION_JUDGE }}
+          NODAL_VERIFIED_IDENTITY: ${{ secrets.NODAL_VERIFIED_IDENTITY }}
+          NODAL_WORKSPACE: ${{ steps.workspace.outputs.path }}
+        run: python .ci/regression_ci.py run --workspace "$NODAL_WORKSPACE"
+      - name: Always remove plaintext, identities, rows and judge evidence
+        if: always() && steps.workspace.outputs.path != ''
+        env:
+          NODAL_WORKSPACE: ${{ steps.workspace.outputs.path }}
+        run: python .ci/regression_ci.py cleanup --workspace "$NODAL_WORKSPACE"
+      # No upload-artifact or PR-comment step: only sanitized IDs/status categories
+      # are written to the job summary. The cleanup also covers failed executions.

@@ -3,15 +3,16 @@
 
 Runs only when ANTHROPIC_API_KEY is set. Reads the markdown report produced by
 `.ci/drift.py`, loads the context files it flagged, and asks Claude to draft concrete
-edits — always `status: draft`, tagged `# dbt-derived`, for a human to confirm. This
+edits on a working branch, tagged `# dbt-derived`, for human review and merge. This
 preserves the repo's core invariant: the model drafts, the analyst owns every
 definition (see CLAUDE.md / README.md). It NEVER edits files; it only writes a
 suggestion block the reconciliation PR/issue can carry.
 
-  python .ci/suggest.py --report drift-report.md --out drift-suggestions.md
+  python .ci/suggest.py --report .nodal/drift-report.md --out .nodal/drift-suggestions.md
 
 This is the BYO-key path: it runs in the customer's own GitHub Action with the
-customer's key, so reconciliation costs Nodal nothing and no data leaves their repo.
+customer's key. The selected context/report is sent to the customer's model
+provider. This optional local helper is not part of automatic status publication.
 """
 import argparse
 import os
@@ -19,18 +20,25 @@ import re
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from acf_runtime.verified import contained, atomic_private
+
 MODEL = "claude-opus-4-8"
 # Bound what we send so a huge drift never blows up the request.
 MAX_FILE_CHARS = 8000
 MAX_FILES = 20
+MAX_REPORT_CHARS = 24000
+MAX_OUTPUT_CHARS = 32000
 
 SYSTEM = (
     "You help maintain an Analytics Context Format (ACF) repository. dbt models that "
     "feed the context changed, and the context may now be stale. Propose concrete, "
     "minimal edits to the named context files.\n\n"
     "Hard rules — the repo's reason to exist depends on these:\n"
-    "- A human owns every definition. You DRAFT; the analyst confirms. Mark every new "
-    "or changed field `status: draft`.\n"
+    "- A human owns every definition. Propose working-branch edits without authored status. "
+    "Protected human-reviewed merge is the approval mechanism. "
+    "Preserve old human attribution; never invent approver or confirmed_at.\n"
     "- Tag each dbt-derived suggestion with a `# dbt-derived` comment so its origin is "
     "auditable.\n"
     "- No statistics or numbers — qualitative business logic only.\n"
@@ -46,8 +54,11 @@ def _warn(msg):
 
 
 def affected_files(report_text):
-    """Pull the context file paths drift.py listed (domains/<d>/<file>)."""
-    paths = re.findall(r"domains/[^\s,]+?\.(?:yaml|md)", report_text)
+    """Only 0.3 authored-context paths; never seeds, caches or notebook sidecars."""
+    paths = re.findall(
+        r"(?<![\w/.-])(?:domains/[A-Za-z0-9_-]+/(?:(?:metrics/[A-Za-z_][A-Za-z0-9_-]*|domain|entities)\.yaml|"
+        r"(?:context|reference|known-issues)\.md)|entities/[A-Za-z_][A-Za-z0-9_-]*\.yaml|"
+        r"methods/[A-Za-z_][A-Za-z0-9_-]*\.md|company/(?:overview|terminology)\.md)(?![A-Za-z0-9/.-])", report_text)
     # dedupe, preserve order
     seen, out = set(), []
     for p in paths:
@@ -58,13 +69,22 @@ def affected_files(report_text):
 
 
 def build_prompt(report_text, repo_root):
+    if len(report_text) > MAX_REPORT_CHARS:
+        raise ValueError("report exceeds suggestion limit")
     parts = ["# Drift report\n", report_text, "\n\n# Current content of affected files\n"]
     for rel in affected_files(report_text):
-        f = repo_root / rel
+        try:
+            f = contained(repo_root, rel, ".")
+        except ValueError:
+            parts.append(f"\n## {rel}\n(unavailable; path rejected)\n")
+            continue
         if not f.exists():
             parts.append(f"\n## {rel}\n(missing on disk)\n")
             continue
-        body = f.read_text()[:MAX_FILE_CHARS]
+        if f.stat().st_size > MAX_FILE_CHARS:
+            parts.append(f"\n## {rel}\n(omitted: input limit; ask the analyst instead of inferring content)\n")
+            continue
+        body = f.read_text()
         parts.append(f"\n## {rel}\n```\n{body}\n```\n")
     parts.append("\nPropose draft edits for these files based on the drift above.")
     return "".join(parts)
@@ -73,8 +93,8 @@ def build_prompt(report_text, repo_root):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--report", default="drift-report.md")
-    ap.add_argument("--out", default="drift-suggestions.md")
+    ap.add_argument("--report", default=".nodal/drift-report.md")
+    ap.add_argument("--out", default=".nodal/drift-suggestions.md")
     ap.add_argument("--repo-root", default=".")
     args = ap.parse_args(argv)
 
@@ -92,27 +112,35 @@ def main(argv=None):
         _warn("anthropic SDK not installed (pip install anthropic); skipping")
         return 0
 
-    client = anthropic.Anthropic()
-    prompt = build_prompt(report.read_text(), Path(args.repo_root))
+    try:
+        prompt = build_prompt(report.read_text(), Path(args.repo_root))
+        destination = contained(args.repo_root, args.out, ".nodal")
+        client = anthropic.Anthropic(timeout=60, max_retries=0)
 
-    # Streaming so a large suggestion can't hit the request timeout; adaptive thinking
-    # because mapping a dbt diff to careful draft edits benefits from reasoning.
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=8000,
-        system=SYSTEM,
-        thinking={"type": "adaptive"},
-        messages=[{"role": "user", "content": prompt}],
-    ) as stream:
-        message = stream.get_final_message()
+        # A bounded, optional request; failure never substitutes for human review.
+        with client.messages.stream(
+            model=MODEL,
+            max_tokens=8000,
+            system=SYSTEM,
+            thinking={"type": "adaptive"},
+            messages=[{"role": "user", "content": prompt}],
+        ) as stream:
+            message = stream.get_final_message()
+        text = "".join(b.text for b in message.content if b.type == "text").strip()
+    except Exception:
+        _warn("context or model unavailable; no suggestions produced")
+        return 0
 
-    text = "".join(b.text for b in message.content if b.type == "text").strip()
-    if not text:
-        _warn("model returned no suggestions")
+    if not text or len(text) > MAX_OUTPUT_CHARS:
+        _warn("model returned empty or oversized suggestions")
         return 0
 
     body = "## Suggested draft edits (LLM-generated, unconfirmed)\n\n" + text + "\n"
-    Path(args.out).write_text(body)
+    try:
+        atomic_private(destination, body.encode(), overwrite=True)
+    except (ValueError, OSError):
+        _warn("local suggestion output unavailable")
+        return 0
     print(body)
     return 0
 

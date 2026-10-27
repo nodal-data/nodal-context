@@ -4,13 +4,10 @@
   "title": "ACF Question IR",
   "description": "The structured decomposition of a data question: which metric, sliced how, filtered how, over what window. Shared contract \u2014 the eval seed's `ir:` block and the disambiguator/router's production output are the same object. The filter item shape is intentionally identical to metric.schema.json's expression.mandatory_filters.",
   "type": "object",
-  "required": [
-    "metric"
-  ],
   "properties": {
     "metric": {
       "type": "string",
-      "description": "Name reference into domains/<domain>/metrics.yaml (the seed's `domain` scopes the lookup)."
+      "minLength": 1
     },
     "dimensions": {
       "type": "array",
@@ -51,6 +48,22 @@
         }
       ],
       "description": "Relative token (last_quarter, last_30_days, ytd, all_time, ...) for evergreen seeds; absolute {start, end} only where expected.as_of pins the snapshot."
+    },
+    "method": {
+      "type": "string",
+      "minLength": 1
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": {}
     }
   },
   "additionalProperties": false,
@@ -120,5 +133,57 @@
         }
       ]
     }
-  }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "metric"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "method"
+            ]
+          },
+          {
+            "required": [
+              "metrics"
+            ]
+          },
+          {
+            "required": [
+              "parameters"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "required": [
+        "method",
+        "metrics",
+        "parameters"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "metric"
+            ]
+          },
+          {
+            "required": [
+              "filters"
+            ]
+          },
+          {
+            "required": [
+              "grain"
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

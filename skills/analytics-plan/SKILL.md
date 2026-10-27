@@ -3,6 +3,15 @@ name: analytics-plan
 description: Plan and answer business analytics questions against read-only data, grounding interpretations in available ACF, KTX, dbt, documentation, and warehouse evidence. Use for metrics, reports, trends, comparisons, or warehouse questions. Do not use to author context, modify data, or write dbt models.
 ---
 
+Approval contract: new and changed context stays on a named working branch and
+has no authored approval status. Human-reviewed protected merge grants definition
+approval; consult the live authority through the runtime for the exact revision
+and freshness. Missing/expired evidence or stale dependencies blocks governed
+use. Explicit branch-test mode is proposed context only. Query/notebook result
+verification is separate from definition approval; retain source and review
+evidence. See the context-interview SPEC approval-through-merge contract.
+
+
 # Analytics Plan
 
 Turn a business question into a reviewable analytical plan before executing SQL.
@@ -27,8 +36,11 @@ Never jump directly from a plausible interpretation to a query.
 
 1. **Interpret the request.** Extract metric or measure, dimensions, filters,
    population, grain, time window, comparison, and expected output shape. Keep
-   the decomposition compatible with the ACF question IR: `metric`, optional
-   `dimensions`, `filters`, `grain`, and `time_window`.
+   the decomposition compatible with ACF 0.3 IR: either `metric` with optional
+   `dimensions`, `filters`, `grain`, `time_window`, or `method`, resolved `metrics`,
+   bound `parameters`, optional `dimensions` and `time_window`. Resolve each part
+   of a compound question separately. Record canonical targets after clarification;
+   changing a cohort selector may change the resolved metric set.
 2. **Discover context.** Look for the nearest `.nodal.local.json` upward to the
    current git root and accept only version 1. Treat it as a hint; re-check that
    enabled sources and bindings are reachable. If it is absent or invalid, use a
@@ -42,13 +54,32 @@ Never jump directly from a plausible interpretation to a query.
 4. **Resolve the question.** Prefer the highest-authority supported reading, but
    surface competing credible readings. Batch all ambiguities the user can answer
    now, with an evidence-backed recommendation for each. Never invent a foil.
+   When several governed family members share an alias and no default is confirmed,
+   leave the selection open until the user chooses. A labeled side-by-side comparison
+   may be offered as another choice; it is not a safe default that bypasses selection.
+   Keep this reply to the choices and conditional plan. Do not supply executable SQL
+   for any member or comparison before the interpretation and plan are approved.
 5. **Check satisfiability.** Confirm that the available schema can produce the
    requested grain and dimensions, and that every join and mandatory filter is
    supported. Missing evidence is an explicit gap, not an invitation to guess.
+   For ACF, expand shared fragments and transitive metric references, honor
+   effective draft/blocker state, and keep row filters separate from entity-group
+   filters. Respect allowed dimensions and explicit zero-denominator policy.
+   A deterministic-form target supplies a reviewed procedure/pattern, not a license
+   to invent an unsupported expression or executable query.
+   If required data is absent, decline the unavailable answer and name the source
+   or responsible owner needed to unblock it. Specify the required grain, identifiers,
+   attribution/population rules and period alignment before combining new data with
+   the available data. Do not invent a connector/table or promise execution before
+   access and the revised plan are established. Available components are not a
+   substitute for the requested result.
 6. **Create the plan.** Follow `references/plan-format.md`. The artifact must be
    self-contained enough for a fresh session to execute without conversation
    history. It names the interpretation, evidence, source tables, joins, filters,
    grain, aggregation, time boundaries, output, and unresolved decisions.
+   For methods, include parameter/default choices, selected component metrics,
+   decision IDs, explicit overrides/alignment, output disclosures and checks.
+   Clarify undeclared time tokens and fiscal boundaries before binding dates.
 7. **Measure uncertainty.** Apply `references/uncertainty-rubric.md`. The score is
    a transparent, static v0 heuristic, never a probability of correctness. Apply
    critical escalation gates even when the numeric score is high.
@@ -60,6 +91,30 @@ Never jump directly from a plausible interpretation to a query.
 10. **Return the answer.** Include the result, SQL, applied definitions/caveats,
     evidence provenance, and preliminary confidence. If `verify-result` is
     available, use its review contract for the full post-execution assessment.
+    A method may also require read-only Python in an authorized customer executor;
+    show the actual implementation and distinguish executed results from proposals.
+
+## ACF matching and evidence limits
+
+Use the shared matcher (`scripts/match_question.py` for an explicitly supplied
+IR) when available. Resolve alias/family ambiguity before matching. Structural
+normalization preserves typed AND/OR filters, canonical targets, grain and bound
+parameter names; it applies defaults and keeps time tokens for execution without
+making a different token a different metric identity. Equivalent structure does
+not transfer snapshot verification across dates or parameter values.
+
+Always read structured definitions/entities. Add `reference.md` for equivalent
+metrics; `context.md` and the relevant method body for new slices, decompositions
+or methods; and company overview/terminology for unresolved questions before
+escalation. If matching is unavailable, retrieve the relevant evidence explicitly
+and do not claim measured coverage. Distinguish definition, slicing and
+verification coverage; an unsupported dimension or blocked dependency remains a gap.
+
+Seed expectations, variants and plaintext/encrypted verified SQL are evaluation
+answer keys, not generation context. Leave the evaluated seed out of retrieval.
+Use matching IDs/IR metadata to locate governed definitions, never copy an answer
+key to produce the answer. Any later verification comparison must preserve its
+source, filters, parameterization and snapshot limits.
 
 ## Optional Nodal query attribution
 
@@ -102,5 +157,5 @@ attribution. These IDs locate a conversation; they do not grant access to it.
 
 When the user selects among contested meanings, include a small candidate with the
 original question, selected intent, structured IR, rejected reading, provenance,
-and `status: draft`. Do not write it. `context-interview` owns human-confirmed
+and proposed working-branch content. Do not write it. `context-interview` owns human-confirmed
 context and seed persistence.

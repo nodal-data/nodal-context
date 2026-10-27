@@ -101,7 +101,7 @@ def run():
         with tempfile.TemporaryDirectory() as td:
             cfg = Path(td) / "context.config.yaml"
             cfg.write_text(
-                "version: 0.1\nwarehouse: snowflake\n"
+                "version: 0.3\nwarehouse: snowflake\n"
                 "lineage_sources:\n  - id: dbt_core\n    type: dbt\n"
                 "domains:\n  orders:\n    lineage:\n"
                 "      - source: dbt_core\n        models: [fct_orders, dim_customer]\n"
@@ -112,7 +112,7 @@ def run():
     except ImportError:
         print("test_drift: PyYAML not installed; skipped load_config round-trip")
 
-    # --- main() exit codes: 0 clean, 0 unchecked (back-compat), 3 with
+    # --- main() exit codes: 0 clean, 0 unchecked (explicit coverage gap), 3 with
     # --fail-on-unchecked, 1 drift regardless (only if PyYAML present) ---------
     try:
         import yaml  # noqa: F401
@@ -120,7 +120,7 @@ def run():
             td = Path(td)
             cfg = td / "context.config.yaml"
             cfg.write_text(
-                "version: 0.1\nwarehouse: snowflake\n"
+                "version: 0.3\nwarehouse: snowflake\n"
                 "lineage_sources:\n  - id: dbt_core\n    type: dbt\n"
                 "domains:\n  orders:\n    lineage:\n"
                 "      - source: dbt_core\n        models: [fct_orders]\n"

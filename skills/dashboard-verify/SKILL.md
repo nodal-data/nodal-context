@@ -3,6 +3,15 @@ name: dashboard-verify
 description: Verify answers against a named BI dashboard in the user's local browser, capturing widget values and active filters with extraction tiers. Use for dashboard checks and context-interview Stage 5. Not for general browsing, credentials, or warehouse queries.
 ---
 
+Approval contract: new and changed context stays on a named working branch and
+has no authored approval status. Human-reviewed protected merge grants definition
+approval; consult the live authority through the runtime for the exact revision
+and freshness. Missing/expired evidence or stale dependencies blocks governed
+use. Explicit branch-test mode is proposed context only. Query/notebook result
+verification is separate from definition approval; retain source and review
+evidence. See the context-interview SPEC approval-through-merge contract.
+
+
 # Dashboard Verify
 
 Extract what a BI dashboard actually shows — values *and* the filter state that

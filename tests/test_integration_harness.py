@@ -132,7 +132,7 @@ def run():
         )
         assert result.returncode == 0, result.stderr + result.stdout
         project = source_room / "project"
-        assert (project / "SPEC.md").is_file()
+        assert (project / "skills/context-interview/references/SPEC.md").is_file()
         assert (project / ".agents/skills/context-interview/SKILL.md").is_file()
         assert (project / ".agents/skills/analytics-plan/SKILL.md").is_file()
         assert (project / ".agents/skills/verify-result/SKILL.md").is_file()
@@ -163,7 +163,7 @@ def run():
         )
         assert result.returncode == 2
         assert "refusing to replace" in result.stderr
-        assert (source_room / "project/SPEC.md").is_file()
+        assert (source_room / "project/skills/context-interview/references/SPEC.md").is_file()
 
         outside_temp = ROOT / "unsafe-clean-room"
         result = run_harness("--work-dir", outside_temp, "--prepare-only")

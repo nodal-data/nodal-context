@@ -2,6 +2,17 @@
 FINDINGS.md
 .nodal.local.json
 
+# Local planning documents; the packaged specification lives in the skill.
+/specs/
+/SPEC.md
+/spec.md
+/docs/acf-0.3-development.md
+
+# Derived context indexes, migration backups and execution evidence.
+.nodal/
+.sim-analyst.json
+simulated-analyst-log*
+
 .venv/
 dist/
 

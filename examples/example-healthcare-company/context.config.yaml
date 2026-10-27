@@ -1,10 +1,22 @@
-version: 0.2
+version: '0.3'
 warehouse: snowflake
 lineage_sources:
-  - id: dbt_core
-    type: dbt
+- id: dbt_core
+  type: dbt
 domains:
   session-financials:
     lineage:
-      - source: dbt_core
-        models: [fct_session_financials, dim_client, dim_provider]
+    - source: dbt_core
+      models: [fct_session_financials, dim_client, dim_provider]
+time_tokens:
+  calendar:
+  - last_month
+  - last_quarter
+  - current_billing_period
+  - all_time
+  fiscal: []
+variants:
+  max_per_seed: 20
+verified_sql:
+  encryption: none
+  decrypt_to: evals/verified/

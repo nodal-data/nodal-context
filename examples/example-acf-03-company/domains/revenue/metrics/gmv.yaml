@@ -1,0 +1,40 @@
+name: gmv
+definition: Signed retail order value on order date, before the marketplace fee split.
+aliases:
+- revenue
+- gmv
+alias_notes:
+- 'Revenue is a split term: ask for one revenue_measures family member.'
+family:
+  name: revenue_measures
+  discriminator: measure_name
+  siblings:
+  - recognized_revenue
+  - billed_revenue
+  - net_revenue
+  - collected_cash
+grain: signed measure contribution
+temporal_kind: flow
+lineage:
+  shared: entries
+parameters:
+- shared: window
+expression:
+  measure: SUM(amount)
+  mandatory_filters:
+  - field: measure_name
+    op: '='
+    value: gmv
+    reason: Different measure bases must never be added together.
+  include_filters:
+  - window
+  allowed_dimensions:
+  - activity_date
+  - channel
+  - revenue_stream
+caveats:
+- Choose one measure_name. Rows are already signed; do not subtract credits a second time.
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

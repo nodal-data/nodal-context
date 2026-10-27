@@ -3,13 +3,18 @@
 One domain, five confirmed answers, 3–6 seeds, a live delta, and an **honest depth
 stamp**. The test drive is not a different product or a different artifact — it is
 the full interview's state machine traversed on a hard question budget, stopping
-early on purpose. Everything unasked becomes a `status: draft` stub, which is
+early on purpose. Everything unasked becomes a proposed working-branch content stub, which is
 already the resume queue: a deep pass later is just normal Stage-0 resume.
 
 Every operating principle still applies unchanged: the analyst owns every
 definition, no statistics in context, SQL only as pattern-not-paste query
 patterns, one question at a time, every confirmed disambiguation emits a seed
 immediately (`eval-seed-harvesting.md`).
+
+Use the 0.3 per-metric layout and real approval metadata. If a metric needs an
+unresolved ratio policy, family choice, method or unsupported expression, keep
+that work draft and record it for the full interview. Notebook import and method
+review do not add a sixth core topic or silently extend the time budget.
 
 ## When to enter
 
@@ -39,7 +44,7 @@ but it never leaves one without a recorded outcome.
 - One sentence for `overview.md`: *"What does the business sell, and who pays?"*
   Mark the rest of the overview draft.
 - **Skip the terminology sweep.** Terms that surface incidentally while you work
-  become `status: draft` stubs in `terminology.md` — captured, not chased.
+  become proposed working-branch content stubs in `terminology.md` — captured, not chased.
 
 ## The five questions (the analyst picks the domain)
 
@@ -81,7 +86,7 @@ moment of confirmation** — same rule as the full interview, no batching.
    7 days vs calendar month), which table/column feeds each. One caveat per
    metric is the budget; further caveats become draft stubs. If Stage-0 mining
    produced conflict groups touching this domain's tables, they ARE the metric
-   questions — ask them verbatim. → `metrics.yaml` + a seed per metric.
+   questions — ask them verbatim. → `metrics/*.yaml` + a seed per metric.
 4. **The standard hygiene filter.** *"Which filter does every correct query here
    apply that a newcomer would forget?"* Listen for: flag columns (`is_test`,
    `is_internal`), status values to exclude, and the cases where the filter
@@ -134,9 +139,9 @@ out — especially when time ran out.
    starts from exactly this list — want to book it, or test-drive another domain
    first?"* Depth goes where the measurement says it pays, not everywhere by
    default.
-5. **Commit** per the "Pausing a session" rules in `SKILL.md` — drafts included,
-   message naming where work stopped (e.g. `wip: billing test drive — 5 confirmed,
-   7 drafts open`).
+5. **Preserve the work** per the "Pausing a session" rules in `SKILL.md`. Commit
+   only when requested, with a message naming where work stopped and reviewed
+   draft files included. Keep local queues, briefs and run evidence out of Git.
 6. **Offer to use the context now.** After the punch list and repo next steps,
    finish with this choice — do not make the analyst infer how to get value from
    what they just built:
@@ -172,5 +177,5 @@ out — especially when time ran out.
 - **Never present a domain captured on a test drive as covered.** The depth stamp and draft
   count travel with every summary, resume message, and PR description.
 - **Don't invent to fill the gaps** the budget leaves — `_To be confirmed by
-  [owner]._` + `status: draft`, as always. A test drive changes how much you ask,
+  [owner]._` + proposed working-branch content, as always. A test drive changes how much you ask,
   never how much you assume.

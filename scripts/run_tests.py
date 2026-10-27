@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run every executable tests/test_*.py file directly."""
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -13,10 +14,12 @@ def main():
     if not tests:
         print("run_tests: ERROR: no tests/test_*.py files found", file=sys.stderr)
         return 1
+    print("run_tests: explicit branch-test mode; governance tests separately exercise live-authority gates", flush=True)
     failures = []
     for test in tests:
         print(f"run_tests: {test.name}", flush=True)
-        result = subprocess.run([sys.executable, "-B", str(test)], cwd=ROOT)
+        result = subprocess.run([sys.executable, "-B", str(test)], cwd=ROOT,
+                                env={**os.environ, "ACF_BRANCH_TEST": "1"})
         if result.returncode:
             failures.append((test.name, result.returncode))
     if failures:

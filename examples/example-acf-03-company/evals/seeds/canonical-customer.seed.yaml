@@ -1,0 +1,11 @@
+question: Which identity defines a customer?
+intent: Which identity defines a customer?
+domain: customers
+provenance: generated
+expected:
+  kind: semantic_entity
+  entity: canonical-customer
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

@@ -3,31 +3,330 @@
   "$id": "https://nodaldata.io/acf/evalseed.schema.json",
   "title": "ACF Eval Seed",
   "type": "object",
-  "required": ["question", "domain", "intent", "expected", "provenance", "status"],
+  "required": [
+    "question",
+    "domain",
+    "intent",
+    "expected",
+    "provenance"
+  ],
   "properties": {
-    "question": { "type": "string" },
-    "domain": { "type": "string" },
-    "intent": { "type": "string" },
+    "question": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "intent": {
+      "type": "string"
+    },
     "expected": {
       "type": "object",
-      "required": ["kind"],
+      "required": [
+        "kind"
+      ],
       "properties": {
-        "kind": { "enum": ["semantic_entity", "sql_shape", "value_at_snapshot"] },
-        "must_include": { "type": "array", "items": { "type": "string" } },
-        "must_exclude": { "type": "array", "items": { "type": "string" } },
-        "entity": { "type": "string" },
+        "kind": {
+          "enum": [
+            "semantic_entity",
+            "sql_shape",
+            "value_at_snapshot",
+            "negative"
+          ]
+        },
+        "must_include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "must_exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "entity": {
+          "type": "string"
+        },
         "value": {},
-        "as_of": { "type": "string", "format": "date" }
-      }
+        "as_of": {
+          "type": "string",
+          "format": "date"
+        },
+        "reason": {
+          "enum": [
+            "lack_data",
+            "unresolved_semantics",
+            "not_sql"
+          ]
+        },
+        "key_columns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "tolerance": {
+          "type": "object",
+          "properties": {
+            "absolute": {
+              "type": "number",
+              "minimum": 0
+            },
+            "relative": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "negative"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "reason"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "value_at_snapshot"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value",
+              "as_of"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "semantic_entity"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "entity"
+            ]
+          }
+        }
+      ]
     },
-    "ir": { "$ref": "ir.schema.json" },
-    "provenance": { "enum": ["interview", "dashboard", "correction", "generated"] },
-    "status": { "enum": ["draft", "confirmed"] },
+    "ir": {
+      "$ref": "ir.schema.json"
+    },
+    "provenance": {
+      "enum": [
+        "interview",
+        "dashboard",
+        "correction",
+        "generated",
+        "observed",
+        "notebook"
+      ]
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "confirmed"
+      ],
+      "deprecated": true,
+      "description": "Legacy migration evidence only; never grants approval. Drafts remain blocked until reviewed conversion."
+    },
     "verified_query_file": {
       "type": "string",
-      "description": "Relative path to a LOCAL, gitignored sidecar holding the blessed read-only SQL the analyst confirmed (the answer key) — conventionally evals/verified/<seed-name>.sql. The SQL body is deliberately kept out of git: it goes stale fast and must not be cloneable from the repo. The seed (question/intent/expected/value+as_of) stays committed and is the durable ground truth; only the SQL lives in the sidecar. Set only on a verified match; omit otherwise."
+      "pattern": "^evals/verified/[A-Za-z0-9_][A-Za-z0-9_.-]*\\.sql$",
+      "description": "Ignored plaintext; ciphertext is committed as .sql.age or .sql.sops."
     },
-    "lineage": { "$ref": "lineage.schema.json" }
+    "lineage": {
+      "$ref": "lineage.schema.json"
+    },
+    "approver": {
+      "type": "string",
+      "minLength": 1
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "variants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "provenance": {
+            "enum": [
+              "interview",
+              "dashboard",
+              "correction",
+              "generated",
+              "observed",
+              "notebook"
+            ]
+          },
+          "approver": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "text",
+          "observed_at",
+          "provenance"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "verification_source": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "notebook"
+        },
+        "repo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "output": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "path",
+        "ref",
+        "output"
+      ],
+      "additionalProperties": false
+    },
+    "review_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "draft",
+              "confirmed"
+            ]
+          },
+          "approver": {
+            "type": "string"
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Historical attribution only. Does not grant current approval."
+    }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "confirmed"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "approver",
+          "confirmed_at"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "confirmed"
+          },
+          "expected": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "sql_shape",
+                  "value_at_snapshot"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "ir"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "confirmed"
+          },
+          "provenance": {
+            "const": "notebook"
+          },
+          "expected": {
+            "properties": {
+              "kind": {
+                "const": "value_at_snapshot"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "verification_source"
+        ]
+      }
+    }
+  ]
 }

@@ -8,18 +8,18 @@ intent: >
 ir:
   metric: collection_rate
   dimensions: [payer_name]
-  time_window: { start: "2026-01-01", end: "2026-03-31" }  # absolute is OK here —
+  time_window: {start: "2026-01-01", end: "2026-03-31"}    # absolute is OK here —
     # expected.as_of pins this seed to a snapshot anyway
 expected:
   kind: value_at_snapshot
   value: 0.92
   as_of: "2026-03-31"   # quote it — bare YYYY-MM-DD parses as a date, not a string
 provenance: dashboard
-status: confirmed
-# The blessed read-only SQL lives in a LOCAL, gitignored sidecar (evals/verified/),
-# never committed — it goes stale fast and must not be cloneable from the repo. The
-# seed keeps only this pointer; the answer key (value + as_of, above) stays in git.
 verified_query_file: evals/verified/collection-rate-cigna-snapshot.sql
 lineage:
-  - source: dbt_core
-    models: [fct_session_financials]
+- source: dbt_core
+  models: [fct_session_financials]
+review_history:
+- status: confirmed
+  approver: fictional-example-owner
+  confirmed_at: '2026-10-01'

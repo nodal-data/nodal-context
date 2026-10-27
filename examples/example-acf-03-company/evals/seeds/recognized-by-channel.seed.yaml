@@ -1,0 +1,26 @@
+question: Recognized revenue by channel last quarter?
+intent: Recognized revenue by channel last quarter?
+domain: revenue
+provenance: generated
+expected:
+  kind: sql_shape
+  must_include:
+  - Select only measure_name = recognized_revenue.
+  - Use signed amount on activity_date.
+  must_exclude:
+  - Sum different revenue bases together.
+  - Subtract credits twice.
+ir:
+  metric: recognized_revenue
+  dimensions:
+  - channel
+  time_window: last_quarter
+variants:
+- text: Break recognized revenue down by channel for last quarter.
+  observed_at: '2026-10-01T12:00:00Z'
+  provenance: generated
+  approver: fictional-example-reviewer
+review_history:
+- status: confirmed
+  approver: fictional-example-reviewer
+  confirmed_at: '2026-10-01'

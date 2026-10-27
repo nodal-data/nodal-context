@@ -1,141 +1,209 @@
-# Eval Harness Interface
+# Eval harness interface — NCR v2
 
-The seam between the free context layer and Nodal. This file
-defines a **contract**, not an implementation. The open-source side defines the
-inputs and the delta report shape; the trustworthy "perfect" baseline, continuous
-re-evaluation, drift detection, and observability are the commercial
-implementation (Nodal).
+The harness is format-agnostic. Adapters translate context into plain normalized
+records; matching, coverage and grading operate on those records. ACF is one
+adapter. Unsupported capabilities must be reported explicitly.
 
-The harness is **format-agnostic by design.** It does not require ACF. It reads
-whatever context you have, normalizes it, and measures the same way. This keeps the
-measurement — not the context format — as the thing that matters.
+## Inputs and normalized representation
 
-## Inputs (any one or more)
+`--adapter acf|ktx|dbt|raw|skill` selects an implemented adapter. Non-ACF adapters
+may provide only context text. Attach external ground truth with `--seeds <dir>`;
+seed domains must correspond to the chosen context source.
 
-All five adapters are implemented in `adapters/` (`--adapter acf|ktx|dbt|raw|skill`).
+`eval_harness/ncr.py` defines `NCR_VERSION = 2`:
 
-| Adapter | Reads | Notes |
-|---|---|---|
-| `acf` | this repo's ACF (`SPEC.md`) | richest: carries seeds + lineage + status |
-| `ktx` | Kaelio `semantic-layer/<connection>/*.yaml` + `wiki/**/*.md` | bring an existing ktx project; one domain per connection |
-| `dbt` | `manifest.json` (or bare `models/**/*.yml` docs) | model/column docs, unique-test grain evidence, semantic models + metrics (manifest v12); one domain per top-level `models/` folder |
-| `raw` | a directory of markdown | last resort; one domain per subdirectory |
-| `skill` | an agent data-analysis skill (`SKILL.md` + `references/**/*.md`), folder or packaged `.zip`/`.skill` | e.g. the output of Anthropic's `data-context-extractor`; one domain per reference file, `SKILL.md` + entities/metrics references shared across domains |
+- `context_by_domain`: domain-to-text fallback for all adapters.
+- `seeds`: question, domain, intent, expected obligations, provenance, stored
+  status, optional IR and path. v2 adds approvals, variants, verification pointers,
+  effective status and blockers.
+- `definitions`: optional canonical metric/method records with aliases,
+  dimensions, parameters, dependencies, lineage, method decisions/output/checks
+  and effective eligibility. Optional `time_tokens` declares the allowed relative
+  window vocabulary; an empty list accepts no relative token, while omission
+  means this adapter supplies no vocabulary constraint. ACF supplies its config
+  tokens so extraction, matching and coverage reject unknown tokens consistently.
+  Optional `column_aliases` maps proven equivalent column spellings to one
+  qualified form; `ambiguous_columns` lists spellings with multiple known owners.
+  Normalize both requested and allowed dimensions through that map, including
+  nested filter fields. ACF supplies evidence only from complete, unambiguous
+  manifest lineage; missing evidence never licenses guessed qualification.
+- `context_components`: optional definitions/reference/reasoning/orientation
+  components for the relation-driven document ladder.
+- `capabilities`: explicit `matching`, `methods` and/or `coverage` support.
+- `diagnostics`: adapter-reported issues; unknown capability is not success.
 
-Each adapter maps its source into the **Normalized Context Representation (NCR)** —
-a single intermediate the rest of the harness operates on. That's why the format
-isn't the moat: every format collapses to NCR, and the delta is computed on NCR. We
-are constantly looking to increase our adapters, like Cortex, Genie, Hex, Looker, Atlan, etc. 
+`Seed.eligibility` uses effective status when present, otherwise stored status.
+The confirmed baseline excludes draft/blocked seeds. `--status draft` is an
+explicit draft/simulated measurement and is labeled accordingly. ACF discovery,
+fragments, path rules and approvals belong in its adapter and `acf_runtime/`.
+Generic adapters need not import ACF. The ACF 0.3 adapter rejects earlier versions
+and legacy single-file metric wrappers immediately.
 
-### Normalized Context Representation (NCR)
+The external seed loader rejects duplicate mapping keys (including conflicting
+YAML merges), non-string mapping keys and cyclic values instead of silently
+choosing ground truth. YAML date/timestamp values normalize to ISO strings for
+portable matching and JSON prompts. These parsing rules do not require external
+seed sources to adopt ACF configuration or approval schemas.
 
-```yaml
-entities:    [ {name, meaning, disambiguation, aliases, lineage?} ]
-metrics:     [ {name, definition, grain, params, caveats, lineage?} ]
-routing:     [ {trigger, table, do_not} ]          # from reference.md IF/DO-NOT
-seeds:       [ {question, intent, ir?, expected, provenance, status} ]   # ACF only; others: empty
+## Answering and routing
+
+When matching is supported, inject mode independently extracts question IR from
+the question and definitions. It excludes the evaluated seed and its variants
+from retrieval. Unsupported adapters keep their ordinary context text and do not
+claim ACF routing/coverage. Ambiguous or unresolved semantics are surfaced.
+
+Generation receives the question and, for context-on, appropriate governed
+context. It never receives expected answers, verified SQL, grading-only seed
+obligations or answer-key variants. Method decisions and output requirements are
+legitimate context. Aliases suggest candidates; structural IR and reviewed
+semantics determine relations. Text similarity cannot prove a match.
+
+Answers carry `outcome: answer|escalate|decline`, proposed `sql` and/or `python`,
+assumptions, explanation, disclosures and an escalation reason when applicable.
+Proposal generation cannot claim execution. Negative answers must give the
+expected reason (`lack_data|unresolved_semantics|not_sql`) without executable
+analysis or fabricated results.
+
+## Grading and reporting
+
+`grader.py` grades separate components:
+
+| Obligation | Evidence |
+|---|---|
+| SQL shape / entity | Code plus an explicit judge |
+| Method decisions | Implementation and declared decisions |
+| Required disclosures | User-facing explanation/disclosures, not code alone |
+| Output structure | Actual rows and declared columns |
+| Method relationships | Actual rows; narrow deterministic comparisons or explicit judge |
+| Snapshot | Actual execution at pinned `as_of`, keyed rows/scalar and tolerance |
+| Negative outcome | Correct escalation/reason without invented results |
+
+Qualitative checks are never evaluated as arbitrary Python. Typed snapshot
+comparison distinguishes booleans from numbers and nulls from zero; nonfinite
+numbers are invalid. Multiple rows need unique declared keys, and row order is
+irrelevant. Numeric tolerance is `max(absolute, relative * abs(expected))`, with
+both tolerances defaulting to zero. Other values compare exactly.
+
+An overall pass requires every required component to pass. Missing execution,
+judge capability or valid verdict is skipped. Partial method results remain
+visible without claiming full verification. Positive on/off delta uses only
+paired, fully scored positive seeds. Negative escalation accuracy has separate
+on/off denominators excluding skips. Reports show skipped counts, routing
+uncertainty and truncation. Human ground truth is the target, not an automatically
+measured “perfect 100%” result.
+
+## Execution modes
+
+- **Inject** (`python -m eval_harness.run`): one generation per condition, with
+  optional independent IR extraction and separate grading calls. No warehouse or
+  implicit execution. Numeric checks skip without actual execution evidence.
+- **Interactive Stage 5**: customer read-only answers reconciled with a dashboard
+  or independently rerun notebook. A real human confirms evidence before snapshot
+  promotion. Notebook import alone is drafting.
+- **Customer regression** (`scripts/regress.py` for ACF): replay approved query
+  answer keys with explicit customer executors and pinned snapshots. This checks
+  replay fidelity, not a new AI answer or context uplift. It bundles no database
+  connector, hosted service or credential acquisition.
+
+Notebook verification separately orchestrates a reference notebook, independent
+method-derived answer and explicit semantic judgment. Customer executors enforce
+fresh agent sessions, read-only access, input consistency and reference isolation;
+subprocess separation is not an OS sandbox. See the context-interview notebook
+verification reference and `scripts/verify_notebook.py --help`.
+
+## Approved-query executor contract
+
+A customer command is a JSON argv array, launched without a shell in a private
+workspace. It reads one JSON request from stdin and returns one JSON receipt to
+stdout. Other diagnostics go to stderr and remain local. Models cannot invent
+these execution receipts.
+
+Requests contain:
+
+```text
+protocol: nodal-execution/1
+request_id: unique invocation ID
+role: regression
+seed_id: canonical seed ID
+query_path: private temporary plaintext filename
+query_hash: sha256 of exactly the query bytes
+warehouse: single resolved customer warehouse
+parameters: reviewed bindings
+parameters_hash: digest of bindings
+as_of: pinned snapshot date or null
+require_historical_snapshot: boolean
+require_read_only: true
 ```
 
-Non-ACF inputs produce an NCR with **no seeds** — which is the point: without the
-interview you have context but no ground truth. The runner's `--seeds <dir>` flag
-attaches an external directory of `*.seed.yaml` files (the shape in
-`schemas/evalseed.schema.json`; each seed's `domain` must name one of the adapter's
-context domains) so any adapter can be graded. (This is a concrete reason the
-interview is worth running even if you already have a ktx or dbt context — it's what
-mints the seeds.)
+No expected value, grading obligation or private identity content is included.
+Successful actual execution returns:
 
-## The three measurements
-
-Given an NCR and a seed set, run the target agent over the seeds three ways:
-
-1. **context-off** — agent answers with raw warehouse access only.
-2. **context-on** — agent answers with the NCR injected (as MCP resources / skill).
-3. **perfect** — the confirmed seed answer (human-anchored ground truth).
-
-Grade by `expected.kind`:
-- `semantic_entity` → did it resolve to the right governed entity?
-- `sql_shape` → does the query satisfy `must_include` / `must_exclude`?
-- `value_at_snapshot` → does the number match at the pinned date?
-
-## Modes: how context reaches the subject
-
-The *subject* — the thing that turns a seed question into an answer — is pluggable;
-seeds, grading, and the report are mode-independent.
-
-- **`inject` (implemented, the default):** one API call per condition; context-on
-  pastes the NCR context text into the prompt, context-off omits it. No MCP, no
-  warehouse. This isolates **context quality**: the payload is a fixed string, so the
-  delta has no retrieval variance. Blind spot: an agent failing to *find* good context
-  in production is invisible here.
-- **`mcp` (planned):** run each seed through a headless agent session under **named
-  MCP configurations** (e.g. `off` = warehouse only, `on` = warehouse + context MCP,
-  plus arbitrary combinations), measuring **context + retrieval + tool use** — the
-  production state. Because the agent executes against a live warehouse, this mode
-  also unlocks grading `value_at_snapshot` seeds, which `inject` must skip.
-
-## The delta report (the aha)
-
-```
-Domain: session-financials   (seeds: 34 confirmed, 0 draft excluded)
-
-  context-off   → 41%   ███████░░░░░░░░░░
-  context-on    → 88%   ████████████████░   (+47 pts)
-  perfect       → 100%
-
-  Still wrong with context on (the punch-list):
-    • "GMV by payer"        forgot blank-payer caveat        [sql_shape]
-    • "active providers"    used dim_provider, not CPC level [routing]
-    • "Cigna collection"    aggregated across TX/FL          [sql_shape]
+```text
+request_id: matching ID
+status: ok
+executed: true
+read_only: true
+query_hash, warehouse, parameters_hash: actual matching execution bindings
+rows: array of JSON row objects
+columns: unique column names in every row, including for an empty result
+as_of: actual pinned date when requested
+historical_snapshot: true only if historical inputs were actually used
+explanation, disclosures, assumptions: optional actual method answer evidence
 ```
 
-Two numbers, both meaningful: **on-vs-off** proves the context is worth maintaining;
-**on-vs-perfect** is the punch-list that drives the next interview round — and the
-reason to keep a subscription, because that list regenerates every time a model
-changes.
+Never assert historical execution just because the request asks for it.
+Unavailable history, permissions or execution returns `status: skipped|blocked`
+with the request ID. Do not substitute current data. Scalar expectations require
+exactly one row/column, object expectations exactly one row; keyed array
+expectations use declared keys. Model claims cannot replace executed rows.
 
-## Free vs paid boundary
+The package parses SQL and rejects writes, mutating CTEs, multiple statements,
+unsupported syntax/dialects and unbound angle-bracket placeholders. Parsing cannot
+prove arbitrary SQL functions harmless. Customer database privileges are the
+read-only boundary. Cross-warehouse definitions are unsupported by this contract.
 
-- **Free / OSS:** the adapters, the NCR spec, the grading definitions, and a
-  one-shot local runner that produces the delta report above for a single domain.
-  Enough to see the aha once. In practice today this runner is the interview's
-  **Stage 5 live verification** (`skills/context-interview/references/live-verification.md`):
-  it answers off vs on against the live warehouse in-session and has the analyst
-  confirm the truth against a dashboard — which is also how it mints the
-  `dashboard`-provenance seeds the NCR otherwise lacks (a non-ACF context has
-  context but no seeds; the interview supplies them). One-shot dashboard
-  self-verification is free too (`skills/dashboard-verify/`): the agent reads the
-  blessed dashboard in the analyst's own local browser — tier-tagged values +
-  filter state, reconciled against the answers — the interactive, in-session form
-  of dashboard ingestion; the analyst still blesses every value.
-- **Paid / Nodal:** the trustworthy hosted "perfect" baseline (managed ground
-  truth + **scheduled/continuous** blessed-dashboard ingestion and hosted
-  reconciliation reports), continuous re-evaluation on every PR,
-  drift detection wired to `context.config.yaml`, correction harvesting back into
-  seeds, and the accuracy time-series / observability that catches silent
-  regressions. In short: keeping the delta green as the warehouse changes daily.
-  (A dashboard capture is also a potential future grading input: it could grade
-  `value_at_snapshot` seeds without a warehouse connection — documented here,
-  not implemented; `grader.py` still skips that kind in `inject` mode.)
+An optional judge command receives `role: judge`, `evidence` and `obligations`,
+and returns the request ID, `status: ok`, and
+`verdict: {passed: boolean, reason: string}`. SQL, rows and judge evidence stay
+local; a remote judge requires the customer's explicit choice. No judge runs
+implicitly during validation, coverage or crypto probes.
 
-## Versioning & stability
+`scripts/regress.py` stdout contains only seed IDs, `pass|fail|skipped` and
+sanitized categories. Exit codes: 0 all selected checks pass; 1 a failure;
+2 configuration error; 3 skipped/incomplete or no checks. Private receipts live
+in ignored `.nodal/regressions/<run>/`. Owned temporary plaintext is removed on
+success/failure; local tools never delete caller-provided identity files.
 
-This contract is **v0 and pre-1.0 unstable**: the NCR shape, the seed format, and the
-delta-report shape may change between minor releases without a deprecation cycle. The
-version is stamped in code as `NCR_VERSION` (`eval_harness/ncr.py`); seed files are the
-shape validated by `schemas/evalseed.schema.json`.
+The manually dispatched `verified-regression.yml` uses a trusted default-branch
+checkout and protected customer environment. It creates an owned temporary
+checkout/identity workspace and removes it in an always-run cleanup step. An
+unconfigured executor is explicitly skipped. Only sanitized statuses reach the
+job summary; no raw artifacts or PR comments are published. Ordinary PR
+validation and inject eval neither decrypt nor execute warehouse SQL.
 
-Version history: **v1** — `Seed` gains an optional `ir` field (the structured
-question decomposition, `schemas/ir.schema.json`: metric, dimensions, filters,
-grain, time_window). Additive: absent for non-ACF sources and pre-v1 seeds;
-grading is unchanged (still keyed on `expected.kind`). When the contract reaches 1.0, NCR
-and seed changes will be versioned and backward-compatible within a major version. If
-you build a third-party adapter or tooling against the NCR today, pin the repo revision
-you built against.
+## Coverage, portability and hosted operation
 
-## Why a human-anchored "perfect" is non-negotiable
+Coverage separately reports definition, slicing and verification. Availability,
+ciphertext existence, decryption and checked pass are distinct. Historical
+human-confirmed dashboard/notebook snapshots are separately identified. Local
+regression receipts apply only while seed/definition/config/query fingerprints
+match; stale receipts cannot establish a current pass.
 
-A delta is only as trustworthy as its ground truth. Auto-generated "expected"
-answers encode the same ambiguities the agent has, so the delta would measure
-nothing. That's why `status: draft` seeds are excluded from `perfect`, and why the
-paid product's core value is *managing trustworthy ground truth*, not generating
-more of it.
+Approved plaintext stays ignored under `evals/verified/`. Public recipients and
+`encryption: age|sops|none` are customer config. Portable `.sql.age`/`.sql.sops`
+artifacts are never answering context. Explicit `none` is local-only; encryption
+failure is local/unpublished and never silently downgraded. Private identities
+stay in customer files or protected CI secrets. Recipient rotation does not
+retroactively re-encrypt git history.
+
+Open-source includes adapters, matching/coverage/grading, one-shot inject and
+customer regression, interactive dashboard/notebook verification and customer
+workflows. Hosted ingestion, scheduling, history, observability and managed
+reconciliation remain separate. Local tools do not imply hosted services ran.
+
+## Versioning
+
+NCR is pre-1.0 and may change between minor releases. Pin the repo revision for
+third-party adapters. v1 added metric IR; v2 adds methods, explicit capabilities,
+approvals/effective eligibility, variants and verification metadata while retaining
+text-only adapters. ACF 0.3 and plugin semver are independent version streams.

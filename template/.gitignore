@@ -9,11 +9,16 @@ evals/runs/*
 evals/captures/*
 !evals/captures/.gitkeep
 
-# Verified read-only SQL ("answer keys") for seeds — LOCAL ONLY, never committed.
-# SQL goes stale fast and must not be cloneable from the repo; the seed keeps a
-# `verified_query_file` pointer, not the query body.
+# Verified SQL: only encrypted answer keys are eligible for commit.
 evals/verified/*
 !evals/verified/.gitkeep
+!evals/verified/*.sql.age
+!evals/verified/*.sql.sops
+
+# Observed questions and derived artifacts are local review input/output.
+evals/observed/
+.nodal/
+.sim-analyst.json
 
 # Transient dbt bootstrap summary (Stage 0) — not ACF, discard after drafting.
 .dbt-findings.json

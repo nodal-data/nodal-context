@@ -1,15 +1,17 @@
-# Run the on/off/perfect delta on PR for any domain whose context changed.
+# Run paired context-on/off evaluation for domains affected in either PR graph.
 # The OSS runner produces the one-shot delta report; the hosted Nodal action
 # (commented) adds trustworthy ground truth, time-series, and regression gating.
 name: eval-delta
 on:
   pull_request:
-    paths: ['domains/**', 'entities/**', 'evals/seeds/**']
+    paths: ['domains/**', 'entities/**', 'methods/**', 'company/**', 'context.config.yaml', 'schemas/**', 'evals/seeds/**', 'evals/verified/*.sql.age', 'evals/verified/*.sql.sops', 'acf_runtime/**', 'eval_harness/**', '.ci/**']
 permissions:
   contents: read
   pull-requests: write      # to post the delta report as a PR comment
 jobs:
   delta:
+    env:
+      ACF_BRANCH_TEST: "1"  # proposed context; tests cannot grant approval
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,27 +19,36 @@ jobs:
           fetch-depth: 0          # full history so changed_domains.py can diff vs the base ref
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
-      - run: pip install anthropic pyyaml
+      - run: pip install anthropic pyyaml jsonschema
       - name: Identify changed domains
         id: changed
-        run: python .ci/changed_domains.py >> "$GITHUB_OUTPUT"
-      - name: Run on/off/perfect delta (OSS one-shot runner)
+        env:
+          NODAL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          NODAL_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python .ci/changed_domains.py --base "$NODAL_BASE_SHA" --head "$NODAL_HEAD_SHA" >> "$GITHUB_OUTPUT"
+      - name: Run paired on/off delta (OSS one-shot runner)
         if: steps.changed.outputs.domains != ''
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # BYO key; no key -> graceful skip
+          NODAL_CHANGED_DOMAINS: ${{ steps.changed.outputs.domains }}
         run: |
           python -m eval_harness.run \
             --adapter acf \
-            --domains "${{ steps.changed.outputs.domains }}" \
+            --domains "$NODAL_CHANGED_DOMAINS" \
             --report pr-comment | tee eval-report.md
-        # Excludes status: draft seeds from the "perfect" baseline.
+        # Draft/blocked seeds are excluded; missing execution evidence is skipped.
+      - name: Report coverage without execution or decryption
+        if: steps.changed.outputs.domains != ''
+        continue-on-error: true
+        run: python .ci/coverage.py > coverage-report.md
       - name: Post delta report as a PR comment
         if: steps.changed.outputs.domains != '' && hashFiles('eval-report.md') != ''
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const body = fs.readFileSync('eval-report.md', 'utf8').trim();
+            const coverage = fs.existsSync('coverage-report.md') ? '\n\n' + fs.readFileSync('coverage-report.md', 'utf8') : '';
+            const body = fs.readFileSync('eval-report.md', 'utf8').trim() + coverage;
             if (!body) return;
             await github.rest.issues.createComment({
               owner: context.repo.owner,

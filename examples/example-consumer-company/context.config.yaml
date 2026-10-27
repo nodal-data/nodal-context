@@ -1,0 +1,19 @@
+version: "0.3"
+warehouse: snowflake
+lineage_sources:
+- id: dbt_core
+  type: dbt
+  repo: github.com/example-consumer/consumer-dbt
+domains: {}
+time_tokens:
+  calendar:
+  - last_month
+  - last_quarter
+  - current_billing_period
+  - all_time
+  fiscal: []
+variants:
+  max_per_seed: 20
+verified_sql:
+  encryption: none
+  decrypt_to: evals/verified/

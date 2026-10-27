@@ -26,6 +26,9 @@ REQUIRED_FILES = (
     "scripts/compile_skill.py",
     "scripts/dbt_extract.py",
     "scripts/query_history_extract.py",
+    "scripts/simulated_analyst.py",
+    "schemas/method.schema.json",
+    "acf_runtime/loader.py",
 )
 
 EXECUTABLE_FILES = (
@@ -88,6 +91,12 @@ def check_context_repo(target, resume_marker=None):
             part for part in (validated.stdout.strip(), validated.stderr.strip()) if part
         )
         problems.append(f"context validation failed (exit {validated.returncode}): {detail}")
+
+    if (target / ".sim-analyst.json").exists():
+        checked = _run([sys.executable, "-B", "scripts/simulated_analyst.py", "check",
+                        "--marker", str(target / ".sim-analyst.json"), "--root", str(target)], target)
+        if checked.returncode:
+            problems.append("simulation output check failed: " + (checked.stdout or checked.stderr).strip())
 
     return problems
 

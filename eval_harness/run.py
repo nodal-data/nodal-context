@@ -12,33 +12,58 @@ import sys
 from pathlib import Path
 
 from . import adapters, client, report, seeds as seeds_mod
-from .grader import SKIPPED, grade
+from .grader import SKIPPED, grade_answer
+from .matching import match_question, resolve
+from dataclasses import asdict
 
 
 def _eval_domain(ncr, domain, status, model):
-    """-> {domain, drafts, context_truncated, seeds:[{question, kind, off, on, on_reason}]}"""
-    context = ncr.context_for(domain)
-    truncated = len(context) > client.MAX_CONTEXT_CHARS
-    if truncated:
-        print(f"eval_harness: WARNING: domain '{domain}' context is {len(context)} chars; "
-              f"only the first {client.MAX_CONTEXT_CHARS} are injected — the delta may "
-              "understate this context.", file=sys.stderr)
-    judge_fn = lambda sql, expected: client.judge(sql, expected, model)
-    rows = []
+    """Generate independently of seed answers; grade components with honest skips."""
+    judge_fn = lambda evidence, expected: client.judge(evidence, expected, model)
+    rows, truncated = [], False
     for seed in ncr.seeds_for(domain, status):
-        # value_at_snapshot (and unsupported kinds) are skipped without any LLM call
-        if seed.kind not in ("sql_shape", "semantic_entity"):
-            rows.append({"question": seed.question, "kind": seed.kind,
-                         "off": SKIPPED, "on": SKIPPED, "on_reason": ""})
+        method = None
+        if seed.ir.get("method"):
+            matches = resolve(seed.ir["method"], seed.domain, "method", ncr.definitions, aliases=False)
+            if matches:
+                method = ncr.definitions[matches[0]]
+            else:
+                rows.append({"question": seed.question, "kind": seed.kind, "off": SKIPPED,
+                             "on": SKIPPED, "on_reason": "method without decisions/capability"})
+                continue
+        # No model call solely to compare a snapshot that cannot be executed here.
+        if seed.kind == "value_at_snapshot" and method is None and not any(
+                seed.expected.get(k) for k in ("must_include", "must_exclude")):
+            rows.append({"question": seed.question, "kind": seed.kind, "off": SKIPPED,
+                         "on": SKIPPED, "on_reason": "snapshot needs customer execution"})
             continue
-        off_sql = client.generate(seed.question, None, model)["sql"]
-        on_sql = client.generate(seed.question, context, model)["sql"]
-        off = grade(seed.expected, off_sql, judge_fn)
-        on = grade(seed.expected, on_sql, judge_fn)
-        rows.append({"question": seed.question, "kind": seed.kind,
-                     "off": off.status, "on": on.status, "on_reason": on.reason})
-    return {"domain": domain, "drafts": ncr.draft_count(domain),
-            "context_truncated": truncated, "seeds": rows}
+        routing = {"relation": "unsupported", "blockers": []}
+        if "matching" in ncr.capabilities:
+            try:
+                extracted = client.extract_ir(seed.question, domain, ncr.definitions, model)
+                other_seeds = [{**asdict(s), "id": "seed:" + s.path.removeprefix("evals/seeds/")}
+                               for s in ncr.seeds if s.path != seed.path]
+                routing = match_question(extracted["ir"], domain, ncr.definitions, other_seeds,
+                                         candidates=extracted.get("candidates"))
+            except Exception:
+                routing = {"relation": "unresolved", "blockers": ["IR extraction unavailable"]}
+        context = ncr.context_for(domain, routing["relation"], routing.get("target"))
+        if "matching" in ncr.capabilities and (routing.get("blockers") or routing["relation"] in ("ambiguous", "unresolved")):
+            context = "Question routing: " + str({"relation": routing["relation"],
+                         "blockers": routing.get("blockers", []),
+                         "unsupported": routing.get("unsupported", [])}) + "\nClarify unresolved business semantics before a governed answer.\n\n" + context
+        truncated |= len(context) > client.MAX_CONTEXT_CHARS
+        off_answer = client.generate(seed.question, None, model)
+        on_answer = client.generate(seed.question, context, model)
+        off = grade_answer(seed.expected, off_answer, judge_fn, method=method)
+        on = grade_answer(seed.expected, on_answer, judge_fn, method=method)
+        rows.append({"question": seed.question, "kind": seed.kind, "off": off.status,
+                     "on": on.status, "on_reason": on.reason, "routing": routing["relation"],
+                     "off_components": off.components, "on_components": on.components})
+    if truncated:
+        print(f"eval_harness: WARNING: domain {domain!r} context was truncated; results may understate context.", file=sys.stderr)
+    return {"domain": domain, "drafts": ncr.draft_count(domain) if status != "draft" else 0, "context_truncated": truncated,
+            "selection": status, "seeds": rows}
 
 
 def main(argv=None):
@@ -56,16 +81,19 @@ def main(argv=None):
     ap.add_argument("--seeds", help="directory of *.seed.yaml ground truth to attach — "
                     "required for adapters whose source carries no seeds "
                     "(dbt/ktx/raw/skill)")
-    ap.add_argument("--status", default="confirmed",
+    ap.add_argument("--status", default="confirmed", choices=["confirmed", "draft"],
                     help="seed status to score (default: confirmed; draft excluded)")
     ap.add_argument("--model", default=client.MODEL, help="Anthropic model id")
     ap.add_argument("--out", help="also write the report here")
+    ap.add_argument("--branch-test", action="store_true", help="ACF only: test proposed context without approval")
     args = ap.parse_args(argv)
 
     requested = [d.strip() for d in args.domains.split(",") if d.strip()]
 
     builder = adapters.get_builder(args.adapter)
-    ncr = builder(args.root, requested or None)
+    ncr = builder(args.root, requested or None, branch_test=True) if args.adapter == "acf" and args.branch_test else builder(args.root, requested or None)
+    if args.adapter == "acf" and (args.branch_test or __import__("os").environ.get("ACF_BRANCH_TEST") == "1"):
+        print("BRANCH TEST: proposed context; results do not grant approval or establish live freshness.")
     if args.seeds:
         ncr.seeds.extend(seeds_mod.load_seeds(args.seeds))
     domains = requested or ncr.domains()

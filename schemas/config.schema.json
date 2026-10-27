@@ -3,27 +3,142 @@
   "$id": "https://nodaldata.io/acf/config.schema.json",
   "title": "ACF Repo Config",
   "type": "object",
-  "required": ["version", "warehouse", "lineage_sources"],
+  "required": [
+    "version",
+    "warehouse",
+    "lineage_sources"
+  ],
   "properties": {
-    "version": { "type": ["number", "string"] },
-    "warehouse": { "type": "string" },
+    "version": {
+      "enum": [
+        "0.3",
+        0.3
+      ]
+    },
+    "warehouse": {
+      "type": "string"
+    },
     "lineage_sources": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "type"],
+        "required": [
+          "id",
+          "type"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "type": { "enum": ["dbt", "sqlmesh", "raw_sql", "none"] },
-          "warehouse": { "type": "string" },
-          "repo": { "type": "string" },
-          "ref": { "type": "string" },
-          "manifest_path": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "dbt",
+              "sqlmesh",
+              "raw_sql",
+              "none"
+            ]
+          },
+          "warehouse": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "manifest_path": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }
     },
-    "domains": { "type": "object" }
+    "domains": {
+      "type": "object"
+    },
+    "time_tokens": {
+      "type": "object",
+      "properties": {
+        "calendar": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "fiscal": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "fiscal_calendar": {
+      "type": "object",
+      "properties": {
+        "year_start_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        }
+      },
+      "required": [
+        "year_start_month"
+      ],
+      "additionalProperties": false
+    },
+    "variants": {
+      "type": "object",
+      "properties": {
+        "max_per_seed": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 20
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "verified_sql": {
+      "type": "object",
+      "properties": {
+        "encryption": {
+          "enum": [
+            "age",
+            "sops",
+            "none"
+          ]
+        },
+        "recipients": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "decrypt_to": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "encryption"
+      ],
+      "additionalProperties": false
+    },
+    "approval_branch": {
+      "type": "string",
+      "minLength": 1,
+      "default": "main"
+    }
   },
   "additionalProperties": false
 }

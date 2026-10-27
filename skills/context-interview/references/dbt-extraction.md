@@ -3,8 +3,8 @@
 When a dbt project is available, seed the draft from it instead of hand-eliciting
 everything. dbt encodes grain, value sets, join paths, and dashboards as structured
 artifacts — but they are a **draft to react to**, never truth. Everything you write
-from dbt is `status: draft`, tagged `# dbt-derived (<source node>)`, and stays
-excluded from the perfect eval baseline until the analyst confirms it. A wrong dbt
+from dbt is proposed working-branch content, tagged `# dbt-derived (<source node>)`, and stays
+excluded from the confirmed evaluation until the analyst confirms it. A wrong dbt
 description is exactly the plausible-but-wrong failure mode; **tag, don't trust.**
 
 ## Step 1 — produce `dbt-findings.json`
@@ -37,7 +37,7 @@ there (a transient bootstrap artifact, not ACF). Discard it after Stage 0.
 `columns[]`, `depends_on[]`, `tests[]`, `grain_hint[]`), `exposures[]`,
 `unavailable[]`, `coverage{}`.
 
-Map each artifact to its ACF field — all `status: draft`, all tagged:
+Map each artifact to its ACF field — all proposed working-branch content, all tagged:
 
 | dbt artifact (in findings) | ACF target (actual field) | Notes |
 |---|---|---|
@@ -51,7 +51,7 @@ Map each artifact to its ACF field — all `status: draft`, all tagged:
 | `exposures[]` | `domain.yaml.dashboards[]` + domain clustering | the Stage-2/Stage-5 dashboard backlog |
 | `depends_on[]` graph | `context.config.yaml` lineage models + domain boundaries | which models feed an exposure = domain shape |
 | compiled SQL (when `compiled_sql: true`) | `metrics.common_filters` / hygiene-filter candidates in `reference.md` | best-effort; only when `dbt compile` ran |
-| dbt semantic models / metrics | `metrics.yaml` stubs, including a draft `expression:` (measure / filters / dimensions when the semantic model carries them) | draft only, never auto-confirm |
+| dbt semantic models / metrics | `metrics/<name>.yaml` stubs, including a draft `expression:` (measure / filters / dimensions when the semantic model carries them) | draft only, never auto-confirm |
 
 `grain_hint` is the headline win: phrase it as a question, e.g. *"dbt has a
 uniqueness test on `soap_note_id` for `fct_session_financials` — is one row really
@@ -79,7 +79,7 @@ there — fall back to the interview:
   are warehouse identifiers — often codenames. Use
   `relation` only to fill `domain.yaml.tables`; the company and domain *names* come
   from the analyst in Stages 1–2, not from what you queried. If unsure, ask.
-- Every dbt-derived line: `status: draft` + `# dbt-derived (<node id>)`.
+- Every dbt-derived line: proposed working-branch content + `# dbt-derived (<node id>)`.
 - Descriptions and semantic-layer metric defs are **often stale/aspirational** —
   confirm hard before flipping to `confirmed`.
 - The script drafts nothing into ACF; you draft, the analyst confirms. Same
@@ -88,3 +88,13 @@ there — fall back to the interview:
 ## Test
 
 The extractor has a stdlib test (no pytest dep): `python3 tests/test_dbt_extract.py`.
+
+## ACF 0.3 review boundary
+
+Write one draft metric per `domains/<domain>/metrics/<name>.yaml`; do not emit the
+legacy wrapper or infer a confirmation from source frequency or a dbt description.
+Review inherited/shared constraints, allowed dimensions and any division policy.
+If the formula is outside the expression grammar, propose an explicit blocked
+expression and deterministic pattern/method for review. Confirmed metrics and
+seeds need a real `approver` and `confirmed_at`, plus reviewed metric/method IR
+for positive seeds. Extraction findings remain local draft inputs, not answer keys.

@@ -5,9 +5,10 @@ this domain. Write it for an LLM, not a person: explicit routing, grain, filters
 and wrong-answer modes — no narrative warm-up. This skeleton mirrors the structure
 Anthropic's data team published as their per-domain reference doc, adapted to ACF.
 
-The difference from `context.md`: `context.md` is for a human onboarding to the
-domain; `reference.md` is for an agent deciding *which table, which filter, which
-grain* in the next three seconds. Keep them separate.
+`reference.md` supplies routing, grain and filters for equivalent questions.
+`context.md` explains the business reasoning to both humans and agents handling
+new slices, decompositions and methods. Structured definitions are always loaded;
+the prose ladder adds these documents according to the question's relation.
 
 ## Template — fill the brackets, delete what doesn't apply
 
@@ -44,6 +45,7 @@ grain* in the next three seconds. Keep them separate.
 ## Common query patterns
 - [Default cuts described as prose one-liners]
 
+<a id="pattern-[slug]"></a>
 ### [pattern name]   <!-- a fenced sql block ONLY where the exact form is the hard part -->
 Without this: [the plausible-but-wrong result the obvious query produces]
 ```sql
@@ -67,13 +69,20 @@ SELECT ...
   form is the hard-won knowledge — pattern, not paste: real model/column names,
   `<placeholders>` for parameter values, each led by a `Without this:` line naming
   the failure it prevents, a handful per domain, analyst-confirmed (drafts marked
-  `<!-- status: draft -->`), and **never mined from query logs** — a pattern comes
+  a working-branch review note), and **never mined from query logs** — a pattern comes
   from the interview or a Stage-5 verified match. Full rule: `SPEC.md` "Query
-  patterns". Runnable, blessed SQL stays in the gitignored `evals/verified/`
-  sidecar. When a pattern encodes a *metric's measure*, also land it as that
-  metric's `expression:` block in `metrics.yaml` (the structured, schema-checked
-  home — see SPEC.md "Deterministic anchor"); `reference.md` keeps the routing
-  prose and the `Without this:` line.
+  patterns". Runnable approved SQL stays in ignored plaintext sidecars; configured
+  ciphertext travels separately as an answer key. Neither is answering context.
+  When a measure fits the expression grammar, record it in
+  `metrics/<name>.yaml`. Otherwise name the unsupported construct in
+  `expression_blocked_by` and link `deterministic_form` to the confirmed
+  `reference.md#pattern-<slug>` anchor or root `methods/<slug>`. Never invent an
+  expression for window functions or other unsupported constructs.
+- **Keep rationales aligned.** Name expression metrics in reference routing.
+  Map each `Without this:` to a filter/ratio reason or method decision. Only use
+  models in domain lineage; draft patterns must be marked before their content
+  and must not be compiled as confirmed guidance. Semantic lint warnings require
+  review; no warning is not proof of agreement.
 - **Name the aliases.** If a concept is `client_status` in one table and
   `weekly_status` in another, say so — alias confusion is a silent failure.
 - **Every gotcha should also be an eval seed.** If you wrote "exclude BHPN" here,

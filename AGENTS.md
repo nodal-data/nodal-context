@@ -17,10 +17,13 @@ do not edit or include it in package work.
 
 ## Canonical and generated files
 
-Root ACF files are canonical: `SPEC.md`, `schemas/`, `template/`, `.ci/`, the
-three customer workflows, `scripts/`, and `eval_harness/`. The payload under
+The canonical specification is `skills/context-interview/references/SPEC.md`.
+The root `SPEC.md` is an ignored local copy and is not a package input.
+Root ACF files are canonical: `schemas/`, `template/`, `.ci/`, the
+customer workflows, `scripts/`, and `eval_harness/`. The payload under
 `skills/context-interview/` is a generated distribution mirror described by
 `scripts/scaffold_manifest.py`; it is not another manually maintained source.
+The canonical specification above is maintained directly, not generated.
 
 After editing a canonical artifact, run:
 
@@ -35,7 +38,7 @@ preserve `.ci/lineage-baseline.json` and authored
 context.
 
 An ACF field or path change must reconcile all affected canonical surfaces:
-`SPEC.md`, `schemas/`, `template/`, the worked example, and
+`skills/context-interview/references/SPEC.md`, `schemas/`, `template/`, the worked example, and
 `skills/context-interview/` instructions.
 
 ## Skills and packaging
@@ -51,6 +54,13 @@ An ACF field or path change must reconcile all affected canonical surfaces:
   bumps plugin semver.
 
 ## Validation
+
+Before running checks, activate a project virtual environment and install the
+local test dependencies:
+
+```bash
+python3 -m pip install jsonschema pyyaml ruamel.yaml nbformat sqlglot
+```
 
 Run the direct test runner, not `pytest tests/` (these executable tests are not
 pytest-discovered):

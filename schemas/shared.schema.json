@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nodaldata.io/acf/shared.schema.json",
+  "type": "object",
+  "properties": {
+    "lineage": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "lineage.schema.json"
+      }
+    },
+    "filter_sets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "metric.schema.json#/$defs/filterOrGroup"
+            }
+          }
+        },
+        "required": [
+          "filters"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1
+            },
+            "default": {},
+            "dimension": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+}

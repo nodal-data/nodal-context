@@ -9,19 +9,22 @@ ir:
   metric: collection_rate
   dimensions: [payer_name]     # state-specific payers stay separate rows
   filters:
-    - field: payer_name
-      op: ilike
-      value: "Payer X%"
+  - field: payer_name
+    op: ilike
+    value: "Payer X%"
   time_window: last_quarter    # evergreen seed — keep the window relative
 expected:
   kind: sql_shape
   must_include:
-    - "session age cutoff >= 45 days"
-    - "state-specific payer resolution (no cross-state Payer X aggregation)"
+  - "session age cutoff >= 45 days"
+  - "state-specific payer resolution (no cross-state Payer X aggregation)"
   must_exclude:
-    - "Payer Y / Payer Y-CA payers"
+  - "Payer Y / Payer Y-CA payers"
 provenance: interview
-status: confirmed
 lineage:
-  - source: dbt_core
-    models: [fct_session_financials]
+- source: dbt_core
+  models: [fct_session_financials]
+review_history:
+- status: confirmed
+  approver: fictional-example-owner
+  confirmed_at: '2026-10-01'

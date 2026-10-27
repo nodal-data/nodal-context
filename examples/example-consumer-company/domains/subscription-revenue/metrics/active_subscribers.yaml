@@ -1,0 +1,27 @@
+# Fictional example: approvals and business rules are illustrative.
+name: active_subscribers
+definition: Distinct paid subscriptions active in the selected billing period; exclude trials.
+grain: subscription in billing period
+temporal_kind: stock
+lineage:
+- source: dbt_core
+  models: [fct_subscription_periods]
+parameters:
+- name: billing_period
+  note: Selected current billing period.
+expression:
+  measure: COUNT(DISTINCT subscription_id)
+  mandatory_filters:
+  - field: status
+    op: '='
+    value: active
+    reason: Paid subscribers exclude trialing subscriptions.
+  - field: billing_period
+    op: '='
+    value: <billing_period>
+    reason: Count each subscription only within the selected billing period.
+  allowed_dimensions: []
+review_history:
+- status: confirmed
+  approver: fictional-example-owner
+  confirmed_at: '2026-10-01'

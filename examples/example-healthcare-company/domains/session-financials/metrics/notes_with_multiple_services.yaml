@@ -1,0 +1,15 @@
+name: notes_with_multiple_services
+definition: Notes with at least two distinct authorized services among surviving rows.
+grain: note_id
+expression:
+  measure: COUNT(DISTINCT note_id)
+  entity_filters:
+  - entity: note_id
+    having:
+    - {measure: 'COUNT(DISTINCT authorized_service_id)', op: '>=', value: 2}
+    reason: Multiple-service eligibility belongs to the note, not one session row.
+  allowed_dimensions: [session_date]
+lineage:
+  shared: lineage_3111488458
+review_history:
+- status: draft

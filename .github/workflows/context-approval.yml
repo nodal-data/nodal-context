@@ -1,0 +1,52 @@
+# No PR code receives authority credentials. Restrict both environments to the
+# approval branch; nodal-governance-repair requires human review. See GOVERNANCE.md.
+name: context-approval
+on:
+  push:
+    branches-ignore: [acf-governance]
+  workflow_dispatch:
+    inputs:
+      block:
+        description: 'Block event ID to clear for this reviewed repair revision'
+        required: true
+      reason:
+        description: 'How this repair addresses the recorded source change'
+        required: true
+      checks:
+        description: 'URL of fresh passing repair/behavior checks'
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: acf-governance-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  record:
+    if: github.ref == format('refs/heads/{0}', vars.ACF_APPROVAL_BRANCH || 'main')
+    environment: ${{ github.event_name == 'workflow_dispatch' && 'nodal-governance-repair' || 'nodal-governance' }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.ACF_GOVERNANCE_TOKEN }}
+      ACF_GOVERNANCE_REPOSITORY: ${{ github.repository }}
+      ACF_GOVERNANCE_WRITER: ${{ vars.ACF_GOVERNANCE_WRITER }}
+      APPROVAL_BRANCH: ${{ vars.ACF_APPROVAL_BRANCH || 'main' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install jsonschema pyyaml
+      - name: Validate merge content and dependency readiness
+        run: python .ci/validate.py --branch-test --require-ready
+      - name: Record protected merge approval
+        if: github.event_name == 'push'
+        run: python scripts/governance_github.py approve --branch "$APPROVAL_BRANCH"
+      - name: Clear only the named block for this reviewed repair
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          BLOCK: ${{ inputs.block }}
+          REASON: ${{ inputs.reason }}
+          CHECKS: ${{ inputs.checks }}
+        run: python scripts/governance_github.py clear --branch "$APPROVAL_BRANCH" --block "$BLOCK" --reason "$REASON" --checks "$CHECKS"

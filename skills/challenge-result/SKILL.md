@@ -3,6 +3,15 @@ name: challenge-result
 description: Challenge a completed analytics answer when the user disputes it or requests a second opinion, testing alternative interpretations and failure hypotheses before upholding it, escalating uncertainty, or handing a correction to analytics-plan. Do not use for routine first-pass verification.
 ---
 
+Approval contract: new and changed context stays on a named working branch and
+has no authored approval status. Human-reviewed protected merge grants definition
+approval; consult the live authority through the runtime for the exact revision
+and freshness. Missing/expired evidence or stale dependencies blocks governed
+use. Explicit branch-test mode is proposed context only. Query/notebook result
+verification is separate from definition approval; retain source and review
+evidence. See the context-interview SPEC approval-through-merge contract.
+
+
 # Challenge Result
 
 Run a skeptical second-pass review after an analytics answer has already been
@@ -60,6 +69,12 @@ and label plan comparison unavailable.
    user's concern without letting it crowd out independent alternatives. Test
    whether the user's expectation could be wrong as well as whether the reported
    number could be wrong.
+   For ACF 0.3, use the same normalized definitions, canonical IR and dependency
+   evidence as planning/verification. Challenge family selection, method branch
+   selection/defaults, inherited filter stages, ratio policy, fixed cohorts,
+   partial-window disclosures and stale or blocked definitions where relevant.
+   A matched seed shape or old notebook/dashboard snapshot cannot prove the
+   current parameterization; investigate source/input/revision differences.
 3. **Keep a challenge ledger.** For each hypothesis record the evidence that
    would distinguish it, checks performed, finding, likely impact, and evidence
    still missing. Missing evidence remains unknown.

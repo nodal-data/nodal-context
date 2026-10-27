@@ -2,7 +2,7 @@
 name: validate-context
 on:
   pull_request:
-    paths: ['**/*.yaml', '**/*.md', 'context.config.yaml']
+    # Run for every PR so required checks cannot remain pending on path filters.
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -12,8 +12,15 @@ jobs:
         with: { python-version: '3.12' }
       - run: pip install jsonschema pyyaml
       - name: Validate YAML against ACF schemas
-        run: python .ci/validate.py        # validates entities/metrics/domain/seeds
-      - name: Surface unconfirmed drafts (warn, don't fail)
-        run: |
-          echo "Definitions still marked status: draft:"
-          grep -rn "status: draft" --include=*.yaml . || echo "none — all confirmed"
+        run: python .ci/validate.py --branch-test --require-ready        # validates entities/metrics/domain/seeds
+  approval-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install jsonschema pyyaml
+      - name: Check authoring contract
+        run: python .ci/approval_policy.py
