@@ -1,6 +1,9 @@
 # Changelog
 
-## 1.7.1 — Unreleased
+## 1.7.1 — 2026-10-27
+
+This release includes the ACF 0.3 migration and merge-based approval changes.
+Version 1.7.0 was superseded before publication.
 
 - Correct adversarial-review regressions in CI revision identity and skip exits,
   clearance inheritance, post-merge freshness, deterministic/clean exports, scoped
@@ -14,10 +17,8 @@
 - Migrate shipped legacy content with owner-authorized admission, preserve review
   history, separate result verification, and verify exports against approved sources.
 
-## 1.7.0 — Unreleased (superseded before publication)
-
-- Adopt ACF 0.3 per-metric YAML, shared fragments, aliases and families, approval
-  metadata, explicit blockers, ratio policies and cross-domain dependencies.
+- Adopt ACF 0.3 per-metric YAML, shared fragments, aliases and families, review
+  history, explicit blockers, ratio policies and cross-domain dependencies.
   Retire ACF 0.2 and legacy metric layouts immediately; provide a one-time,
   comment-preserving YAML converter with backups and conflict protection.
 - Add governed methods, static notebook import, and independent notebook/method
@@ -37,6 +38,18 @@
   and missing-data declines, retaining the should-not-fire control and ablation.
 - Live host, warehouse, dashboard and customer notebook acceptance remains an
   opt-in maintainer check; offline tests do not establish those results.
+
+Upgrade notes:
+
+- Existing context repositories need an explicit ACF 0.3 migration and support
+  upgrade; updating the plugin alone does not migrate authored context. Back up
+  existing content and review the conversion before merging. Admission of legacy
+  drafts requires each repository owner's authorization.
+- Production consumers require the protected approval branch, governance state,
+  workflow identity and trusted live reader described in
+  [GOVERNANCE.md](template/GOVERNANCE.md). Conversion alone grants no live approval.
+- `ACF_BRANCH_TEST=1` permits local testing of proposed context only. Remove it
+  for production use and verify approval and freshness through the live authority.
 
 ## 1.6.4 — 2026-10-19
 
