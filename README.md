@@ -118,6 +118,13 @@ claude plugin update --scope user nodal-analytics@nodal
 codex plugin marketplace add nodal-data/nodal-context
 codex plugin add nodal-analytics@nodal
 ```
+To update an existing installation:
+
+```bash
+codex plugin marketplace upgrade nodal
+codex plugin add nodal-analytics@nodal
+```
+
 
 </details>
 
