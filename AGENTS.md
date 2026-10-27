@@ -25,6 +25,11 @@ customer workflows, `scripts/`, and `eval_harness/`. The payload under
 `scripts/scaffold_manifest.py`; it is not another manually maintained source.
 The canonical specification above is maintained directly, not generated.
 
+Customer-only approval and drift workflows live in `template/.github/workflows/`.
+The scaffold manifest installs them into the generated repo's `.github/workflows/`.
+Do not put these workflows in the package repo's active `.github/workflows/`:
+the package repo does not operate a customer governance ledger or lineage sources.
+
 After editing a canonical artifact, run:
 
 ```bash

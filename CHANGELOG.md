@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.2 — Unreleased
+
+- Move customer approval and drift workflows into the context template so they
+  no longer execute in the package source repository. Fresh scaffolds and support
+  upgrades still install both workflows under `.github/workflows/` in customer
+  repositories, with their existing approval and freshness behavior unchanged.
+
 ## 1.7.1 — 2026-10-27
 
 This release includes the ACF 0.3 migration and merge-based approval changes.
