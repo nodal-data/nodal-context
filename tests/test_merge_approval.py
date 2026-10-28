@@ -42,10 +42,16 @@ def run():
         assert proposed.metrics[0].data['review_history'][0]['status'] == 'draft'
         missing = load_context(root, branch_test=False, authority=lambda _: {})
         assert all(n.blocking_reasons for n in missing.nodes.values())
+        # Scaffolded non-contract files must not split checkout and revision digests.
+        (root/'evals/seeds/_seed-template.yaml').write_text('question: "<template>"\n')
+        (root/'evals/seeds/.gitkeep').write_text('')
         for args in (['init','-q'], ['add','.'], ['-c','user.name=Test','-c','user.email=test@example.invalid','commit','-qm','fixture']):
             subprocess.run(['git','-C',td,*args],check=True,capture_output=True)
         rev = subprocess.check_output(['git','-C',td,'rev-parse','HEAD'],text=True).strip()
         content = digest(context_files(root))
+        from acf_runtime.impact import snapshot
+        with snapshot(root, rev) as committed:
+            assert digest(context_files(committed)) == content, 'approval digest differs from merge snapshot'
         def approve(events, revision=rev):
             return append_event(events,'approve',revision=revision,content_digest=content,branch='main',
                                 review=['human review evidence'],checks=['passing required checks'],protection='enforced')
