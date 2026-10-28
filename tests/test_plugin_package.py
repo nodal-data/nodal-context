@@ -19,7 +19,7 @@ def run():
     codex = load(".codex-plugin/plugin.json")
     for manifest in (claude, codex):
         assert manifest["name"] == "nodal-analytics"
-        assert manifest["version"] == "1.7.3"
+        assert manifest["version"] == "1.7.4"
         assert manifest["license"] == "Apache-2.0"
         assert manifest["skills"] == "./skills/"
         assert "mcpServers" not in manifest
