@@ -7,6 +7,11 @@
   rosters status-free; distinguish interview evidence from protected merge approval.
 - Stop drift patches from inventing legacy status markers on unmarked query
   patterns. Preserve explicit legacy migration support and runtime eligibility.
+- Fix merge approval never recording in scaffolded repos. The governed content
+  digest now uses the same file scope as the merge snapshot, so the shipped
+  `evals/seeds/_seed-template.yaml` (and other non-contract files) no longer make
+  the checkout and merged revision disagree. Digests for repos with such files
+  change once, so existing freshness records need one fresh source check.
 
 ## 1.7.2 — 2026-10-27
 

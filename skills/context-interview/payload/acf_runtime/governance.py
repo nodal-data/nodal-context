@@ -19,12 +19,17 @@ def digest(value):
 
 def context_files(root):
     """Bind all governed prose, definitions, shared fragments and configuration."""
+    from .impact import context_path
     root = Path(root)
     paths = [root / "context.config.yaml"]
     for name in ("company", "domains", "entities", "methods", "evals/seeds"):
         paths.extend(p for p in (root / name).rglob("*") if p.is_file())
     result = {}
     for path in sorted(set(paths)):
+        # Same scope as the merge snapshot, so templates and other non-contract
+        # files cannot make a checkout and its revision disagree.
+        if not context_path(path.relative_to(root).as_posix()):
+            continue
         if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
             raise ValueError("governed content cannot escape the context root")
         if path.is_file():
