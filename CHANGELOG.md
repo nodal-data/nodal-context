@@ -1,17 +1,29 @@
 # Changelog
 
-## 1.7.3 — Unreleased
+## 1.7.4 — 2026-10-28
+
+- Fix merge approval never recording in scaffolded repos. The governed content
+  digest now uses the same file scope as the merge snapshot, so the shipped
+  `evals/seeds/_seed-template.yaml` (and other non-contract files) no longer make
+  the checkout and merged revision disagree.
+- Add README instructions for updating an existing installation.
+
+Upgrade notes:
+
+- Context repositories created from 1.7.2 or 1.7.3 could not record merge
+  approvals. After a support upgrade, merge the next reviewed change to record
+  the first approval.
+- Content digests change once for repositories with non-contract files under
+  governed directories, so existing freshness records need one fresh source
+  check (any push to the approval branch or a manual `context-drift` run).
+
+## 1.7.3 — 2026-10-27
 
 - Remove leftover authored approval-status instructions and Markdown markers from
   interview guidance, extraction documentation and customer templates. Keep owner
   rosters status-free; distinguish interview evidence from protected merge approval.
 - Stop drift patches from inventing legacy status markers on unmarked query
   patterns. Preserve explicit legacy migration support and runtime eligibility.
-- Fix merge approval never recording in scaffolded repos. The governed content
-  digest now uses the same file scope as the merge snapshot, so the shipped
-  `evals/seeds/_seed-template.yaml` (and other non-contract files) no longer make
-  the checkout and merged revision disagree. Digests for repos with such files
-  change once, so existing freshness records need one fresh source check.
 
 ## 1.7.2 — 2026-10-27
 
