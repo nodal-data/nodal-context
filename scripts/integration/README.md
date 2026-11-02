@@ -1,5 +1,95 @@
 # Clean-room integration testing
 
+## Scoped dbt retrieval probe
+
+`retrieval_probe.py` prepares a deterministic synthetic dbt project and reports
+operator-exported retrieval captures. It does not start an agent, implement an
+MCP server, access a warehouse, or change any host configuration.
+
+```bash
+.venv/bin/python scripts/integration/retrieval_probe.py prepare /tmp/nodal-dbt-probe-UNIQUE
+.venv/bin/python scripts/integration/retrieval_probe.py report /tmp/retrieval-captures.json
+```
+
+Preparation requires an absent directory, never deletes caller data, and prints
+the fixture digest. The project has `fct_orders`, its customer dependency, thirty
+unrelated supplier models, a shared schema YAML, model-level/cross-column tests,
+and an upstream account exclusion. The context's revision-specific governance
+statement is synthetic exercise evidence, not a live receipt. Expected answers
+and adjudication records belong outside the agent's evidence directory.
+
+For maintainer-operated comparisons, give baseline and changed agents the same
+question, fixture and authorized test connector capabilities. Keep host/model
+settings fixed. Record baseline and skill-only arms first; server-only and
+combined arms require the separately implemented external server. Do not simulate
+their success with hand-written traces. Local file reads can test selection but
+do not establish cold-cache MCP behavior or transport savings.
+
+Export a JSON array of runs in this format (the strings below are placeholders,
+not measurement evidence):
+
+```json
+[
+  {
+    "configuration": "skill-only",
+    "host": "host/version",
+    "model": "exact-model",
+    "settings_id": "digest-of-matched-nonsecret-settings",
+    "fixture_sha256": "digest-printed-by-prepare",
+    "run_id": "unique-run-id",
+    "tokenizer": "tokenizer-name/version-or-omit-if-unavailable",
+    "events": [
+      {
+        "kind": "evidence",
+        "raw_response": "full response before runtime selection",
+        "emitted_response": "full response actually exposed to the model",
+        "capture_complete": true,
+        "overview": false,
+        "business_execution": false,
+        "model_bodies": ["model.retrieval_fixture.fct_orders"]
+      }
+    ],
+    "review": {
+      "constraints_retained": true,
+      "approval_preserved": true,
+      "evidence_complete": true,
+      "evidence": "Reviewer findings with trace and final-plan locations"
+    }
+  }
+]
+```
+
+Use event kinds `discovery`, `evidence`, or `execution`. `model_bodies` records
+actual exposed bodies, including repeated exposures, not compact index hits.
+Set `overview` for broad overview calls and `business_execution` for business
+result execution (metadata reads do not count). Include failed calls, warnings,
+continuations and revision changes. Do not mark captures complete if only a
+truncated transcript is available. Remove secrets before recording; these fixtures
+need no credentials or real customer data.
+
+Optionally supply nonnegative integer `emitted_tokens` for every discovery and
+evidence event with the exact tokenizer used. Without complete token measurement,
+the report gives UTF-8 byte counts and null token counts, never a token estimate.
+It reports raw versus emitted bytes separately; runtime filtering does not prove
+reduced server transfer, and neither count includes host-injected tool schemas.
+
+Review the actual plan and trace for distinct-customer counting, first-ever and
+time semantics, account exclusions, join cardinality, retained model/cross-column
+constraints, provenance/continuations, and approval before execution. Record
+unsupported or contradictory evidence as a failed review field. Those fields are
+operator adjudication, not independently attested approval. Reports preserve
+per-run failures and configuration medians; missing arms remain explicit. Compare
+tokens only with the same tokenizer. A combined-path acceptance additionally
+requires no overview or unrelated bodies, complete required evidence, preserved
+approval, and lower emitted discovery/evidence tokens than the matched baseline.
+Do not infer improvement from byte counts alone or hide failed runs in a median.
+
+`tests/test_retrieval_probe.py` checks fixture preservation and measurement
+behavior offline. Plugin eval cases 10–13 check supplied-evidence decisions.
+Neither is a substitute for the opt-in real retrieval comparison.
+
+## Clean-room workflow
+
 This opt-in harness exercises Nodal from a clean project without copying ignored
 operator data out of the source checkout. It complements the deterministic tests
 in `tests/`; authenticated agent, warehouse, and dashboard runs are release
