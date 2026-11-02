@@ -3,6 +3,10 @@
 import copy
 import importlib.util
 import json
+import os
+import re
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -49,6 +53,27 @@ def run():
         assert len(list((first / "models").glob("*.sql"))) == 32
         assert "customer_created_date" in json.dumps(models[0]["data_tests"])
         assert "account_type = 'customer'" in (first / "models/dim_customers.sql").read_text()
+        sources = yaml.safe_load((first / "models/_sources.yml").read_text())["sources"]
+        declared = {(s["name"], t["name"]) for s in sources for t in s["tables"]}
+        referenced = set()
+        for sql in (first / "models").glob("*.sql"):
+            referenced.update(re.findall(r"source\('([^']+)', '([^']+)'\)", sql.read_text()))
+        assert declared == referenced and len(declared) == 32
+        # Opt-in real parser smoke test; no database connection or model execution.
+        if os.environ.get("RETRIEVAL_PROBE_DBT"):
+            profiles = Path(temporary) / "profiles"
+            profiles.mkdir()
+            (profiles / "profiles.yml").write_text(
+                "retrieval_fixture:\n  target: local\n  outputs:\n    local:\n"
+                "      type: duckdb\n      path: ':memory:'\n      threads: 1\n")
+            subprocess.run([os.environ["RETRIEVAL_PROBE_DBT"], "parse", "--no-partial-parse",
+                            "--project-dir", str(first), "--profiles-dir", str(profiles)],
+                           check=True, env={**os.environ, "DBT_SEND_ANONYMOUS_USAGE_STATS": "false"})
+            manifest = json.loads((first / "target/manifest.json").read_text())
+            assert len(manifest["sources"]) == 32
+            assert sum(n["resource_type"] == "model" for n in manifest["nodes"].values()) == 32
+            assert any(n.get("test_metadata", {}).get("name") == "expression_is_true"
+                       for n in manifest["nodes"].values())
         marker = first / "keep.txt"
         marker.write_text("caller data")
         try:
@@ -101,6 +126,63 @@ def run():
     findings = probe.compare([failed])["runs"][0]
     assert len(findings["failures"]) == 3
     assert findings["unrelated_model_bodies"] == 1
+    baseline = capture()
+    baseline.update(configuration="baseline", run_id="baseline")
+    baseline["events"][0]["emitted_tokens"] = 10
+    combined = capture()
+    combined.update(configuration="combined", run_id="combined")
+
+    def check_acceptance(runs, status, exit_code):
+        report = probe.compare(runs)
+        assert report["combined_acceptance"]["status"] == status
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "capture.json"
+            path.write_text(json.dumps(runs))
+            command = subprocess.run([sys.executable, str(ROOT / "scripts/integration/retrieval_probe.py"),
+                                      "report", str(path)], capture_output=True, text=True)
+            assert command.returncode == exit_code, command.stderr
+            assert json.loads(command.stdout) == report
+        return report
+
+    check_acceptance([baseline, combined], "pass", 0)
+    for count in (10, 30):
+        combined["events"][0]["emitted_tokens"] = count
+        check_acceptance([baseline, combined], "fail", 1)
+    combined["events"][0]["emitted_tokens"] = 3
+    check_acceptance([combined], "not_evaluated", 2)
+    combined["tokenizer"] = "different-counter"
+    report = check_acceptance([baseline, combined], "not_evaluated", 2)
+    assert report["token_comparison"]["status"] == "incomparable"
+    assert all("evidence_tokens" not in median for median in report["medians"].values())
+    assert report["medians"]["combined"]["evidence_bytes"] > 0
+    combined["configuration"] = "skill-only"
+    assert probe.compare([baseline, combined])["token_comparison"]["status"] == "incomparable"
+    combined.update(configuration="combined", tokenizer="test-counter")
+    for value in (None, "", "   ", True, ["counter"]):
+        missing = copy.deepcopy(combined)
+        missing["tokenizer"] = value
+        check_acceptance([baseline, missing], "not_evaluated", 2)
+    missing = copy.deepcopy(combined)
+    del missing["events"][0]["emitted_tokens"]
+    check_acceptance([baseline, missing], "not_evaluated", 2)
+    execution_only = copy.deepcopy(combined)
+    execution_only["events"][0]["kind"] = "execution"
+    report = check_acceptance([baseline, execution_only], "not_evaluated", 2)
+    assert report["runs"][1]["evidence_tokens"] is None
+    assert report["runs"][1]["discovery_tokens"] is None
+    combined["events"][0]["emitted_tokens"] = 0
+    assert check_acceptance([baseline, combined], "pass", 0)["runs"][1]["evidence_tokens"] == 0
+    combined["review"]["constraints_retained"] = False
+    check_acceptance([baseline, combined], "fail", 1)
+    # Take the median of each run's total, not the sum of category medians.
+    totals = []
+    for index, (discovery, evidence) in enumerate(((0, 9), (9, 0), (8, 8))):
+        item = copy.deepcopy(baseline)
+        item["run_id"] = str(index)
+        item["events"][0]["emitted_tokens"] = evidence
+        item["events"].append({**item["events"][0], "kind": "discovery", "emitted_tokens": discovery})
+        totals.append(item)
+    assert probe.compare(totals)["medians"]["baseline"]["retrieval_tokens"] == 9
     print("test_retrieval_probe: OK")
 
 

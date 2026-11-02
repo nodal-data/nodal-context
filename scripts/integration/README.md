@@ -17,6 +17,17 @@ unrelated supplier models, a shared schema YAML, model-level/cross-column tests,
 and an upstream account exclusion. The context's revision-specific governance
 statement is synthetic exercise evidence, not a live receipt. Expected answers
 and adjudication records belong outside the agent's evidence directory.
+All sources are declared, and the cross-column test uses a bundled generic macro;
+no dbt packages are required. To smoke-test manifest generation with a separately
+installed `dbt-duckdb`, run:
+
+```bash
+RETRIEVAL_PROBE_DBT=/path/to/dbt .venv/bin/python tests/test_retrieval_probe.py
+```
+
+This runs `dbt parse` with a temporary in-memory DuckDB profile and checks the
+manifest's models, sources and cross-column test. It does not execute models or
+connect to a warehouse. The ordinary offline test skips this opt-in parser check.
 
 For maintainer-operated comparisons, give baseline and changed agents the same
 question, fixture and authorized test connector capabilities. Keep host/model
@@ -70,6 +81,10 @@ need no credentials or real customer data.
 Optionally supply nonnegative integer `emitted_tokens` for every discovery and
 evidence event with the exact tokenizer used. Without complete token measurement,
 the report gives UTF-8 byte counts and null token counts, never a token estimate.
+Execution-only captures also have null token counts. Token medians are emitted
+only when every supplied run has complete retrieval measurements using the same
+nonempty tokenizer identifier; otherwise `token_comparison` is `incomparable`.
+Per-run measurements and byte medians remain available.
 It reports raw versus emitted bytes separately; runtime filtering does not prove
 reduced server transfer, and neither count includes host-injected tool schemas.
 
@@ -81,7 +96,13 @@ operator adjudication, not independently attested approval. Reports preserve
 per-run failures and configuration medians; missing arms remain explicit. Compare
 tokens only with the same tokenizer. A combined-path acceptance additionally
 requires no overview or unrelated bodies, complete required evidence, preserved
-approval, and lower emitted discovery/evidence tokens than the matched baseline.
+approval, and a strictly lower median of per-run total emitted discovery plus
+evidence tokens than the matched baseline. `combined_acceptance` reports `pass`,
+`fail`, or `not_evaluated` with a reason. Missing baseline/combined arms or
+incomparable measurements cannot pass; any failed run prevents acceptance.
+The report exits 1 for failed review/execution checks or a failed reduction,
+and 2 when a supplied combined arm cannot be evaluated. Reports without a
+combined arm may exit 0, but do not establish combined acceptance.
 Do not infer improvement from byte counts alone or hide failed runs in a median.
 
 `tests/test_retrieval_probe.py` checks fixture preservation and measurement

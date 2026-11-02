@@ -23,12 +23,12 @@ def fixture_files():
         {
             "name": "fct_orders",
             "description": "Canonical real-customer order fact; first-day flags may repeat.",
-            "data_tests": [{"dbt_utils.expression_is_true": {
-                "expression": "order_date >= customer_created_date"}}],
+            "data_tests": [{"expression_is_true": {
+                "arguments": {"expression": "order_date >= customer_created_date"}}}],
             "columns": [
                 {"name": "order_id", "data_tests": ["unique", "not_null"]},
                 {"name": "customer_id", "data_tests": ["not_null", {"relationships": {
-                    "to": "ref('dim_customers')", "field": "app_db_customer_id"}}]},
+                    "arguments": {"to": "ref('dim_customers')", "field": "app_db_customer_id"}}}]},
                 {"name": "order_date"}, {"name": "customer_created_date"},
                 {"name": "is_first_order"},
             ],
@@ -40,7 +40,13 @@ def fixture_files():
         },
     ]
     files = {
-        "dbt_project.yml": "name: retrieval_fixture\nversion: '1.0'\nconfig-version: 2\n",
+        "dbt_project.yml": (
+            "name: retrieval_fixture\nversion: '1.0'\nconfig-version: 2\n"
+            "profile: retrieval_fixture\n"),
+        "macros/expression_is_true.sql": (
+            "{% test expression_is_true(model, expression) %}\n"
+            "select * from {{ model }} where not ({{ expression }})\n"
+            "{% endtest %}\n"),
         "models/fct_orders.sql": (
             "with orders as (select * from {{ source('raw', 'orders') }}),\n"
             "first_orders as (select customer_id, min(order_date) as first_date "
@@ -62,6 +68,11 @@ def fixture_files():
                        "columns": [{"name": "supplier_id", "data_tests": ["not_null"]}]})
         files[f"models/{name}.sql"] = f"select supplier_id from {{{{ source('raw', '{name}') }}}}\n"
     files["models/_marts.yml"] = yaml.safe_dump({"version": 2, "models": models}, sort_keys=False)
+    files["models/_sources.yml"] = yaml.safe_dump({
+        "version": 2, "sources": [{"name": "raw", "tables": [
+            {"name": name} for name in ["orders", "customers"] +
+            [f"supplier_{index:02d}" for index in range(30)]
+        ]}]}, sort_keys=False)
     files["context.md"] = (
         "Synthetic planning fixture, not production approval evidence.\n"
         "Question: How many new customers did we gain in September 2026?\n"
@@ -104,7 +115,8 @@ def summarize(run):
               "overview_calls": 0, "business_execution_calls": 0,
               "unrelated_model_bodies": 0}
     tokens = {"discovery_tokens": 0, "evidence_tokens": 0}
-    exact_tokens = bool(run.get("tokenizer"))
+    exact_tokens = isinstance(run.get("tokenizer"), str) and bool(run["tokenizer"].strip())
+    retrieval_events = 0
     for event in events:
         if not isinstance(event, dict):
             raise ValueError("each event must be an object")
@@ -124,6 +136,7 @@ def summarize(run):
         counts["raw_bytes"] += len(event["raw_response"].encode("utf-8"))
         kind = event["kind"]
         if kind in {"discovery", "evidence"}:
+            retrieval_events += 1
             counts[f"{kind}_bytes"] += len(event["emitted_response"].encode("utf-8"))
             count = event.get("emitted_tokens")
             if type(count) is not int or count < 0:
@@ -147,6 +160,7 @@ def summarize(run):
     if run["configuration"] == "combined":
         if counts["overview_calls"] or counts["unrelated_model_bodies"]:
             failures.append("combined path exposed broad/unrelated evidence")
+    exact_tokens = exact_tokens and retrieval_events > 0
     return {"run_id": run["run_id"], "configuration": run["configuration"],
             **counts, **(tokens if exact_tokens else {k: None for k in tokens}),
             "tokenizer": run.get("tokenizer") if exact_tokens else None,
@@ -164,6 +178,10 @@ def compare(runs):
     if len({r["run_id"] for r in runs}) != len(runs):
         raise ValueError("run IDs must be unique")
     medians = {}
+    tokenizers = {r["tokenizer"] for r in summaries}
+    token_reason = (
+        "missing complete retrieval token measurements" if None in tokenizers else
+        "different tokenizers" if len(tokenizers) != 1 else None)
     for config in sorted(CONFIGURATIONS):
         subset = [r for r in summaries if r["configuration"] == config]
         if subset:
@@ -171,12 +189,27 @@ def compare(runs):
                       "overview_calls", "unrelated_model_bodies")
             medians[config] = {k: statistics.median(r[k] for r in subset) for k in fields}
             medians[config]["run_count"] = len(subset)
-            tokenizers = {r["tokenizer"] for r in subset}
-            if len(tokenizers) == 1 and None not in tokenizers:
+            if token_reason is None:
                 medians[config].update({k: statistics.median(r[k] for r in subset)
                                        for k in ("discovery_tokens", "evidence_tokens")})
+                medians[config]["retrieval_tokens"] = statistics.median(
+                    r["discovery_tokens"] + r["evidence_tokens"] for r in subset)
+    acceptance = {"status": "not_evaluated", "reason": "baseline and combined arms required"}
+    if {"baseline", "combined"} <= medians.keys():
+        if any(r["failures"] for r in summaries):
+            acceptance = {"status": "fail", "reason": "one or more runs failed review or execution checks"}
+        elif token_reason:
+            acceptance = {"status": "not_evaluated", "reason": token_reason}
+        else:
+            reduced = medians["combined"]["retrieval_tokens"] < medians["baseline"]["retrieval_tokens"]
+            acceptance = {"status": "pass" if reduced else "fail",
+                          "reason": "combined median total retrieval tokens must be strictly lower than baseline"}
     return {"measurement": "UTF-8 bytes of full captured response strings; tokens only when supplied with tokenizer",
             "review": "operator adjudication; not independent approval attestation",
+            "token_comparison": {"status": "incomparable" if token_reason else "comparable",
+                                 "reason": token_reason,
+                                 "tokenizer": None if token_reason else summaries[0]["tokenizer"]},
+            "combined_acceptance": acceptance,
             "runs": summaries, "medians": medians,
             "missing_configurations": sorted(CONFIGURATIONS - medians.keys())}
 
@@ -191,7 +224,11 @@ def main():
         result = prepare(args.directory) if args.command == "prepare" else compare(
             json.loads(args.capture.read_text(encoding="utf-8")))
         print(json.dumps(result, indent=2))
-        return int(any(r["failures"] for r in result.get("runs", [])))
+        if any(r["failures"] for r in result.get("runs", [])):
+            return 1
+        if "combined" in result.get("medians", {}):
+            return {"pass": 0, "fail": 1, "not_evaluated": 2}[result["combined_acceptance"]["status"]]
+        return 0
     except (ValueError, OSError, KeyError, TypeError) as exc:
         parser.exit(2, f"retrieval_probe: {exc}\n")
 
