@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.7.5 — 2026-11-02
+
+- Prefer scoped dbt evidence and compact tool discovery while preserving model
+  tests, cross-column constraints, provenance, and required continuations.
+- Make the provisional analytical IR explicit and strengthen evidence stopping
+  rules without weakening plan approval or governance checks.
+- Add four retrieval behavior eval cases and a synthetic dbt retrieval probe.
+  The probe declares its sources, uses a local test macro, rejects incomparable
+  token measurements, and checks combined-path acceptance against the baseline.
+
+Upgrade notes:
+
+- Update the installed Nodal Analytics package; no ACF migration is required.
+- Compatible with existing connectors. Scoped aiden-core retrieval can ship
+  independently and is used when its capabilities are advertised.
+- Real MCP token savings have not yet been measured; supplied-evidence evals and
+  the probe's offline tests do not establish production retrieval savings.
+
 ## 1.7.4 — 2026-10-28
 
 - Fix merge approval never recording in scaffolded repos. The governed content
