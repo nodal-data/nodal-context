@@ -13,6 +13,7 @@ browser, scaffold script or MCP server is required.
 | 07 | Reject wrong cohort/identity/completeness despite equal totals |
 | 08 | Block on an open decision despite historic approval and a passing seed |
 | 09 | Decline exact CAC without spend and name the evidence needed |
+| 10–13 | Scoped dbt discovery, legacy prerequisites, incomplete/revised evidence, and ambiguous versus project-wide requests |
 
 Run the full suite from the repository root:
 
@@ -31,3 +32,10 @@ stop is an incomplete pilot, not a passing behavioral check. Record failures and
 fix skill behavior or demonstrated rubric defects; never relax a rubric merely
 to manufacture uplift. `--no-publish` keeps the report local. This command starts
 real hosted model runs and incurs account usage; offline tests do not do so.
+
+Cases 10–13 use hypothetical tool inventories and supplied evidence, not real MCP
+bindings. They grade retrieval decisions, retained constraints and approval
+boundaries; they cannot measure actual tool traffic or prove token savings.
+Pilot them with `--case '*dbt*'`, preserving the standard runs, ablation and judge.
+Use the opt-in retrieval probe described in `scripts/integration/README.md` for
+matched real traces. Server-only and combined arms remain external workstreams.

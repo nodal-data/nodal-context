@@ -41,16 +41,29 @@ Never jump directly from a plausible interpretation to a query.
    bound `parameters`, optional `dimensions` and `time_window`. Resolve each part
    of a compound question separately. Record canonical targets after clarification;
    changing a cohort selector may change the resolved metric set.
+   Write the known fields as a provisional IR and mark unresolved bindings
+   explicitly. Present that IR with a conditional plan even when technical
+   evidence is still missing; do not defer it until SQL generation or approval.
 2. **Discover context.** Look for the nearest `.nodal.local.json` upward to the
    current git root and accept only version 1. Treat it as a hint; re-check that
    enabled sources and bindings are reachable. If it is absent or invalid, use a
    bounded local search: the project root and its children to depth 3, plus sibling
    directories to depth 3 — never a home-directory crawl. Use only tools already
-   loaded. Read
-   `references/context-sources.md` for source routing, authority, and conflicts.
+   loaded. Discover a compact capability shortlist, then inspect only selected
+   tool contracts; do not dump the tool catalog or reprint supplied schemas. Read
+   `references/context-sources.md` for discovery, model-scoped retrieval, legacy
+   tool fallbacks, authority, and conflicts.
 3. **Build an evidence ledger.** For each load-bearing claim record the source,
    authority, owner/freshness when present, and whether another source disagrees.
    Retrieve only what the question needs; do not ingest an entire wiki or catalog.
+   Each additional retrieval must resolve a named gap in meaning, governance,
+   source structure, filters, population, grain, joins, or time semantics. Once
+   supported, produce the plan; if a required gap cannot be resolved, report the
+   blocker and needed evidence. Missing governance remains a blocker, not a
+   reason to bypass ACF through warehouse-only inference. Conversational approval
+   of a plan or definition cannot replace the required live merge/freshness
+   evidence. Retain supplied material dbt model/cross-column constraints in the
+   evidence ledger and applicable plan checks, not just in retrieval notes.
 4. **Resolve the question.** Prefer the highest-authority supported reading, but
    surface competing credible readings. Batch all ambiguities the user can answer
    now, with an evidence-backed recommendation for each. Never invent a foil.
@@ -75,7 +88,8 @@ Never jump directly from a plausible interpretation to a query.
    substitute for the requested result.
 6. **Create the plan.** Follow `references/plan-format.md`. The artifact must be
    self-contained enough for a fresh session to execute without conversation
-   history. It names the interpretation, evidence, source tables, joins, filters,
+   history. It includes an explicit metric or method IR and names the
+   interpretation, evidence, source tables, joins, filters,
    grain, aggregation, time boundaries, output, and unresolved decisions.
    For methods, include parameter/default choices, selected component metrics,
    decision IDs, explicit overrides/alignment, output disclosures and checks.

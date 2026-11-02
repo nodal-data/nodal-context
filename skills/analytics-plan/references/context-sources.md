@@ -19,6 +19,22 @@ For each claim that changes the plan, retain:
 Do not paste large source bodies into the plan. Cite the smallest useful location
 and paraphrase the claim.
 
+## Tool discovery
+
+Identify the capability needed to close the next evidence gap. When the host
+supports deferred discovery, return a compact shortlist of names and one-line
+summaries using narrow capability/provider matching. Select a tool, then inspect
+its full advertised contract, argument schema, prerequisites and authorization
+boundaries before calling it. Broaden or page discovery only when needed; never
+dump the full catalog or silently drop candidates from an oversized shortlist.
+
+On hosts exposing `ALL_TOOLS`, select names and short summaries first, then look
+up the selected entry by exact name. Name/description metadata alone may not
+include the argument schema: use the host's supported schema loader or an already
+supplied schema. Do not invent arguments or require a host-specific discovery API.
+Do not reprint contracts already supplied. This reduces discovery output, not
+necessarily the schemas that the host has injected into its initial context.
+
 ## Source routing
 
 Read only the source types present for the current question.
@@ -58,10 +74,68 @@ measure expressions, segments, grain, joins, and connection identity.
 
 ### dbt
 
-Prefer `target/manifest.json`; fall back to `models/**/*.yml`. Use model and column
-descriptions, semantic models, metrics, tests that establish grain, relationships,
-accepted values, and lineage. A dbt artifact proves technical structure; it proves
-business meaning only when the description is explicit.
+Start from model identifiers or relations in metric lineage. Fetch a known unique
+model directly; do not require a project index scan first. If the target is unknown,
+use bounded model search or compact index summaries to identify candidates. Resolve
+same-name models by project/package and relation identity rather than silently
+choosing one. Summaries route discovery; fetch complete evidence before relying on
+constraints. A project-wide request may legitimately use a project overview.
+
+Prefer `target/manifest.json` when available locally; parse and select relevant
+model nodes and associated test nodes rather than printing the whole artifact.
+Fall back to the relevant entries in `models/**/*.yml`. Preserve model and column
+descriptions, semantic models/metrics, tests, constraints, relationship targets,
+accepted values, source locations and direct dependency identifiers. Read the
+selected model's full SQL, distinguishing raw from compiled SQL when supplied.
+Missing compiled SQL remains explicit; never substitute invented compilation.
+
+For MCP sources, inspect the advertised capabilities and prefer scoped model
+lookup, search and retrieval when available. No particular endpoint name or server
+version is required. Otherwise use directory listings and targeted SQL/schema
+file reads. Never assume a proposed endpoint or an unsupported column projection
+exists. Column selection must retain model-level and cross-column constraints,
+relevant tests and relationship targets. Retain tests whose applicability is
+uncertain and mark that uncertainty; do not remove them to meet a token budget.
+Carry material model-level and cross-column constraints into the plan's evidence
+and applicable checks, including constraints already supplied before retrieval.
+Retain all columns referenced by a supplied cross-column test. Do not silently
+omit the constraint or make it optional because a projection selected fewer
+columns. If a test definition has not been retrieved, name the needed evidence;
+never invent a concrete predicate, exclusion, or uniqueness requirement.
+A dbt data test is evidence to assess, not automatically a new business row filter;
+distinguish the test definition from evidence that the test actually passed.
+
+Follow dependencies only to resolve named gaps, such as an upstream account
+exclusion or a customer join's cardinality. Multiple metrics may need multiple
+models. For a new-customer metric linked to `fct_orders`, retrieve its evidence
+and necessary dependencies, not unrelated subscription or marketing model bodies.
+Use warehouse metadata to check the actual relation/columns; metadata does not
+prove data-level uniqueness, business authority or live governance approval.
+
+### Legacy tools and incomplete responses
+
+Honor a documented initialization prerequisite when it is the only usable route.
+Prefer an independent narrow capability when its contract supports the task.
+An older connector may require an overview before search or a whole-file read of
+shared YAML. Record the unavoidable broad retrieval and avoid repeating it.
+Do not pretend the prerequisite has been removed or install a different server.
+
+When an authorized runtime supports structured result selection, retain the full
+response there and emit relevant sections with provenance, warnings, errors and
+completeness indicators. Use known response structure, not arbitrary text
+truncation. If reliable selection is unavailable, accept the broad response;
+preserving required evidence takes precedence over reducing tokens.
+
+Retain source/model identity, revision or digest when supplied, requested scope,
+returned sections, and omitted/unavailable evidence. Do not invent missing metadata.
+Complete required continuations before claiming completeness. A partial index or
+failed search does not prove an asset is absent. A summary is not full model
+evidence, and complete retrieval is not governance readiness. If a revision changes
+mid-pagination, restart the affected retrieval or report a blocker; do not combine
+incompatible snapshots. If required sections cannot be recovered, state the gap.
+
+A dbt artifact proves technical structure; it supports business meaning only when
+the description is explicit. Technical corroboration does not grant human approval.
 
 ### Markdown and agent skills
 
