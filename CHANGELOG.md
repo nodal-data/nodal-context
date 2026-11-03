@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.7.6 — Unreleased
+## 1.7.6 — 2026-11-03
 
 - Suppress drift publication for clean runs; retain issues for genuinely unchecked
   sources and review proposals for actual changes. Existing issues are not closed
