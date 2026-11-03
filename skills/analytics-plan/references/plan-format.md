@@ -81,3 +81,11 @@ place expected snapshot values or a verified-query answer key in the plan.
 When approved, retain the artifact unchanged beside the SQL. A necessary change to
 tables, joins, filters, grain, or time semantics creates a new plan revision and
 requires renewed approval.
+
+## Governance and analysis authorization
+
+Keep definition certification separate from permission to run the plan. For an
+unverified analysis, record governance status, context revision (or unavailable),
+the missing evidence, the disclosed limitation and the user's explicit acceptance.
+Do not label that acceptance definition approval. Carry it into result verification
+and retain the governance warning in the final answer.

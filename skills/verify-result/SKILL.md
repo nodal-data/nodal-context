@@ -6,8 +6,10 @@ description: Review analytics SQL and results against an approved plan for metri
 Approval contract: new and changed context stays on a named working branch and
 has no authored approval status. Human-reviewed protected merge grants definition
 approval; consult the live authority through the runtime for the exact revision
-and freshness. Missing/expired evidence or stale dependencies blocks governed
-use. Explicit branch-test mode is proposed context only. Query/notebook result
+and freshness. Missing/expired authority evidence prevents governance certification;
+it does not by itself prohibit an explicitly approved, unverified read-only analysis.
+Known revoked definitions or materially stale dependencies still require resolution.
+Explicit branch-test mode is proposed context only. Query/notebook result
 verification is separate from definition approval; retain source and review
 evidence. See the context-interview SPEC approval-through-merge contract.
 
@@ -26,6 +28,12 @@ context evidence used by the plan. Ask for a missing artifact only when it canno
 be recovered from the current conversation or workspace. If no approved plan
 exists, reconstruct the apparent plan from the SQL, label plan fidelity
 `unavailable`, and return at most `WARN`.
+
+For an explicitly authorized unverified analysis, assess plan fidelity and result
+checks normally. Preserve the accepted governance limitation and return at most
+`WARN` while authority evidence is unavailable; do not refuse review solely for
+that reason or turn query success into definition approval. Known revocations,
+material defects and an explicit strict organizational policy remain blockers.
 
 ## Hard boundaries
 

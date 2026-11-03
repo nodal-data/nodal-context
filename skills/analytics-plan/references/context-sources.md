@@ -60,10 +60,42 @@ not use a draft pattern as governed query guidance.
 
 Governed use requires live authority evidence of protected human-reviewed merge
 at the exact source revision, current freshness checks, and ready dependencies.
-Authored status or a branch name is not proof. Missing/expired evidence blocks use. A family or alias collision requires user selection, not a guessed
+Authored status or a branch name is not proof. Missing/expired evidence prevents
+governance certification. A family or alias collision requires user selection, not a guessed
 default. Use seed IDs/IR metadata for structural matching only. Keep expected
 answers, seed variants and verified SQL out of answer generation; they belong to
 separate verification. Ciphertext availability is not a successful regression.
+
+
+### Analysis authorization when governance is unavailable
+
+Maintainers operate governance; business users approve analytical intent. Attempt
+an available trusted authority check for the exact context revision. Do not ask
+users to configure readers, merge ledger branches, supply credentials or repair
+CI. If no reader is exposed, record `unavailable`; never infer rejection from
+absence or claim that a policy document is an approval receipt.
+
+When missing, expired or inaccessible authority evidence is the only governance
+gap, explain it briefly, recommend maintainer escalation, and offer an unverified
+read-only analysis. Require explicit user acceptance of that limitation together
+with the plan; preserve acceptance already given in the session. A bare approval
+of a plan previously described as blocked does not silently accept an exception:
+clarify the available path once. After explicit acceptance, execute with normal
+query and result verification; do not repeatedly demand the missing receipt.
+
+Record the context revision if known, missing evidence, accepted limitation and
+analysis authorization in the plan. Keep governance status `unverified` in the
+answer even if query checks pass. Never mark definitions approved, alter the
+ledger, switch on branch-test mode, or silently replace the metric with a
+warehouse-derived definition. Verification can assess plan fidelity while
+retaining a governance warning.
+
+This exception does not override access restrictions, an explicit organizational
+policy requiring certified answers, known revocations, material source defects,
+unresolved metric/grain/time decisions, or insufficient data. Explain the specific
+remaining blocker and route maintainer work to the owner. A generic certification
+requirement alone is not an explicit ban on unverified analysis; if the repository
+expressly forbids it, honor that policy and identify it.
 
 ### KTX
 

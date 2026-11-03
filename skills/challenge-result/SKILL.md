@@ -6,8 +6,10 @@ description: Challenge a completed analytics answer when the user disputes it or
 Approval contract: new and changed context stays on a named working branch and
 has no authored approval status. Human-reviewed protected merge grants definition
 approval; consult the live authority through the runtime for the exact revision
-and freshness. Missing/expired evidence or stale dependencies blocks governed
-use. Explicit branch-test mode is proposed context only. Query/notebook result
+and freshness. Missing/expired authority evidence prevents governance certification;
+it does not by itself prohibit an explicitly approved, unverified read-only analysis.
+Known revoked definitions or materially stale dependencies still require resolution.
+Explicit branch-test mode is proposed context only. Query/notebook result
 verification is separate from definition approval; retain source and review
 evidence. See the context-interview SPEC approval-through-merge contract.
 

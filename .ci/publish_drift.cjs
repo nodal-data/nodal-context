@@ -3,10 +3,14 @@
 // API contract: https://docs.github.com/en/rest/git/trees#create-a-tree
 // https://docs.github.com/en/rest/git/refs#update-a-reference
 module.exports = async function publishDrift({github, context, core, payload, artifactUrl}) {
-  if (payload.version !== 1 || !/^(?:[a-f0-9]{20}|unchecked)$/.test(payload.batch) ||
+  if (payload.version !== 1 || !/^(?:[a-f0-9]{20}|unchecked|clean)$/.test(payload.batch) ||
       !/^[a-f0-9]{40,64}$/.test(payload.baseSha) || !Array.isArray(payload.edits) ||
       ![undefined, 'seed-regrade'].includes(payload.purpose)) {
     throw new Error('Invalid checked drift publication payload');
+  }
+  if (payload.batch === 'clean') {
+    if (payload.edits.length || payload.patch) throw new Error('Clean report contains edits');
+    return {status: 'no_changes'};
   }
   const {owner, repo} = context.repo;
   const common = {owner, repo};

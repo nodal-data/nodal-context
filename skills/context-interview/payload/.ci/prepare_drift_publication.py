@@ -57,7 +57,8 @@ def prepare_publication(root, report_path, base_ref, *, regrade=False, provider=
     report = strict_json(contained(root, report_path, ".nodal").read_text())
     base_sha = commit(root, "HEAD")
     payload = {"version": 1, "baseRef": base_ref, "baseSha": base_sha, "edits": [],
-               "batch": "unchecked", "report": "", "patch": ""}
+               "batch": "unchecked" if report.get("unchecked_sources") else "clean",
+               "report": "", "patch": ""}
     if not base_ref or base_ref.startswith("-") or any(ord(c) < 32 for c in base_ref):
         raise ValueError("invalid base branch")
     preview = report.get("patch")
@@ -150,7 +151,8 @@ def main(argv=None):
     except (ValueError, OSError, KeyError, TypeError):
         print("drift publication: source changed or invalid proposal; regenerate the drift report", file=sys.stderr)
         return 2
-    publish = bool(result["edits"]) or result.get("purpose") != "seed-regrade"
+    publish = (bool(result["edits"]) or
+               (result["batch"] != "clean" and result.get("purpose") != "seed-regrade"))
     if args.github_output:
         with Path(args.github_output).open("a") as stream:
             stream.write("publish=" + str(publish).lower() + "\n")
