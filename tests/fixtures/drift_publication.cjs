@@ -85,6 +85,10 @@ function fixture() {
   assert.equal(r.category, 'default_branch_changed'); assert(!f.calls.some(c => c.name === 'createCommit'));
   f = fixture(); await f.run(); f.pulls[0].state = 'closed'; r = await f.run();
   assert.equal(r.category, 'batch_already_closed'); assert.equal(f.pulls.length, 1);
+  f = fixture(); f.payload.edits = []; f.payload.patch = ''; f.payload.batch = 'clean';
+  r = await f.run(); assert.equal(r.status, 'no_changes');
+  assert.equal(f.calls.length, 0); assert.equal(f.issues.length, 0);
+  f.payload.edits = [{path: 'unexpected'}]; await assert.rejects(f.run());
   f = fixture(); f.payload.edits = []; f.payload.batch = 'unchecked'; r = await f.run();
   assert.equal(r.category, 'unchecked_sources'); assert.equal(f.calls.length, 0);
   f = fixture(); f.deny = 'createRef'; f.payload.report = 'A'.repeat(70000); f.payload.patch = 'B'.repeat(70000); r = await f.run();

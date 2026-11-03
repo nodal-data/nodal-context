@@ -33,9 +33,9 @@ A branch name, a local `status`, a passing test, or a copied receipt is insuffic
    `gh` manages authentication. Never source commands from a context repository.
 
 An absent authority, inaccessible protection settings, missing source checks,
-expired checks, dirty content, or an unrecognized revision blocks governed use.
+expired checks, dirty content, or an unrecognized revision prevents certification.
 The reader also checks that the latest source workflow completed and published
-its state; pending checks or failed publication block use immediately.
+its state; pending checks or failed publication block certification immediately.
 The reader always fetches live state; there is no offline approval fallback.
 Local copies must retain their approved Git commit and exact content. Exports
 carry deterministic generated files (independent of build date and checkout name)
@@ -53,7 +53,7 @@ mode, for ACF exports. Plain exported text cannot enforce revocation.
 `context-drift` writes an append-only block event to the authority ref before
 publishing any repair proposal. It records target IDs, source evidence, revision
 and reason. Dependency propagation blocks metrics, methods, patterns and seeds.
-A source that cannot be checked blocks use too. Periodic source checks expire in
+A source that cannot be checked blocks certification too. Periodic source checks expire in
 24 hours; live authority responses expire in five minutes. Source checks run on
 each approval-branch push as well as dispatch and schedule, so a merge does not
 wait for the six-hour scheduled refresh. Dispatch source
@@ -70,7 +70,7 @@ Changes to that scope require fresh review and clearance. An unrelated merge
 never clears an uncleared block. Preserve every event and source record.
 Repeated detection can create additional blocks; each must be addressed.
 
-Consumers still reject missing approval/freshness evidence for the revision.
+Certification consumers still reject missing approval/freshness evidence for the revision.
 With valid authority evidence, eval and export exclude blocked definitions and
 their dependents individually while retaining unrelated eligible definitions.
 Unstructured prose from affected domains is withheld; domains with no eligible
@@ -78,6 +78,33 @@ definitions are omitted. Blocked seeds are excluded individually. Re-grading exp
 proposed context without granting approval. CI regression workspaces preserve
 the exact commit identity without copying Git credentials or plaintext SQL;
 skipped execution returns a nonzero check result.
+
+## Analysis authorization versus certification
+
+Maintainers own authority readers, branch protection, approval recording, source
+checks and repair. Business users should not need to configure governance tooling
+or merge the separate `acf-governance` ledger branch into the approval branch.
+
+The live-evidence requirements above govern certification, exports and governed
+runtime eligibility. Missing, expired or inaccessible authority evidence alone
+may instead be disclosed as a limitation of a read-only analysis. If technical
+and semantic evidence supports the plan, offer that unverified path, recommend
+maintainer escalation, and require explicit user acceptance of the limitation and
+plan before execution. Preserve that acceptance across the session. Record the
+context revision when known, evidence gap and acceptance; keep the result labeled
+governance-unverified and perform normal plan/result verification.
+
+Acceptance never approves a definition, clears a ledger block, proves freshness,
+or authorizes branch-test mode for production. Certification/export/runtime checks
+remain fail-closed. If an executor only accepts certified context, it remains
+unavailable; do not bypass its enforcement. Known revocations, material defects,
+unresolved business decisions and access restrictions still require resolution.
+An organization may explicitly require certified answers and prohibit this
+exception; identify that policy when explaining the block. Do not treat an absent
+reader as proof that a definition was rejected.
+
+Existing customer repositories need a reviewed support-file upgrade to adopt this
+policy. Installing updated skills does not rewrite their governance instructions.
 
 ## Authoring and tests
 

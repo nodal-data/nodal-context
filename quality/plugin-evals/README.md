@@ -13,6 +13,7 @@ browser, scaffold script or MCP server is required.
 | 07 | Reject wrong cohort/identity/completeness despite equal totals |
 | 08 | Block on an open decision despite historic approval and a passing seed |
 | 09 | Decline exact CAC without spend and name the evidence needed |
+| 14–16 | Accepted unverified analysis, explicit strict policy, and verification with governance warnings |
 | 10–13 | Scoped dbt discovery, legacy prerequisites, incomplete/revised evidence, and ambiguous versus project-wide requests |
 
 Run the full suite from the repository root:

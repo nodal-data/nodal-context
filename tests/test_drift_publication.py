@@ -63,6 +63,22 @@ def run():
         save(root)  # default branch now has stale seeds with their prior approval in history
         report = {'impact': {'objects': [], 'snapshot_batch': [], 'reasons': []}, 'unchecked_sources': []}
         target = root / '.nodal/drift-report.json'; target.parent.mkdir(); target.write_bytes(encoded(report))
+        # A clean scheduled run must not request GitHub publication.
+        output = root / 'github-output'
+        command = subprocess.run([sys.executable, str(ROOT / '.ci/prepare_drift_publication.py'),
+            '--repo-root', str(root), '--base-ref', 'main', '--github-output', str(output)],
+            check=True, capture_output=True, text=True)
+        summary = json.loads(command.stdout)
+        assert summary['batch'] == 'clean' and summary['publish'] is False
+        assert output.read_text() == 'publish=false\n'
+        # An actual unchecked source must still reach the publisher.
+        target.write_bytes(encoded({**report, 'unchecked_sources': ['missing']}))
+        command = subprocess.run([sys.executable, str(ROOT / '.ci/prepare_drift_publication.py'),
+            '--repo-root', str(root), '--base-ref', 'main'],
+            check=True, capture_output=True, text=True)
+        summary = json.loads(command.stdout)
+        assert summary['batch'] == 'unchecked' and summary['publish'] is True
+        target.write_bytes(encoded(report))
         before = {p:p.read_bytes() for p in (root/'evals/seeds').glob('*.yaml')}
         result = prepare_publication(root, '.nodal/drift-report.json', 'main', regrade=True, provider=Provider())
         assert result['purpose'] == 'seed-regrade'

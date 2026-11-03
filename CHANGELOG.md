@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.7.6 — 2026-11-03
+
+- Suppress drift publication for clean runs; retain issues for genuinely unchecked
+  sources and review proposals for actual changes. Existing issues are not closed
+  automatically.
+- Separate governance certification from explicit authorization of an unverified
+  read-only analysis. Retain strict organization policies, known revocations,
+  semantic blockers and normal query/result checks.
+- Keep authority setup and repair with maintainers; carry accepted governance
+  limitations into result verification rather than repeatedly blocking users.
+
+Upgrade notes:
+
+- Existing context repositories need a reviewed support-file upgrade for the drift
+  fix and governance guidance. Updating the plugin alone does not replace those
+  files. Authority runtime and certified export checks remain fail-closed.
+- No ACF schema migration or aiden-core change is included.
+
 ## 1.7.5 — 2026-11-02
 
 - Prefer scoped dbt evidence and compact tool discovery while preserving model

@@ -6,8 +6,10 @@ description: Plan and answer business analytics questions against read-only data
 Approval contract: new and changed context stays on a named working branch and
 has no authored approval status. Human-reviewed protected merge grants definition
 approval; consult the live authority through the runtime for the exact revision
-and freshness. Missing/expired evidence or stale dependencies blocks governed
-use. Explicit branch-test mode is proposed context only. Query/notebook result
+and freshness. Missing/expired authority evidence prevents governance certification;
+it does not by itself prohibit an explicitly approved, unverified read-only analysis.
+Known revoked definitions or materially stale dependencies still require resolution.
+Explicit branch-test mode is proposed context only. Query/notebook result
 verification is separate from definition approval; retain source and review
 evidence. See the context-interview SPEC approval-through-merge contract.
 
@@ -59,10 +61,14 @@ Never jump directly from a plausible interpretation to a query.
    Each additional retrieval must resolve a named gap in meaning, governance,
    source structure, filters, population, grain, joins, or time semantics. Once
    supported, produce the plan; if a required gap cannot be resolved, report the
-   blocker and needed evidence. Missing governance remains a blocker, not a
-   reason to bypass ACF through warehouse-only inference. Conversational approval
-   of a plan or definition cannot replace the required live merge/freshness
-   evidence. Retain supplied material dbt model/cross-column constraints in the
+   gap and needed evidence. Distinguish unavailable governance evidence from a
+   known revocation or material defect. Missing authority alone does not make a
+   documented metric meaning unresolved. Explicitly offer the unverified path
+   once other semantic/technical gaps are resolved; do not only say "blocked".
+   Follow the analysis authorization policy
+   in `references/context-sources.md`; user approval can authorize an unverified
+   analysis but cannot certify a definition or replace live merge/freshness evidence.
+   Retain supplied material dbt model/cross-column constraints in the
    evidence ledger and applicable plan checks, not just in retrieval notes.
 4. **Resolve the question.** Prefer the highest-authority supported reading, but
    surface competing credible readings. Batch all ambiguities the user can answer
@@ -102,7 +108,10 @@ Never jump directly from a plausible interpretation to a query.
    execute until the user approves or resolves every blocking decision.
 9. **Execute faithfully.** Generate SQL from the approved plan and show it. If the
    plan must change, stop, revise it, re-score it, and request approval again.
-10. **Return the answer.** Include the result, SQL, applied definitions/caveats,
+10. **Return the answer.** Derive acceptance checks from the plan and evidence;
+    do not invent uniqueness or nonzero-count requirements. Repeated flags can be
+    compatible with distinct counting, and zero can be a valid result.
+    Include the result, SQL, applied definitions/caveats,
     evidence provenance, and preliminary confidence. If `verify-result` is
     available, use its review contract for the full post-execution assessment.
     A method may also require read-only Python in an authorized customer executor;
